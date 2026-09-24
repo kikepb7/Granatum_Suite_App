@@ -1,0 +1,12 @@
+# Copy this file to `local.properties` (already gitignored) and fill in real values.
+# local.properties is never committed — this is where per-developer / per-machine
+# secrets and SDK paths live.
+
+# Consumed by BuildKonfigConventionPlugin (build-logic) and exposed at runtime
+# as BuildKonfig.API_KEY, sent as the `x-api-key` header on every request
+# (see core/data/.../networking/HttpClientFactory.kt). The build fails fast
+# if this is missing.
+API_KEY=your-dev-api-key
+
+# Uncomment and set if the Android Gradle Plugin can't auto-detect your SDK.
+# sdk.dir=/Users/you/Library/Android/sdk

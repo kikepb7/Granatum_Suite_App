@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<resources>
+    <string name="app_name">App</string>
+    <string name="hide_password">Hide password</string>
+    <string name="show_password">Show password</string>
+    <string name="special_character">Caracteres especiales</string>
+    <string name="min_length">Longitud mínima</string>
+    <string name="upper_case">Letra mayúscula</string>
+    <string name="dismiss_dialog">Dismiss dialog</string>
+    <string name="app_topbar_back">Volver</string>
+    <string name="app_topbar_settings">Ajustes</string>
+</resources>
