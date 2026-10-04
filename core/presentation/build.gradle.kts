@@ -1,8 +1,24 @@
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
+
 plugins {
     alias(libs.plugins.convention.cmp.library)
 }
 
 kotlin {
+    // `mobileMain` carries the `actual`s shared by Android and iOS (the moko-backed
+    // PermissionController). Declaring it as a group on the default hierarchy template
+    // — rather than hand-wiring dependsOn edges — lets Kotlin keep owning androidMain
+    // and iosMain; explicit dependsOn calls make it bail out of the template entirely.
+    @OptIn(ExperimentalKotlinGradlePluginApi::class)
+    applyDefaultHierarchyTemplate {
+        common {
+            group("mobile") {
+                withAndroidTarget()
+                withIos()
+            }
+        }
+    }
+
     sourceSets {
         commonMain {
             dependencies {
@@ -18,30 +34,6 @@ kotlin {
                 implementation(libs.moko.permissions)
                 implementation(libs.moko.permissions.compose)
                 implementation(libs.moko.permissions.notifications)
-            }
-        }
-
-        val mobileMain by creating {
-            dependencies {
-                implementation(libs.moko.permissions)
-                implementation(libs.moko.permissions.compose)
-                implementation(libs.moko.permissions.notifications)
-            }
-            dependsOn(commonMain.get())
-        }
-        androidMain.get().dependsOn(mobileMain)
-
-        val iosMain by creating {
-            dependsOn(mobileMain)
-        }
-
-        listOf(
-            iosArm64(),
-            iosX64(),
-            iosSimulatorArm64()
-        ).forEach { target ->
-            getByName("${target.name}Main") {
-                dependsOn(iosMain)
             }
         }
     }

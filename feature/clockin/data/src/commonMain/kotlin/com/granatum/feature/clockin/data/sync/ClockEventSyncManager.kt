@@ -20,8 +20,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlin.time.Clock
 
 /**
  * The piece that makes clock punches offline-first instead of merely
