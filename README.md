@@ -40,6 +40,22 @@ See **[ARCHITECTURE.md](./ARCHITECTURE.md)** for the deep dive into how everythi
    - Android: `./gradlew :composeApp:assembleDebug`, or the run configuration in Android Studio.
    - iOS: open `iosApp/iosApp.xcodeproj` in Xcode and run, or use the run configuration in your IDE.
 
+## Spec-driven development (Spec Kit)
+
+The shared process lives in `.specify/` and **is** committed: the project constitution (`.specify/memory/constitution.md`), the spec/plan/tasks templates and the workflow scripts. Feature specs generated under `specs/` are committed too — they're the artefact worth reviewing.
+
+The `/speckit-*` agent commands are **not** committed. They install into `.claude/skills/`, which is gitignored. Recreate them after cloning:
+
+```bash
+brew install uv
+uv tool install specify-cli --from git+https://github.com/github/spec-kit.git
+specify init . --integration claude --ignore-agent-tools --force
+```
+
+`--ignore-agent-tools` is mandatory on macOS. Spec Kit probes the `PATH` for a `claude` executable; the Claude Code desktop app ships only a Linux binary inside its bundle, so the tool check fails and `init` aborts without the flag.
+
+Workflow: `/speckit-constitution` → `/speckit-specify` → `/speckit-plan` → `/speckit-tasks` → `/speckit-implement`.
+
 ## Project structure
 
 ```
