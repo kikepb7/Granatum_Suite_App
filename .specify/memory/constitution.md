@@ -1,50 +1,288 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+SYNC IMPACT REPORT — revisión humana, eliminar antes de commitear
+=================================================================
+Cambio de versión: (ninguna) → 1.0.0
+Motivo del bump: ratificación inicial. No hay versión previa; el fichero era la
+plantilla sin rellenar (18 marcadores).
+
+Principios añadidos (12):
+  I.    Arquitectura limpia por módulos
+  II.   commonMain por defecto
+  III.  Offline-first
+  IV.   Errores explícitos y observabilidad
+  V.    Secretos y configuración por entorno
+  VI.   El contrato de API manda
+  VII.  Credenciales en almacenamiento seguro
+  VIII. Tests y CI en verde
+  IX.   UI por design system, accesible y en español
+  X.    Toda feature documentada
+  XI.   El build vive en los convention plugins
+  XII.  Paridad Android / iOS
+
+Secciones añadidas:
+  - Stack y restricciones técnicas
+  - Flujo de desarrollo y puertas de calidad
+  - Governance (con brechas conocidas)
+
+Principios del usuario incorporados tal cual: los 10 suministrados.
+Aportaciones derivadas del análisis de Squadfy_KMM y del código actual:
+  - XI y XII como principios propios.
+  - AppLogger plegado en IV; esquemas Room y migraciones plegados en III;
+    dirección de dependencias plegada en I; higiene de deprecaciones plegada en XI.
+
+TODOs diferidos: ninguno. Las cinco brechas conocidas están listadas de forma
+explícita en Governance en lugar de como marcadores TODO, porque son trabajo
+pendiente de producto, no datos que falten.
+=================================================================
+-->
+
+# Constitución de Granatum Suite App
+
+Granatum Suite App es una aplicación Kotlin Multiplatform (Android + iOS) con UI
+en Compose Multiplatform. Esta constitución fija las reglas técnicas no
+negociables. Toma como arquitectura de referencia el proyecto hermano
+[Squadfy_KMM](https://github.com/kikepb7/Squadfy_KMM), con el que comparte linaje
+(KMM-Skeleton), los mismos convention plugins y una capa `core/domain`
+(`Result`, `DataError`, `Error`) idéntica salvo el package.
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Arquitectura limpia por módulos
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+La estructura modular es `core/{domain, data, designsystem, presentation}` y
+`feature/<nombre>/{domain, database, data, presentation}`, siguiendo el patrón de
+`feature/example`. Toda feature nueva MUST replicar esa forma.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+Las dependencias apuntan hacia dentro: `presentation → domain ← data`. Un módulo
+`domain` MUST ser Kotlin puro y NO PUEDE depender de Android, Ktor, Room ni
+Compose. Esa prohibición no es estilística: es lo que permite que el dominio se
+teste en `commonTest` sin emulador y que iOS compile sin arrastrar el SDK de
+Android.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+Un módulo `data` depende de su `domain` y de `core/data`, nunca de otro
+`feature`. La comunicación entre features pasa por `core`.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### II. commonMain por defecto
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+El código vive en `commonMain` salvo que exista una razón de plataforma. Escribir
+en `androidMain` o `iosMain` lo que podría estar en `commonMain` es una
+regresión.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+`expect/actual` se reserva a cinco áreas: geolocalización, permisos,
+almacenamiento seguro, conectividad y compartición de ficheros. Cualquier sexto
+uso MUST justificarse en la PR.
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+Cuando un `actual` sea idéntico en Android e iOS, va en un source set
+intermedio (`mobileMain`) declarado como grupo de la plantilla de jerarquía por
+defecto. NO se permiten llamadas `dependsOn()` manuales: sacan a Kotlin de la
+plantilla y rompen el cableado automático de los source sets.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+### III. Offline-first
+
+La UI lee siempre de Room; la red sincroniza por detrás. Ningún `ViewModel`
+observa directamente una llamada HTTP.
+
+El fichaje MUST funcionar sin conexión y **un fichaje nunca se pierde**. Toda
+marca se escribe primero en local con estado de sincronización y se encola. El
+envío respeta el orden del evento y para en el primer fallo, en lugar de saltarse
+eventos: una secuencia de fichajes solo es válida en orden.
+
+Cada evento lleva un identificador generado en cliente, y el backend MUST hacer
+upsert por ese id. Sin idempotencia, un reintento tras una respuesta perdida
+duplica la marca.
+
+Los esquemas de Room se exportan y se commitean. Todo cambio de esquema viaja
+con su migración en la misma PR; nunca se recurre a borrar la base en destino.
+
+### IV. Errores explícitos y observabilidad
+
+Los errores cruzan capas como `Result<D, E>` con `DataError`, nunca como
+excepciones. Una excepción que escapa de `data` hacia `domain` o `presentation`
+es un bug, no un mecanismo de control de flujo.
+
+El mapeo a texto de usuario ocurre en `presentation` (`toUiText()`), jamás en
+`domain`: el dominio no conoce idiomas ni pantallas.
+
+Las trazas pasan por la abstracción `AppLogger` de `core/domain`. `println` y
+`android.util.Log` están prohibidos en código de producción — rompen la
+multiplataforma y escapan a cualquier control de nivel o redacción.
+
+### V. Secretos y configuración por entorno
+
+Secretos y URLs se inyectan vía BuildKonfig desde `local.properties`. NUNCA se
+commitean. `local.properties.example` documenta las claves necesarias sin valores
+reales.
+
+Producción MUST ser HTTPS exclusivamente. Tráfico en claro solo se admite contra
+`localhost`/emulador en builds de debug.
+
+Las credenciales reales de Firebase (`google-services.json`,
+`GoogleService-Info.plist`) quedan fuera del repositorio.
+
+### VI. El contrato de API manda
+
+El contrato es `docs/openapi.json` del backend. La app NO inventa endpoints,
+campos ni códigos de estado.
+
+Si una feature necesita algo que el contrato no ofrece, la PR se bloquea hasta
+que el contrato se actualice. Adivinar la forma de la respuesta y "ya lo
+arreglaremos" es lo que convierte un fallo de integración en un fallo en
+producción.
+
+### VII. Credenciales en almacenamiento seguro
+
+Los tokens de sesión MUST residir en el almacén seguro del sistema: Keychain en
+iOS, Keystore en Android. No en `DataStore` plano, no en `SharedPreferences`, no
+en la base de datos.
+
+El interfaz `SessionStorage` de `core/domain` es el único punto de acceso. Ningún
+otro módulo lee ni escribe tokens directamente.
+
+> Esta regla **todavía no se cumple**: hoy se usa `DataStoreSessionStorage`. Ver
+> «Brechas conocidas» en Governance.
+
+### VIII. Tests y CI en verde
+
+El dominio y los `ViewModel` se testean en `commonTest`, no en `androidUnitTest`:
+un test que solo corre en JVM no protege iOS.
+
+Nada se fusiona con la CI en rojo. Sin excepciones, sin "lo arreglo después del
+merge".
+
+Las puertas mínimas de la CI se definen en «Flujo de desarrollo y puertas de
+calidad». Bajar un umbral de cobertura requiere enmienda a esta constitución, no
+una decisión de PR.
+
+### IX. UI por design system, accesible y en español
+
+Todo componente visual sale de `core/designsystem`. Colores, tipografías y
+espaciados literales en pantallas de feature están prohibidos.
+
+Los textos viven en recursos, con **español como idioma primario**. Nada de
+cadenas incrustadas en composables.
+
+Los objetivos táctiles respetan los mínimos de accesibilidad (48dp en Android,
+44pt en iOS) y todo elemento interactivo expone semántica para lectores de
+pantalla.
+
+### X. Toda feature documentada
+
+Cada feature queda documentada en `specs/` siguiendo el flujo de Spec Kit
+(`spec.md` → `plan.md` → `tasks.md`) y se refleja en el README.
+
+Código sin spec es deuda: nadie puede revisar contra una intención que no está
+escrita.
+
+### XI. El build vive en los convention plugins
+
+Toda configuración de build reside en los convention plugins de `build-logic`:
+`android-application`, `android-application-compose`, `cmp-application`,
+`cmp-library`, `cmp-feature`, `kmp-library`, `room`, `buildkonfig`.
+
+Los `build.gradle.kts` de módulo declaran dependencias y nada más. Configuración
+Gradle ad-hoc en un módulo es una desviación que MUST corregirse subiéndola al
+convention plugin correspondiente.
+
+Las versiones salen exclusivamente de `gradle/libs.versions.toml`, fuente única
+de verdad. Las versiones del toolchain —Kotlin, KSP, AGP, Compose— se mueven
+juntas: un KSP desalineado con Kotlin rompió el build el 2026-10-04.
+
+Higiene de deprecaciones: las que señalan una migración incompatible aguas arriba
+se atienden, no se silencian. Un `typealias` deprecado hoy es un error de
+compilación en la próxima subida de versión.
+
+### XII. Paridad Android / iOS
+
+Un cambio no está terminado hasta que compilan **ambos** targets. Verificar solo
+la variante de Android no es verificar.
+
+Toda PR que toque código compartido MUST acreditar `:composeApp:assembleDebug` y
+la compilación de iOS (`compileKotlinIosSimulatorArm64` del módulo afectado).
+
+Las roturas de iOS son la regresión más frecuente en KMP porque el ciclo de
+desarrollo diario ocurre en Android. Esta regla existe precisamente por eso.
+
+## Stack y restricciones técnicas
+
+Targets: Android e iOS. No hay desktop ni web, y añadir uno requiere enmienda.
+
+Package raíz: `com.granatum`.
+
+Stack fijo:
+
+| Área | Tecnología |
+|---|---|
+| DI | Koin |
+| Red | Ktor |
+| Persistencia | Room (en `commonMain`, driver bundled) |
+| UI | Compose Multiplatform |
+| Navegación | Navigation con rutas type-safe (nada de rutas por string) |
+| Secretos | BuildKonfig |
+| Fecha/hora | kotlinx-datetime + `kotlin.time` |
+| Serialización | kotlinx-serialization |
+
+Sustituir cualquiera de estas piezas es una enmienda MAJOR. Añadir una librería
+nueva requiere justificarla en la PR frente a lo que ya existe en el stack.
+
+JDK 17 es el mínimo para compilar.
+
+## Flujo de desarrollo y puertas de calidad
+
+La CI es el modelo de Squadfy_KMM, adaptado a la rama `main`. Jobs obligatorios:
+
+1. **Análisis estático** — ktlint.
+2. **Tests unitarios + cobertura** — con puerta de línea mínima vía Kover. El
+   umbral arranca en 20 % y sube; nunca baja sin enmienda.
+3. **Assemble debug** — `:composeApp:assembleDebug`, publicando el APK como
+   artefacto.
+4. **Tests instrumentados** — API 26, 30 y 34.
+5. **Resumen** — job final que falla el run si cualquier job anterior falló, para
+   que un fallo no quede enterrado en la matriz.
+
+Requisitos de PR:
+
+- La rama parte de `main` y la CI está verde antes del merge.
+- Las desviaciones de esta constitución se declaran explícitamente en la
+  descripción de la PR, con su justificación.
+- Un cambio de esquema de Room incluye migración y esquema exportado.
+- Un cambio en código compartido acredita que iOS compila.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+Esta constitución prevalece sobre cualquier otra práctica o costumbre del
+equipo. Ante conflicto entre este documento y un hábito establecido, manda el
+documento.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Procedimiento de enmienda.** Toda modificación se propone en una PR que toca
+este fichero, explica el motivo y actualiza la versión. Una enmienda que invalide
+código existente MUST incluir el plan de migración.
+
+**Versionado.** Semántico:
+
+- **MAJOR** — se elimina o redefine un principio de forma incompatible.
+- **MINOR** — se añade un principio o se amplía materialmente una guía.
+- **PATCH** — aclaraciones, redacción, correcciones sin cambio semántico.
+
+**Revisión de cumplimiento.** Cada PR verifica el cumplimiento. La complejidad
+que se aparte de estos principios se justifica o se revierte.
+
+### Brechas conocidas
+
+Este documento describe el estado objetivo. A fecha de ratificación, cinco reglas
+**no se cumplen todavía**. Se listan de forma explícita para que nadie las dé por
+satisfechas:
+
+| # | Brecha | Principio afectado |
+|---|---|---|
+| 1 | No existe pipeline de CI (`.github/workflows` ausente) | VIII |
+| 2 | ktlint y Kover no están configurados en el build | VIII |
+| 3 | Los tokens se guardan en `DataStoreSessionStorage`, no en Keychain/Keystore | VII |
+| 4 | `docs/openapi.json` no existe; `docs/` está vacío | VI |
+| 5 | `specs/` no existe aún | X |
+
+Las brechas 1 y 2 son de mayor prioridad: hasta que existan, el principio VIII no
+es exigible y el resto depende de la disciplina manual. La brecha 3 es una mejora
+sobre el proyecto de referencia, no una paridad: Squadfy_KMM tampoco usa
+Keychain/Keystore.
+
+**Version**: 1.0.0 | **Ratified**: 2026-10-04 | **Last Amended**: 2026-10-04
