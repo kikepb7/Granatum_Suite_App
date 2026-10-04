@@ -18,6 +18,12 @@ captures
 **/xcshareddata/WorkspaceSettings.xcsettings
 node_modules/
 
+# Claude Code: per-developer tooling, not shared via the repo.
+# Agent skills are pinned in skills-lock.json (committed) and restored with
+# `npx skills experimental_install`, so the files themselves stay out of git.
+.claude/settings.local.json
+.claude/skills/
+
 # Real Firebase/Google Services config — never commit, see README
 google-services.json
 GoogleService-Info.plist
