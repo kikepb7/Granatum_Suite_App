@@ -1,0 +1,18 @@
+<!--
+  Provisional launcher mark: the brand initial on a flat ground, until the real
+  identity arrives. A vector rather than a PNG set because minSdk is 26, so every
+  supported device renders the adaptive icon and the legacy mipmaps never show.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:pathData="M69.6,38.4 A22,22 0 1 0 69.6,69.6 L69.6,54 L54,54"
+        android:strokeWidth="9"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000" />
+</vector>

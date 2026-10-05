@@ -1,44 +1,78 @@
-# KMM Skeleton
+# Granatum Suite
 
-A ready-to-clone **Kotlin Multiplatform Mobile** (Android + iOS) starting point with Compose Multiplatform, a modular Clean Architecture, and the networking/database/DI plumbing already wired up — so a new project starts with a working app on day one instead of a week of boilerplate.
+Aplicación **Kotlin Multiplatform** (Android + iOS) con UI en Compose Multiplatform para la gestión interna de Granatum: **fichaje** de jornada e **inventario** de materiales.
 
-It was extracted from a real production app, then stripped down to a neutral `feature/example` module that shows the full pattern (Ktor + Room offline-first + Koin) without any of that app's business logic.
+El fichaje es offline-first: funciona sin conexión y un fichaje nunca se pierde. Esa restricción manda sobre buena parte del diseño de la app.
 
-See **[ARCHITECTURE.md](./ARCHITECTURE.md)** for the deep dive into how everything fits together.
+Las reglas técnicas no negociables están en la **[constitución del proyecto](.specify/memory/constitution.md)**. El recorrido por la arquitectura, en **[ARCHITECTURE.md](./ARCHITECTURE.md)**.
 
-## What's already wired up
+## Qué hay montado
 
-- **Compose Multiplatform** UI shared between Android and iOS (`composeApp`)
-- **Gradle convention plugins** (`build-logic`) so every module's `build.gradle.kts` is 5–20 lines, not 100
-- **Koin** dependency injection, composed per module (`data`/`domain`/`presentation` each expose one Koin module)
-- **Ktor** HTTP client with JSON, logging, timeouts, WebSockets, and automatic bearer-token refresh already configured
-- **Room** (KMP) for offline-first local persistence, with the Android/iOS `DatabaseFactory` expect/actual already done
-- **Ready-made email/password auth plumbing** in `core/data` (login, register, verify email, forgot/reset/change password, session storage, automatic token refresh) — build your own login screens against `AuthRepository`, or delete it if you don't need it
-- **A small design system** (`core/designsystem`): theme, typography, buttons, text fields, dialogs, top bar, bottom bar, etc.
-- A typed **`Result<D, E>` / `DataError`** model instead of throwing exceptions across layers
-- **BuildKonfig** wired to `local.properties` for secrets (never hardcoded, never committed)
+- **Compose Multiplatform** compartido entre Android e iOS (`composeApp`)
+- **Convention plugins de Gradle** (`build-logic`): los `build.gradle.kts` de módulo tienen 5-20 líneas, no 100
+- **Koin** para inyección, un módulo por cada capa de cada feature
+- **Ktor** con JSON, logging, timeouts y renovación automática del token
+- **Room** (KMP) para la caché local, con el `DatabaseFactory` expect/actual ya resuelto
+- **Autenticación** en `core/data`: login, cambio de contraseña, cierre de sesión y renovación de token. Sin registro, verificación por correo ni recuperación: las cuentas las crea la empresa
+- **Design system** propio (`core/designsystem`)
+- **`Result<D, E>` / `DataError`** en vez de excepciones entre capas
+- **BuildKonfig** para la configuración por entorno, leída de `local.properties` y nunca commiteada
 
-## Requirements
+## Requisitos
 
 - JDK 17+
-- Android Studio (latest stable) or IntelliJ IDEA with the Kotlin Multiplatform plugin
-- Xcode (latest stable), only needed to build/run the iOS app
-- A backend that speaks the routes referenced in `core/data` (`/auth/*`) and `feature/example` (`/example-items`) — point it at your own API, see below
+- Android Studio (estable más reciente) o IntelliJ IDEA con el plugin de Kotlin Multiplatform
+- Xcode (estable más reciente), solo para compilar y ejecutar en iOS
+- El backend de Granatum ([Granatum_Suite_Backend](https://github.com/kikepb7/Granatum_Suite_Backend)) corriendo en local
 
-## Getting started
+## Puesta en marcha
 
-1. **Clone this repo as your new project** (don't fork — you want a clean history):
+1. **Clona el repositorio y copia la configuración local:**
    ```bash
-   git clone https://github.com/<you>/KMM-Skeleton.git my-new-app
-   cd my-new-app
-   rm -rf .git && git init
+   cp local.properties.example local.properties
    ```
-2. **Copy `local.properties.example` to `local.properties`** and fill in `API_KEY` (any non-empty string works while you don't have a real backend yet — the build fails without it, see [ARCHITECTURE.md](./ARCHITECTURE.md#secrets--buildkonfig)).
-3. **Point the app at your backend.** Edit `core/data/src/commonMain/kotlin/com/template/core/data/networking/UrlConstants.kt` — it defaults to `http://10.0.2.2:8080/api`, the Android emulator's alias for your machine's `localhost:8080`.
-4. **Rename the package/app identity** to your own (see [below](#renaming-the-skeleton)).
-5. **Run it:**
-   - Android: `./gradlew :composeApp:assembleDebug`, or the run configuration in Android Studio.
-   - iOS: open `iosApp/iosApp.xcodeproj` in Xcode and run, or use the run configuration in your IDE.
+   Rellena `API_KEY` con cualquier cadena no vacía mientras no haya backend real: el build falla si falta.
+
+2. **Arranca el backend** en local. Por defecto escucha en el puerto 8080 y expone `/actuator/health`.
+
+3. **Ejecuta la app:**
+   - Android: `./gradlew :composeApp:assembleDebug`, o la configuración de ejecución de Android Studio.
+   - iOS: abre `iosApp/iosApp.xcodeproj` en Xcode y ejecuta.
+
+No hace falta configurar ninguna URL: el entorno `local` ya apunta a la máquina anfitriona en ambas plataformas.
+
+## Entornos
+
+El entorno se elige **al compilar** y queda fijado en el binario. No se puede cambiar en ejecución, a propósito: así ningún binario de producción puede repuntarse a otro servidor.
+
+```bash
+./gradlew :composeApp:assembleDebug                                # local (por defecto)
+./gradlew :composeApp:assembleDebug   -Pbuildkonfig.flavor=staging
+./gradlew :composeApp:assembleRelease -Pbuildkonfig.flavor=prod
+```
+
+| Entorno | Dirección | Cifrado |
+|---|---|---|
+| `local` | Android `http://10.0.2.2:8080/api` · iOS `http://localhost:8080/api` | no exigido |
+| `staging` | de `BASE_URL_HTTP_STAGING` | **obligatorio** |
+| `prod` | de `BASE_URL_HTTP_PROD` | **obligatorio** |
+
+Android e iOS resuelven direcciones distintas en `local` porque `10.0.2.2` es un alias que solo entiende el emulador de Android; el simulador de iOS comparte la red del Mac y usa `localhost`. El convention plugin lo resuelve por target, así que no hay que hacer nada.
+
+`staging` y `prod` **no tienen valor por defecto** y el build falla si falta su clave o si la URL no es `https://`. Un binario apuntando al servidor equivocado es peor que un build fallido.
+
+Cada clave se resuelve en este orden: propiedad de Gradle (`-PCLAVE=valor`, cómodo desde CI), luego `local.properties`, luego el valor por defecto. Todas están documentadas en [`local.properties.example`](./local.properties.example).
+
+## Verificación
+
+No hay CI todavía (ver «Brechas conocidas» en la constitución), así que estas comprobaciones hay que lanzarlas a mano:
+
+```bash
+./gradlew :composeApp:assembleDebug
+./gradlew :core:data:compileKotlinIosSimulatorArm64
+```
+
+**Ambas son obligatorias.** Un cambio no está terminado hasta que compilan los dos targets: verificar solo Android no es verificar.
 
 ## Spec-driven development (Spec Kit)
 
@@ -73,39 +107,23 @@ core/
                           shared ViewModel/Compose utilities.
 
 feature/
-  example/
+  clockin/               Fichaje — offline-first, the app's reason to exist.
     domain/               Model + repository interface + use cases for this feature.
     database/             Room database, entity, DAO (own Gradle module, per convention).
     data/                 Ktor + Room repository implementations, DTOs, mappers, DI.
     presentation/         ViewModel, screen, navigation graph, DI.
+  inventory/             Materials — same four-module shape.
 
 composeApp/              App shell: DI bootstrap, NavHost, Android/iOS entry points.
 iosApp/                  Xcode project — the iOS app shell (SwiftUI + Compose bridge).
 ```
 
-Every feature follows the same four-module shape as `feature/example`. Adding a new feature means copying that folder, renaming `example` → `yourFeature` throughout, and registering the new modules in `settings.gradle.kts` and `composeApp`'s DI (`initKoin.kt`) and nav graph (`NavigationRoot.kt`). Skip the `database` module if the feature has nothing to cache locally.
+Toda feature sigue la misma forma de cuatro módulos. Añadir una significa replicar esa estructura y registrar los módulos en `settings.gradle.kts`, en la DI de `composeApp` (`initKoin.kt`) y en el grafo de navegación (`NavigationRoot.kt`). El módulo `database` se omite si la feature no cachea nada en local.
 
-## Renaming the skeleton
+## Firebase / notificaciones push
 
-Everything below currently uses `com.granatum.*` / `GranatumSuite` as placeholders. A project-wide find-and-replace covers it:
+No están incluidas. El plugin de `google-services`, las dependencias de Firebase y el Swift Package se retiraron junto con el `GoogleService-Info.plist` original: las credenciales reales no van en el repositorio. Si hacen falta:
 
-| Placeholder | Where | Replace with |
-|---|---|---|
-| `com.granatum.app` | `composeApp` package, Android `applicationId`, iOS bundle identifier | your app ID, e.g. `com.acme.myapp` |
-| `com.granatum.core` | `core/*` module packages | `com.acme.myapp.core` (or whatever you prefer) |
-| `com.granatum.feature` | `feature/*` module packages | `com.acme.myapp.feature` |
-| `com.granatum.buildlogic.convention` | `build-logic` package + plugin IDs (`gradle/libs.versions.toml`, `build-logic/convention/build.gradle.kts`) | `com.acme.buildlogic.convention` |
-| `GranatumSuite` | `settings.gradle.kts` (`rootProject.name`), `iosApp` product name/target, `strings.xml` app name | your app's name |
-
-After renaming, move each package's Kotlin source directories to match (e.g. `com/template/core` → `com/acme/myapp/core`) — Kotlin's package declaration must match the folder path.
-
-## Firebase / push notifications
-
-Not included. The `google-services` Gradle plugin, Firebase BOM/dependencies, and the Firebase Swift Package were deliberately removed along with the original project's `GoogleService-Info.plist` (real credentials never belong in a template). If you need push notifications:
-1. Re-add `alias(libs.plugins.google.services)` to `composeApp/build.gradle.kts` and the relevant catalog entries to `gradle/libs.versions.toml`.
-2. Drop your own `google-services.json` into `composeApp/` and `GoogleService-Info.plist` into `iosApp/iosApp/` — both are gitignored already.
-3. Add the Firebase Swift Package back to the Xcode project and wire an `AppDelegate` again (removed here since nothing used it).
-
-## License
-
-Use this however you like as a starting point for your own projects.
+1. Añade `alias(libs.plugins.google.services)` a `composeApp/build.gradle.kts` y las entradas correspondientes a `gradle/libs.versions.toml`.
+2. Pon tu `google-services.json` en `composeApp/` y el `GoogleService-Info.plist` en `iosApp/iosApp/`. Ambos ya están gitignorados.
+3. Vuelve a añadir el Swift Package de Firebase al proyecto de Xcode y cablea un `AppDelegate`.

@@ -4,6 +4,12 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<!-- User-facing name on the home screen. Kept separate from PRODUCT_NAME
+	     (Configuration/Config.xcconfig), which names the built product and is
+	     better off without a space. If iOS truncates this on the springboard,
+	     add a shorter CFBundleName here rather than changing Android. -->
+	<key>CFBundleDisplayName</key>
+	<string>Granatum Suite</string>
 	<!-- TODO: replace with your own custom URI scheme, matching AndroidManifest.xml -->
 	<key>CFBundleURLTypes</key>
 	<array>

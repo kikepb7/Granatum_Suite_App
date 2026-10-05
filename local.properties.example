@@ -8,5 +8,30 @@
 # if this is missing.
 API_KEY=your-dev-api-key
 
+# ---------------------------------------------------------------------------
+# Backend environment
+# ---------------------------------------------------------------------------
+# Pick the environment at build time:
+#
+#   ./gradlew :composeApp:assembleDebug                              # local (default)
+#   ./gradlew :composeApp:assembleDebug   -Pbuildkonfig.flavor=staging
+#   ./gradlew :composeApp:assembleRelease -Pbuildkonfig.flavor=prod
+#
+# Every key below resolves in this order: Gradle property (-PKEY=value, handy
+# for CI), then this file, then a built-in default.
+
+# The `local` flavor needs NOTHING here — it already defaults to the host machine
+# on both platforms. Android uses the 10.0.2.2 emulator alias; iOS uses localhost,
+# because the simulator shares the Mac's network and does not understand 10.0.2.2.
+# Override only if your backend is not on :8080.
+# BASE_URL_HTTP=http://10.0.2.2:8080/api
+# BASE_URL_HTTP_IOS=http://localhost:8080/api
+
+# Required by their flavors — no defaults, and the build fails when they are
+# missing or not https://. A binary pointing at the wrong server is worse than
+# no binary.
+# BASE_URL_HTTP_STAGING=https://staging.example.com/api
+# BASE_URL_HTTP_PROD=https://api.example.com/api
+
 # Uncomment and set if the Android Gradle Plugin can't auto-detect your SDK.
 # sdk.dir=/Users/you/Library/Android/sdk
