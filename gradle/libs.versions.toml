@@ -46,6 +46,8 @@ coil = "3.3.0"
 coil-network = "3.3.0"
 moko = "0.19.1"
 buildkonfig = "0.17.1"
+ktlint-gradle = "14.2.0"
+kover = "0.9.11"
 kermit = "2.0.6"
 
 projectApplicationId = "com.granatum.app"
@@ -147,6 +149,8 @@ androidx-room-gradle-plugin = { module = "androidx.room:room-gradle-plugin", ver
 ksp-gradlePlugin = { group = "com.google.devtools.ksp", name = "com.google.devtools.ksp.gradle.plugin", version.ref = "ksp" }
 buildkonfig-gradlePlugin = { group = "com.codingfeline.buildkonfig", name = "buildkonfig-gradle-plugin", version.ref = "buildkonfig" }
 buildkonfig-compiler = { group = "com.codingfeline.buildkonfig", name = "buildkonfig-compiler", version.ref = "buildkonfig" }
+ktlint-gradlePlugin = { group = "org.jlleitschuh.gradle", name = "ktlint-gradle", version.ref = "ktlint-gradle" }
+kover-gradlePlugin = { group = "org.jetbrains.kotlinx", name = "kover-gradle-plugin", version.ref = "kover" }
 
 androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
 androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
@@ -177,6 +181,7 @@ convention-cmp-library = { id = "com.granatum.buildlogic.convention.cmp.library"
 convention-cmp-feature = { id = "com.granatum.buildlogic.convention.cmp.feature", version = "unspecified" }
 convention-buildkonfig = { id = "com.granatum.buildlogic.convention.buildkonfig", version = "unspecified" }
 convention-room = { id = "com.granatum.buildlogic.convention.room", version = "unspecified" }
+convention-quality = { id = "com.granatum.buildlogic.convention.quality", version = "unspecified" }
 
 # Android
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -199,6 +204,8 @@ room = { id = "androidx.room", version.ref = "room" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 buildkonfig = { id = "com.codingfeline.buildkonfig", version.ref = "buildkonfig" }
 android-lint = { id = "com.android.lint", version.ref = "agp" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint-gradle" }
+kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 
 [bundles]
 koin-common = [

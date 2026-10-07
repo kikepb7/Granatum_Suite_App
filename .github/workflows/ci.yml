@@ -1,0 +1,221 @@
+# Continuous integration — constitution principle VIII and XII.
+#
+# Nothing reaches main without compiling for Android *and* iOS and passing the tests on both.
+# The `summary` job is the single verdict: require it in main's branch protection to make this
+# a gate rather than a suggestion (Settings → Branches → main → Require status checks).
+#
+# Safe for pull requests from forks: `pull_request` (never `pull_request_target`), a read-only
+# token, and no secrets — the build needs none.
+
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# A newer push to a PR cancels the run it replaces. Pushes to main are never cancelled, so every
+# commit that lands there gets verified.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  # The build needs some API_KEY to configure (BuildKonfigConventionPlugin fails fast without
+  # one) but no test talks to a real server. Gradle exposes ORG_GRADLE_PROJECT_* variables as
+  # project properties, which is where the plugin looks before local.properties.
+  ORG_GRADLE_PROJECT_API_KEY: ci-placeholder
+
+jobs:
+  static-analysis:
+    name: Static analysis (ktlint, informative)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      violations: ${{ steps.count.outputs.violations }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+
+      # Reports only: QualityConventionPlugin sets ignoreFailures, because the code predates
+      # ktlint. This job therefore stays green whatever it finds.
+      - name: ktlint
+        run: ./gradlew ktlintCheck
+
+      - name: Count violations
+        id: count
+        if: always()
+        run: |
+          violations=$(find . -path '*/build/reports/ktlint/*' -name '*.xml' -not -path './build-logic/*' \
+            -exec cat {} + 2>/dev/null | grep -o '<error ' | wc -l | tr -d ' ')
+          echo "violations=${violations}" >> "$GITHUB_OUTPUT"
+          echo "### ktlint: ${violations} violations (informative)" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ktlint-reports
+          path: '**/build/reports/ktlint/'
+          retention-days: 7
+
+  unit-tests:
+    name: Unit tests + coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      tests: ${{ steps.tests.outputs.count }}
+      coverage: ${{ steps.coverage.outputs.line }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Run unit tests
+        run: ./gradlew testDebugUnitTest
+
+      # Gradle 8 treats a test task with nothing to run as a pass, so deleting every test would
+      # leave CI green. Counted from the debug results only: the coverage report below also runs
+      # the release variant, which would double the number.
+      - name: Fail if no test ran
+        id: tests
+        if: success() || failure()
+        run: |
+          count=$(find . -path '*/build/test-results/testDebugUnitTest/*.xml' -not -path './build-logic/*' \
+            -exec cat {} + 2>/dev/null | grep -o '<testcase ' | wc -l | tr -d ' ')
+          echo "count=${count}" >> "$GITHUB_OUTPUT"
+          echo "### Tests run: ${count}" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${count}" -eq 0 ]; then
+            echo "::error::No test ran. A test stage with nothing to run is not a passing stage."
+            exit 1
+          fi
+
+      - name: Coverage report
+        run: ./gradlew :koverXmlReport :koverHtmlReport
+
+      - name: Read line coverage
+        id: coverage
+        run: |
+          line=$(python3 - <<'PY'
+          import xml.etree.ElementTree as ET
+          root = ET.parse("build/reports/kover/report.xml").getroot()
+          c = next(c for c in root.findall("counter") if c.get("type") == "LINE")
+          missed, covered = int(c.get("missed")), int(c.get("covered"))
+          total = missed + covered
+          print(f"{100 * covered / total:.2f}" if total else "0.00")
+          PY
+          )
+          echo "line=${line}" >> "$GITHUB_OUTPUT"
+          floor=$(grep '^granatum.coverage.minLine=' gradle.properties | cut -d= -f2)
+          echo "### Line coverage: ${line} % (ratchet: ${floor} %)" >> "$GITHUB_STEP_SUMMARY"
+
+      # The ratchet from gradle.properties. Fails if coverage dropped below it.
+      - name: Coverage ratchet
+        run: ./gradlew :koverVerify
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unit-test-and-coverage-reports
+          path: |
+            **/build/test-results/
+            **/build/reports/tests/
+            build/reports/kover/
+          retention-days: 7
+
+  build-android:
+    name: Build Android
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Assemble debug
+        run: ./gradlew :composeApp:assembleDebug
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: debug-apk
+          path: composeApp/build/outputs/apk/debug/composeApp-debug.apk
+          retention-days: 7
+
+  build-ios:
+    name: Build + test iOS
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+
+      # The Kotlin/Native toolchain is a large download that would otherwise happen on every run.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.konan
+          key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+          restore-keys: konan-${{ runner.os }}-
+
+      # Linking composeApp's framework compiles every shared module it depends on and catches
+      # cross-module link errors and missing `actual`s, which compiling one module in isolation
+      # does not. iosSimulatorArm64Test then runs commonTest on iOS itself: a test that only runs
+      # on the JVM does not protect iOS (principle VIII).
+      - name: Link framework and run tests on the iOS simulator
+        run: ./gradlew :composeApp:linkDebugFrameworkIosSimulatorArm64 iosSimulatorArm64Test
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ios-test-reports
+          path: '**/build/test-results/iosSimulatorArm64Test/'
+          retention-days: 7
+
+  summary:
+    name: summary
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [static-analysis, unit-tests, build-android, build-ios]
+    if: always()
+    steps:
+      - name: Pipeline summary
+        run: |
+          mark() { [ "$1" = "success" ] && echo "✅ pass" || echo "❌ $1"; }
+          {
+            echo "## Pipeline summary"
+            echo ""
+            echo "| Stage | Result | Blocks merge |"
+            echo "|---|---|---|"
+            echo "| Static analysis (ktlint) | $(mark '${{ needs.static-analysis.result }}') — ${{ needs.static-analysis.outputs.violations || '?' }} violations | no |"
+            echo "| Unit tests + coverage | $(mark '${{ needs.unit-tests.result }}') — ${{ needs.unit-tests.outputs.tests || '?' }} tests, ${{ needs.unit-tests.outputs.coverage || '?' }} % lines | yes |"
+            echo "| Build Android | $(mark '${{ needs.build-android.result }}') | yes |"
+            echo "| Build + test iOS | $(mark '${{ needs.build-ios.result }}') | yes |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # A cancelled or timed-out job counts as a failure: a silent failure is exactly what this
+      # job exists to prevent. ktlint is left out on purpose, it does not block.
+      - name: Fail if a blocking stage did not pass
+        if: >-
+          needs.unit-tests.result != 'success' ||
+          needs.build-android.result != 'success' ||
+          needs.build-ios.result != 'success'
+        run: |
+          echo "::error::A blocking stage did not pass — see the pipeline summary."
+          exit 1

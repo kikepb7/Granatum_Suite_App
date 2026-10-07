@@ -63,16 +63,48 @@ Android e iOS resuelven direcciones distintas en `local` porque `10.0.2.2` es un
 
 Cada clave se resuelve en este orden: propiedad de Gradle (`-PCLAVE=valor`, cómodo desde CI), luego `local.properties`, luego el valor por defecto. Todas están documentadas en [`local.properties.example`](./local.properties.example).
 
-## Verificación
+## Integración continua
 
-No hay CI todavía (ver «Brechas conocidas» en la constitución), así que estas comprobaciones hay que lanzarlas a mano:
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) se ejecuta en cada PR contra `main` y en cada push a `main`.
 
-```bash
-./gradlew :composeApp:assembleDebug
-./gradlew :core:data:compileKotlinIosSimulatorArm64
+| Job | Qué hace | Bloquea |
+|---|---|---|
+| `static-analysis` | ktlint en todos los módulos | **no** — informativo |
+| `unit-tests` | tests unitarios, cobertura y trinquete | sí |
+| `build-android` | `assembleDebug`; el APK queda descargable | sí |
+| `build-ios` | enlaza el framework de `composeApp` y ejecuta los tests en el simulador de iOS | sí |
+| `summary` | veredicto único: falla si algún job bloqueante falla o se cancela | sí |
+
+No necesita secretos, así que también comprueba con seguridad las PRs que llegan desde forks.
+
+**ktlint no bloquea** porque el código es anterior a la herramienta: al activarlo encontró unas 1.500 violaciones. Pasará a bloquear cuando el código esté saneado, con una enmienda de la constitución.
+
+**La cobertura funciona como trinquete** (principio VIII). El mínimo vive en una línea de `gradle.properties`:
+
+```properties
+granatum.coverage.minLine=0
 ```
 
-**Ambas son obligatorias.** Un cambio no está terminado hasta que compilan los dos targets: verificar solo Android no es verificar.
+Arrancó en 0 % porque esa era la cobertura real al activar la CI. **Súbelo en la misma PR que añada tests**; bajarlo exige enmendar la constitución.
+
+### Para que la CI bloquee de verdad
+
+Sin este paso la CI informa, pero no impide fusionar. Lo configura quien administra el repositorio:
+
+> Settings → Branches → Branch protection rules → `main` → *Require status checks to pass before merging* → marcar **`summary`**.
+
+### Reproducirla en local
+
+Los mismos comandos que ejecuta la CI:
+
+```bash
+./gradlew ktlintCheck
+./gradlew testDebugUnitTest :koverXmlReport :koverVerify
+./gradlew :composeApp:assembleDebug
+./gradlew :composeApp:linkDebugFrameworkIosSimulatorArm64 iosSimulatorArm64Test
+```
+
+Un cambio no está terminado hasta que compilan los dos targets: verificar solo Android no es verificar.
 
 ## Spec-driven development (Spec Kit)
 

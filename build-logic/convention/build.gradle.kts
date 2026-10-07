@@ -15,6 +15,8 @@ dependencies {
     compileOnly(libs.androidx.room.gradle.plugin)
     implementation(libs.buildkonfig.gradlePlugin)
     implementation(libs.buildkonfig.compiler)
+    compileOnly(libs.ktlint.gradlePlugin)
+    compileOnly(libs.kover.gradlePlugin)
 }
 
 java {
@@ -72,6 +74,11 @@ gradlePlugin {
         register("room") {
             id = "com.granatum.buildlogic.convention.room"
             implementationClass = "RoomConventionPlugin"
+        }
+
+        register("quality") {
+            id = "com.granatum.buildlogic.convention.quality"
+            implementationClass = "QualityConventionPlugin"
         }
     }
 }

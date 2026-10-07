@@ -16,6 +16,7 @@ class CmpApplicationConventionPlugin: Plugin<Project> {
                 apply("org.jetbrains.compose")
                 apply("org.jetbrains.kotlin.plugin.compose")
                 apply("org.jetbrains.kotlin.plugin.serialization")
+                apply("com.granatum.buildlogic.convention.quality")
             }
 
             configureAndroidTarget()
@@ -23,6 +24,9 @@ class CmpApplicationConventionPlugin: Plugin<Project> {
 
             dependencies {
                 "debugImplementation"(libs.findLibrary("androidx-compose-ui-tooling").get())
+                // KmpLibraryConventionPlugin already gives every library module kotlin.test;
+                // the app module was missing it, so composeApp's commonTest never compiled.
+                "commonTestImplementation"(libs.findLibrary("kotlin-test").get())
             }
         }
     }

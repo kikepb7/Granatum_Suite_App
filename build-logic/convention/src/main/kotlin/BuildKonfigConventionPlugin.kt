@@ -70,9 +70,11 @@ class BuildKonfigConventionPlugin: Plugin<Project> {
                 packageName = target.pathToPackageName()
 
                 defaultConfigs {
-                    val apiKey = localProperties.getProperty("API_KEY")
+                    // Through resolve() like every other key, so CI can pass -PAPI_KEY=… without
+                    // a local.properties, which is gitignored and never exists on a runner.
+                    val apiKey = resolve("API_KEY")
                         ?: throw IllegalStateException(
-                            "Missing API_KEY property in local.properties"
+                            "Missing API_KEY: set it in local.properties or pass -PAPI_KEY=…"
                         )
                     buildConfigField(FieldSpec.Type.STRING, "API_KEY", apiKey)
                     buildConfigField(FieldSpec.Type.STRING, "ENVIRONMENT", selectedFlavor)
