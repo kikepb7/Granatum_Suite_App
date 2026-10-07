@@ -1,41 +1,3 @@
-<!--
-SYNC IMPACT REPORT — revisión humana, eliminar antes de commitear
-=================================================================
-Cambio de versión: (ninguna) → 1.0.0
-Motivo del bump: ratificación inicial. No hay versión previa; el fichero era la
-plantilla sin rellenar (18 marcadores).
-
-Principios añadidos (12):
-  I.    Arquitectura limpia por módulos
-  II.   commonMain por defecto
-  III.  Offline-first
-  IV.   Errores explícitos y observabilidad
-  V.    Secretos y configuración por entorno
-  VI.   El contrato de API manda
-  VII.  Credenciales en almacenamiento seguro
-  VIII. Tests y CI en verde
-  IX.   UI por design system, accesible y en español
-  X.    Toda feature documentada
-  XI.   El build vive en los convention plugins
-  XII.  Paridad Android / iOS
-
-Secciones añadidas:
-  - Stack y restricciones técnicas
-  - Flujo de desarrollo y puertas de calidad
-  - Governance (con brechas conocidas)
-
-Principios del usuario incorporados tal cual: los 10 suministrados.
-Aportaciones derivadas del análisis de Squadfy_KMM y del código actual:
-  - XI y XII como principios propios.
-  - AppLogger plegado en IV; esquemas Room y migraciones plegados en III;
-    dirección de dependencias plegada en I; higiene de deprecaciones plegada en XI.
-
-TODOs diferidos: ninguno. Las cinco brechas conocidas están listadas de forma
-explícita en Governance en lugar de como marcadores TODO, porque son trabajo
-pendiente de producto, no datos que falten.
-=================================================================
--->
-
 # Constitución de Granatum Suite App
 
 Granatum Suite App es una aplicación Kotlin Multiplatform (Android + iOS) con UI
@@ -138,8 +100,10 @@ en la base de datos.
 El interfaz `SessionStorage` de `core/domain` es el único punto de acceso. Ningún
 otro módulo lee ni escribe tokens directamente.
 
-> Esta regla **todavía no se cumple**: hoy se usa `DataStoreSessionStorage`. Ver
-> «Brechas conocidas» en Governance.
+Lo que la regla prohíbe es el texto **legible**, no un medio concreto de
+almacenamiento. En Android, guardar en `DataStore` el texto cifrado con una clave que
+custodia el Keystore cumple el principio: la clave nunca sale del almacén seguro, y
+sin ella lo almacenado no se puede leer.
 
 ### VIII. Tests y CI en verde
 
@@ -150,8 +114,15 @@ Nada se fusiona con la CI en rojo. Sin excepciones, sin "lo arreglo después del
 merge".
 
 Las puertas mínimas de la CI se definen en «Flujo de desarrollo y puertas de
-calidad». Bajar un umbral de cobertura requiere enmienda a esta constitución, no
-una decisión de PR.
+calidad». La puerta de cobertura funciona como **trinquete**: ningún cambio puede
+dejarla por debajo de su valor vigente. Subirla es libre y conviene hacerlo en cada
+feature que añada tests; bajarla requiere enmienda a esta constitución, no una
+decisión de PR.
+
+Un umbral de cobertura que el proyecto no alcanza no protege nada: deja la CI en
+rojo y convierte la regla anterior —nada se fusiona en rojo— en un bloqueo total.
+Por eso la puerta parte de la cobertura real y sube desde ahí, en lugar de partir
+de una cifra que el código todavía no cumple.
 
 ### IX. UI por design system, accesible y en español
 
@@ -228,16 +199,27 @@ JDK 17 es el mínimo para compilar.
 
 ## Flujo de desarrollo y puertas de calidad
 
-La CI es el modelo de Squadfy_KMM, adaptado a la rama `main`. Jobs obligatorios:
+La CI toma como modelo la de Squadfy_KMM, adaptada a la rama `main` y al estado real
+de los tests de Granatum. Se ejecuta en cada PR contra `main` y en cada push a `main`.
 
-1. **Análisis estático** — ktlint.
-2. **Tests unitarios + cobertura** — con puerta de línea mínima vía Kover. El
-   umbral arranca en 20 % y sube; nunca baja sin enmienda.
+Jobs:
+
+1. **Análisis estático** — ktlint, en modo **informativo**: publica sus resultados
+   pero no bloquea. El código es anterior a la herramienta, y hacerlo bloqueante de
+   entrada obligaría a corregir todas las violaciones existentes de golpe. Pasa a
+   bloqueante por enmienda una vez saneado el código.
+2. **Tests unitarios + cobertura** — puerta de línea vía Kover en modo trinquete
+   (principio VIII): se fija en la cobertura medida al activar la CI y solo sube.
 3. **Assemble debug** — `:composeApp:assembleDebug`, publicando el APK como
    artefacto.
-4. **Tests instrumentados** — API 26, 30 y 34.
-5. **Resumen** — job final que falla el run si cualquier job anterior falló, para
-   que un fallo no quede enterrado en la matriz.
+4. **Compilación de iOS** — `compileKotlinIosSimulatorArm64` en un runner de macOS
+   (principio XII). Al ser el repositorio público, no tiene coste.
+5. **Tests instrumentados** — **condicional**: no existe mientras no haya tests de
+   dispositivo, y se incorpora en la misma PR que añada el primero. Su matriz de
+   referencia es API 26, 30 y 34. Un job que arranca emuladores para no ejecutar nada
+   da una falsa sensación de cobertura.
+6. **Resumen** — job final que falla el run si cualquier job anterior falló o se
+   canceló, para que un fallo no quede enterrado en la matriz.
 
 Requisitos de PR:
 
@@ -268,21 +250,25 @@ que se aparte de estos principios se justifica o se revierte.
 
 ### Brechas conocidas
 
-Este documento describe el estado objetivo. A fecha de ratificación, cinco reglas
-**no se cumplen todavía**. Se listan de forma explícita para que nadie las dé por
-satisfechas:
+Este documento describe el estado objetivo. Las reglas que todavía no se cumplen se
+listan de forma explícita para que nadie las dé por satisfechas.
 
-| # | Brecha | Principio afectado |
-|---|---|---|
-| 1 | No existe pipeline de CI (`.github/workflows` ausente) | VIII |
-| 2 | ktlint y Kover no están configurados en el build | VIII |
-| 3 | Los tokens se guardan en `DataStoreSessionStorage`, no en Keychain/Keystore | VII |
-| 4 | `docs/openapi.json` no existe; `docs/` está vacío | VI |
-| 5 | `specs/` no existe aún | X |
+| # | Brecha | Principio | Estado |
+|---|---|---|---|
+| 1 | No existe pipeline de CI (`.github/workflows` ausente) | VIII | Abierta — en curso en `003-ci-pipeline` |
+| 2 | ktlint y Kover no están configurados en el build | VIII | Abierta — en curso en `003-ci-pipeline` |
+| 3 | Los tokens se guardaban en claro en `DataStoreSessionStorage` | VII | **Cerrada** por `002-secure-session-storage` |
+| 4 | `docs/openapi.json` no existe; `docs/` está vacío | VI | Abierta — bloquea las specs de inventario y panel de encargado |
+| 5 | `specs/` no existía | X | **Cerrada** — existen 001, 002 y 003 |
 
 Las brechas 1 y 2 son de mayor prioridad: hasta que existan, el principio VIII no
-es exigible y el resto depende de la disciplina manual. La brecha 3 es una mejora
-sobre el proyecto de referencia, no una paridad: Squadfy_KMM tampoco usa
-Keychain/Keystore.
+es exigible y el resto depende de la disciplina manual. Las specs 1 y 2 lo
+demostraron: en ambas, un build en verde convivió con un defecto real que solo
+apareció al ejecutar en dispositivo.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-04 | **Last Amended**: 2026-10-04
+La brecha 3 se cerró con las credenciales en el Android Keystore y el iOS Keychain,
+verificado en dispositivo, incluida la purga del Keychain al reinstalar. Fue una
+mejora sobre el proyecto de referencia, no una paridad: Squadfy_KMM tampoco usa
+almacén seguro.
+
+**Version**: 1.1.0 | **Ratified**: 2026-10-04 | **Last Amended**: 2026-10-08
