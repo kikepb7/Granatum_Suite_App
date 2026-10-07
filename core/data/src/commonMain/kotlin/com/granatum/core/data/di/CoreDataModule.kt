@@ -1,7 +1,9 @@
 package com.granatum.core.data.di
 
 import com.granatum.core.data.auth.KtorAuthRepositoryImpl
-import com.granatum.core.data.auth.storage.DataStoreSessionStorage
+import com.granatum.core.data.auth.DevSessionSeeder
+import com.granatum.core.data.auth.storage.LegacySessionCleaner
+import com.granatum.core.data.auth.storage.SecureSessionStorage
 import com.granatum.core.data.logger.KermitLogger
 import com.granatum.core.data.networking.BackendHealthProbe
 import com.granatum.core.data.networking.HttpClientFactory
@@ -23,5 +25,7 @@ val coreDataModule = module {
     }
     singleOf(::BackendHealthProbe)
     singleOf(::KtorAuthRepositoryImpl) bind AuthRepository::class
-    singleOf(::DataStoreSessionStorage) bind SessionStorage::class
+    singleOf(::LegacySessionCleaner)
+    singleOf(::DevSessionSeeder)
+    single { SecureSessionStorage(get(), get()) } bind SessionStorage::class
 }
