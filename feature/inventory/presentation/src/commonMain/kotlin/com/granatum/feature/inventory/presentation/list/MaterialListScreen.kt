@@ -1,149 +1,122 @@
 package com.granatum.feature.inventory.presentation.list
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.granatum.core.designsystem.components.buttons.AppButton
-import com.granatum.core.designsystem.components.buttons.AppButtonStyle
-import com.granatum.core.designsystem.components.buttons.AppFloatingActionButton
 import com.granatum.core.designsystem.components.textfields.AppTextField
-import com.granatum.core.designsystem.components.topbar.AppTopBar
-import com.granatum.core.designsystem.theme.AppTheme
 import com.granatum.core.designsystem.theme.extended
-import com.granatum.core.presentation.util.ObserveAsEvents
-import com.granatum.feature.inventory.domain.model.MaterialCategory
+import com.granatum.feature.inventory.domain.model.MaterialCondition
 import com.granatum.feature.inventory.domain.model.MaterialModel
-import com.granatum.feature.inventory.domain.model.MaterialStatus
-import com.granatum.feature.inventory.presentation.list.MaterialListAction.OnAddClick
-import com.granatum.feature.inventory.presentation.list.MaterialListAction.OnCategorySelected
-import com.granatum.feature.inventory.presentation.list.MaterialListAction.OnMaterialClick
-import com.granatum.feature.inventory.presentation.list.MaterialListAction.OnRefresh
-import com.granatum.feature.inventory.presentation.list.MaterialListAction.OnStatusSelected
-import com.granatum.feature.inventory.presentation.list.MaterialListEvent.Error
-import com.granatum.feature.inventory.presentation.list.MaterialListEvent.NavigateToCreate
-import com.granatum.feature.inventory.presentation.list.MaterialListEvent.NavigateToDetail
-import kotlinx.coroutines.launch
+import com.granatum.feature.inventory.presentation.common.label
+import granatumsuite.feature.inventory.presentation.generated.resources.Res
+import granatumsuite.feature.inventory.presentation.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun MaterialListRoot(
     onNavigateToDetail: (String) -> Unit,
     onNavigateToCreate: () -> Unit,
+    onNavigateToCategories: () -> Unit,
     viewModel: MaterialListViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
-
-    ObserveAsEvents(flow = viewModel.events) { event ->
-        when (event) {
-            is NavigateToDetail -> onNavigateToDetail(event.materialId)
-            NavigateToCreate -> onNavigateToCreate()
-            is Error -> scope.launch { snackbarHostState.showSnackbar(event.message.asStringAsync()) }
-        }
-    }
-
-    MaterialListScreen(
-        state = state,
-        queryState = viewModel.queryState,
-        onAction = viewModel::onAction,
-        snackbarHostState = snackbarHostState
-    )
+    MaterialListScreen(state, viewModel, onNavigateToDetail, onNavigateToCreate, onNavigateToCategories)
 }
 
 @Composable
-fun MaterialListScreen(
-    state: MaterialListUiState,
-    queryState: TextFieldState,
-    onAction: (MaterialListAction) -> Unit,
-    snackbarHostState: SnackbarHostState
+private fun MaterialListScreen(
+    state: MaterialListState,
+    viewModel: MaterialListViewModel,
+    onOpen: (String) -> Unit,
+    onCreate: () -> Unit,
+    onCategories: () -> Unit
 ) {
     Scaffold(
         containerColor = MaterialTheme.colorScheme.extended.surfaceLower,
         contentWindowInsets = WindowInsets.safeDrawing,
-        topBar = { AppTopBar(title = "Inventario") },
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        floatingActionButton = {
-            AppFloatingActionButton(onClick = { onAction(OnAddClick) }) {
-                Text(text = "+", style = MaterialTheme.typography.titleLarge)
+        topBar = {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(start = 24.dp, end = 8.dp, top = 12.dp, bottom = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    stringResource(Res.string.inventory_title),
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.extended.textPrimary,
+                    modifier = Modifier.weight(1f)
+                )
+                IconButton(onClick = onCategories) { Icon(Icons.AutoMirrored.Filled.List, contentDescription = stringResource(Res.string.manage_categories)) }
+                IconButton(onClick = { viewModel.onAction(MaterialListAction.OnRefresh) }) { Icon(Icons.Default.Refresh, contentDescription = stringResource(Res.string.refresh)) }
             }
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = onCreate) { Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.add_material)) }
         }
     ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            Column(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                AppTextField(
-                    state = queryState,
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = "Buscar material…",
-                    singleLine = true
-                )
-
-                FilterRow(
-                    label = "Categoría",
-                    options = MaterialCategory.entries,
-                    optionLabel = { it.toDisplayName() },
-                    selected = state.filter.category,
-                    onSelected = { onAction(OnCategorySelected(it)) }
-                )
-
-                FilterRow(
-                    label = "Estado",
-                    options = MaterialStatus.entries,
-                    optionLabel = { it.toDisplayName() },
-                    selected = state.filter.status,
-                    onSelected = { onAction(OnStatusSelected(it)) }
+        Column(Modifier.fillMaxSize().padding(padding)) {
+            if (state.isRefreshing) LinearProgressIndicator(Modifier.fillMaxWidth())
+            if (state.isStale) {
+                Text(
+                    stringResource(Res.string.list_stale),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.extended.yellowCardText,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp)
                 )
             }
-
-            HorizontalDivider(color = MaterialTheme.colorScheme.extended.surfaceOutline)
-
-            if (state.items.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize().padding(24.dp)) {
+            AppTextField(
+                state = viewModel.query,
+                placeholder = stringResource(Res.string.search_placeholder),
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp)
+            )
+            Filters(state, viewModel)
+            when {
+                state.materials.isEmpty() -> Box(Modifier.fillMaxSize().padding(24.dp)) {
                     Text(
-                        text = if (state.isRefreshing) {
-                            "Cargando materiales…"
-                        } else {
-                            "No hay materiales que coincidan con el filtro."
-                        },
-                        style = MaterialTheme.typography.bodyMedium,
+                        stringResource(if (state.isEmptyInventory) Res.string.list_empty else Res.string.list_empty_filtered),
                         color = MaterialTheme.colorScheme.extended.textPlaceholder
                     )
                 }
-            } else {
-                LazyColumn(contentPadding = PaddingValues(vertical = 8.dp)) {
-                    items(items = state.items, key = { it.id }) { material ->
-                        MaterialRow(material = material, onClick = { onAction(OnMaterialClick(material.id)) })
-                        HorizontalDivider(color = MaterialTheme.colorScheme.extended.surfaceOutline)
-                    }
+                else -> LazyColumn(
+                    contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 96.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    items(state.materials, key = { it.id }) { MaterialCard(it, onClick = { onOpen(it.id) }) }
                 }
             }
         }
@@ -151,109 +124,50 @@ fun MaterialListScreen(
 }
 
 @Composable
-private fun <T> FilterRow(
-    label: String,
-    options: List<T>,
-    optionLabel: (T) -> String,
-    selected: T?,
-    onSelected: (T?) -> Unit
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.extended.textSecondary
-        )
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            item {
-                AppButton(
-                    text = "Todos",
-                    onClick = { onSelected(null) },
-                    style = if (selected == null) AppButtonStyle.PRIMARY else AppButtonStyle.SECONDARY
-                )
+private fun Filters(state: MaterialListState, viewModel: MaterialListViewModel) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 24.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterChip(selected = state.filter.categoryId == null, onClick = { viewModel.onAction(MaterialListAction.OnCategory(null)) }, label = { Text(stringResource(Res.string.filter_all_categories)) })
+            state.categories.forEach { c ->
+                FilterChip(selected = state.filter.categoryId == c.id, onClick = { viewModel.onAction(MaterialListAction.OnCategory(c.id)) }, label = { Text(c.name) })
             }
-            items(items = options) { option ->
-                AppButton(
-                    text = optionLabel(option),
-                    onClick = { onSelected(option) },
-                    style = if (selected == option) AppButtonStyle.PRIMARY else AppButtonStyle.SECONDARY
-                )
+        }
+        Row(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 24.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterChip(selected = state.filter.onlyOutOfStock, onClick = { viewModel.onAction(MaterialListAction.OnToggleOutOfStock) }, label = { Text(stringResource(Res.string.filter_out_of_stock)) })
+            FilterChip(selected = state.filter.condition == null, onClick = { viewModel.onAction(MaterialListAction.OnCondition(null)) }, label = { Text(stringResource(Res.string.filter_any_condition)) })
+            MaterialCondition.entries.forEach { c ->
+                FilterChip(selected = state.filter.condition == c, onClick = { viewModel.onAction(MaterialListAction.OnCondition(c)) }, label = { Text(stringResource(c.label())) })
             }
         }
     }
 }
 
 @Composable
-private fun MaterialRow(material: MaterialModel, onClick: () -> Unit) {
-    Surface(onClick = onClick, color = MaterialTheme.colorScheme.surface) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Text(
-                text = material.name,
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                color = MaterialTheme.colorScheme.extended.textPrimary
-            )
-            Text(
-                text = "${material.category.toDisplayName()} · ${material.quantity} uds. · ${material.location ?: "sin ubicación"}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.extended.textPlaceholder
-            )
-            StatusBadge(status = material.status)
-        }
-    }
-}
-
-@Composable
-private fun StatusBadge(status: MaterialStatus) {
+private fun MaterialCard(material: MaterialModel, onClick: () -> Unit) {
     Surface(
-        shape = RoundedCornerShape(6.dp),
-        color = status.toBadgeColor()
+        shape = RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.extended.surfaceHigher,
+        modifier = Modifier.fillMaxWidth().clickable(role = Role.Button, onClick = onClick)
     ) {
-        Text(
-            text = status.toDisplayName(),
-            style = MaterialTheme.typography.labelSmall,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-        )
-    }
-}
-
-@Composable
-private fun MaterialStatus.toBadgeColor() = when (this) {
-    MaterialStatus.DISPONIBLE -> MaterialTheme.colorScheme.primaryContainer
-    MaterialStatus.STOCK_BAJO -> MaterialTheme.colorScheme.tertiaryContainer
-    MaterialStatus.AGOTADO -> MaterialTheme.colorScheme.errorContainer
-    MaterialStatus.RESERVADO -> MaterialTheme.colorScheme.secondaryContainer
-    MaterialStatus.DANADO -> MaterialTheme.colorScheme.errorContainer
-}
-
-fun MaterialCategory.toDisplayName(): String = when (this) {
-    MaterialCategory.FLORES -> "Flores"
-    MaterialCategory.PLANTAS -> "Plantas"
-    MaterialCategory.ACCESORIOS -> "Accesorios"
-    MaterialCategory.MOBILIARIO -> "Mobiliario"
-    MaterialCategory.DECORACION -> "Decoración"
-    MaterialCategory.OTROS -> "Otros"
-}
-
-fun MaterialStatus.toDisplayName(): String = when (this) {
-    MaterialStatus.DISPONIBLE -> "Disponible"
-    MaterialStatus.STOCK_BAJO -> "Stock bajo"
-    MaterialStatus.AGOTADO -> "Agotado"
-    MaterialStatus.RESERVADO -> "Reservado"
-    MaterialStatus.DANADO -> "Dañado"
-}
-
-@org.jetbrains.compose.ui.tooling.preview.Preview
-@Composable
-private fun MaterialListScreenPreview() {
-    AppTheme {
-        MaterialListScreen(
-            state = MaterialListUiState(),
-            queryState = TextFieldState(),
-            onAction = {},
-            snackbarHostState = remember { SnackbarHostState() }
-        )
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    material.name,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.extended.textPrimary,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    text = if (material.isOutOfStock) stringResource(Res.string.out_of_stock) else stringResource(Res.string.stock_of, material.available, material.total),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = if (material.isOutOfStock) MaterialTheme.colorScheme.extended.redCardText else MaterialTheme.colorScheme.extended.success
+                )
+            }
+            Text(
+                "${material.category.name} · ${stringResource(material.condition.label())} · ${material.location}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.extended.textSecondary
+            )
+        }
     }
 }

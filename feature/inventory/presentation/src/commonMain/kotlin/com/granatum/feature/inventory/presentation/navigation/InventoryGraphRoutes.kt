@@ -11,6 +11,8 @@ import com.granatum.feature.inventory.presentation.navigation.InventoryGraphRout
 import com.granatum.feature.inventory.presentation.navigation.InventoryGraphRoutes.MaterialDetailRoute
 import com.granatum.feature.inventory.presentation.navigation.InventoryGraphRoutes.MaterialEditRoute
 import com.granatum.feature.inventory.presentation.navigation.InventoryGraphRoutes.MaterialListRoute
+import com.granatum.feature.inventory.presentation.category.CategoryListRoot
+import com.granatum.feature.inventory.presentation.navigation.InventoryGraphRoutes.CategoryListRoute
 import kotlinx.serialization.Serializable
 
 sealed interface InventoryGraphRoutes {
@@ -25,13 +27,17 @@ sealed interface InventoryGraphRoutes {
 
     @Serializable
     data class MaterialEditRoute(val materialId: String) : InventoryGraphRoutes
+
+    @Serializable
+    data object CategoryListRoute : InventoryGraphRoutes
 }
 
 fun NavGraphBuilder.inventoryGraph(navController: NavHostController) {
     composable<MaterialListRoute> {
         MaterialListRoot(
             onNavigateToDetail = { materialId -> navController.navigate(MaterialDetailRoute(materialId)) },
-            onNavigateToCreate = { navController.navigate(MaterialCreateRoute) }
+            onNavigateToCreate = { navController.navigate(MaterialCreateRoute) },
+            onNavigateToCategories = { navController.navigate(CategoryListRoute) }
         )
     }
     composable<MaterialDetailRoute> { backStackEntry ->
@@ -56,5 +62,8 @@ fun NavGraphBuilder.inventoryGraph(navController: NavHostController) {
             onSaved = { navController.popBackStack() },
             onNavigateBack = navController::popBackStack
         )
+    }
+    composable<CategoryListRoute> {
+        CategoryListRoot(onNavigateBack = navController::popBackStack)
     }
 }

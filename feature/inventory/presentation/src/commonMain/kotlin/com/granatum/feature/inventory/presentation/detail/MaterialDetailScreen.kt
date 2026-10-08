@@ -1,226 +1,204 @@
 package com.granatum.feature.inventory.presentation.detail
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.text.input.TextFieldState
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
 import com.granatum.core.designsystem.components.buttons.AppButton
 import com.granatum.core.designsystem.components.buttons.AppButtonStyle
-import com.granatum.core.designsystem.components.dialogs.AppBottomSheet
-import com.granatum.core.designsystem.components.textfields.AppTextField
+import com.granatum.core.designsystem.components.dialogs.AppDestructiveConfirmationDialog
 import com.granatum.core.designsystem.components.topbar.AppTopBar
 import com.granatum.core.designsystem.theme.extended
 import com.granatum.core.presentation.util.ObserveAsEvents
-import com.granatum.feature.inventory.domain.model.StockMovementModel
-import com.granatum.feature.inventory.presentation.detail.MaterialDetailAction.OnConfirmQuantityUpdate
-import com.granatum.feature.inventory.presentation.detail.MaterialDetailAction.OnDismissQuantitySheet
-import com.granatum.feature.inventory.presentation.detail.MaterialDetailAction.OnEditClick
-import com.granatum.feature.inventory.presentation.detail.MaterialDetailAction.OnUpdateQuantityClick
-import com.granatum.feature.inventory.presentation.detail.MaterialDetailEvent.Error
-import com.granatum.feature.inventory.presentation.detail.MaterialDetailEvent.NavigateToEdit
-import com.granatum.feature.inventory.presentation.list.toDisplayName
+import com.granatum.feature.inventory.domain.model.MaterialHistoryEntry
+import com.granatum.feature.inventory.domain.model.MaterialModel
+import com.granatum.feature.inventory.presentation.common.label
+import com.granatum.feature.inventory.presentation.common.measureLabel
+import com.granatum.feature.inventory.presentation.common.priceLabel
+import granatumsuite.feature.inventory.presentation.generated.resources.Res
+import granatumsuite.feature.inventory.presentation.generated.resources.*
 import kotlinx.coroutines.launch
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
+import kotlin.time.Instant
 
 @Composable
 fun MaterialDetailRoot(
     materialId: String,
     onNavigateBack: () -> Unit,
     onNavigateToEdit: (String) -> Unit,
-    viewModel: MaterialDetailViewModel = koinViewModel(parameters = { parametersOf(materialId) })
+    viewModel: MaterialDetailViewModel = koinViewModel(key = materialId) { parametersOf(materialId) }
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-
-    ObserveAsEvents(flow = viewModel.events) { event ->
+    ObserveAsEvents(viewModel.eventFlow) { event ->
         when (event) {
-            is NavigateToEdit -> onNavigateToEdit(event.materialId)
-            is Error -> scope.launch { snackbarHostState.showSnackbar(event.message.asStringAsync()) }
+            MaterialDetailEvent.Deleted -> onNavigateBack()
+            is MaterialDetailEvent.Message -> scope.launch { snackbar.showSnackbar(event.text.asStringAsync()) }
         }
     }
-
-    MaterialDetailScreen(
-        state = state,
-        newQuantityState = viewModel.newQuantityState,
-        reasonState = viewModel.reasonState,
-        onAction = viewModel::onAction,
-        onBackClick = onNavigateBack,
-        snackbarHostState = snackbarHostState
-    )
-}
-
-@Composable
-fun MaterialDetailScreen(
-    state: MaterialDetailUiState,
-    newQuantityState: TextFieldState,
-    reasonState: TextFieldState,
-    onAction: (MaterialDetailAction) -> Unit,
-    onBackClick: () -> Unit,
-    snackbarHostState: SnackbarHostState
-) {
-    val material = state.material
-
     Scaffold(
         containerColor = MaterialTheme.colorScheme.extended.surfaceLower,
         contentWindowInsets = WindowInsets.safeDrawing,
-        topBar = { AppTopBar(title = material?.name ?: "Material", onBackClick = onBackClick) },
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+        topBar = { AppTopBar(title = stringResource(Res.string.detail_title), onBackClick = onNavigateBack) },
+        snackbarHost = { SnackbarHost(snackbar) }
     ) { padding ->
-        if (material == null) {
-            Column(modifier = Modifier.fillMaxSize().padding(padding).padding(24.dp)) {
-                Text(text = "Cargando…", color = MaterialTheme.colorScheme.extended.textPlaceholder)
-            }
-            return@Scaffold
-        }
-
+        val material = state.material
         Column(
-            modifier = Modifier.fillMaxSize().padding(padding).padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            InfoRow(label = "Categoría", value = material.category.toDisplayName())
-            InfoRow(label = "Estado", value = material.status.toDisplayName())
-            InfoRow(label = "Cantidad", value = "${material.quantity} unidades")
-            material.size?.let { InfoRow(label = "Tamaño", value = it) }
-            material.color?.let { InfoRow(label = "Color", value = it) }
-            material.location?.let { InfoRow(label = "Ubicación", value = it) }
-            material.notes?.let { InfoRow(label = "Notas", value = it) }
-
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                AppButton(
-                    text = "Actualizar cantidad",
-                    onClick = { onAction(OnUpdateQuantityClick) },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                AppButton(
-                    text = "Editar material",
-                    style = AppButtonStyle.SECONDARY,
-                    onClick = { onAction(OnEditClick) },
-                    modifier = Modifier.fillMaxWidth()
-                )
+            if (material == null) {
+                if (state.loaded) Text(stringResource(Res.string.detail_gone), color = MaterialTheme.colorScheme.extended.textPlaceholder)
+                return@Column
             }
-
+            Text(material.name, style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.extended.textPrimary)
             Text(
-                text = "Historial de cambios",
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                color = MaterialTheme.colorScheme.extended.textPrimary
+                stringResource(Res.string.stock_of, material.available, material.total),
+                style = MaterialTheme.typography.titleMedium,
+                color = if (material.isOutOfStock) MaterialTheme.colorScheme.extended.redCardText else MaterialTheme.colorScheme.extended.success
             )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                AppButton(stringResource(Res.string.adjust_quantity), onClick = { viewModel.onAction(MaterialDetailAction.OnAdjust) }, enabled = !state.isBusy, modifier = Modifier.weight(1f))
+                AppButton(stringResource(Res.string.edit), onClick = { onNavigateToEdit(material.id) }, style = AppButtonStyle.SECONDARY, enabled = !state.isBusy, modifier = Modifier.weight(1f))
+            }
+            Photos(material.photos)
+            Facts(material)
+            History(state.history)
+            AppButton(
+                stringResource(Res.string.delete),
+                onClick = { viewModel.onAction(MaterialDetailAction.OnDelete) },
+                style = AppButtonStyle.DESTRUCTIVE_SECONDARY,
+                enabled = !state.isBusy,
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+            )
+        }
+    }
+    val material = state.material
+    if (state.isAdjusting && material != null) {
+        AdjustQuantitySheet(material, state, viewModel)
+    }
+    if (state.isConfirmingDelete && material != null) {
+        AppDestructiveConfirmationDialog(
+            title = stringResource(Res.string.delete_title),
+            description = stringResource(Res.string.delete_description, material.name),
+            confirmButtonText = stringResource(Res.string.delete_confirm),
+            cancelButtonText = stringResource(Res.string.cancel),
+            onConfirmClick = { viewModel.onAction(MaterialDetailAction.OnDeleteConfirm) },
+            onCancelClick = { viewModel.onAction(MaterialDetailAction.OnDeleteDismiss) },
+            onDismiss = { viewModel.onAction(MaterialDetailAction.OnDeleteDismiss) }
+        )
+    }
+}
 
-            if (state.history.isEmpty()) {
-                Text(
-                    text = "Sin movimientos registrados todavía.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.extended.textPlaceholder
-                )
-            } else {
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    items(items = state.history, key = { it.id }) { movement ->
-                        StockMovementRow(movement = movement)
-                        HorizontalDivider(color = MaterialTheme.colorScheme.extended.surfaceOutline)
-                    }
+@Composable
+private fun Photos(photos: List<String>) {
+    if (photos.isEmpty()) return
+    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        photos.forEachIndexed { i, url ->
+            AsyncImage(
+                model = url,
+                contentDescription = stringResource(Res.string.detail_photo, i + 1, photos.size.toString()),
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.size(120.dp).clip(RoundedCornerShape(12.dp))
+            )
+        }
+    }
+}
+
+@Composable
+private fun Facts(m: MaterialModel) {
+    val size = if (m.size.diameter != null) {
+        stringResource(Res.string.detail_size_value_diameter, m.size.height.measureLabel(), m.size.width.measureLabel(), m.size.unit.name.lowercase(), m.size.diameter!!.measureLabel())
+    } else {
+        stringResource(Res.string.detail_size_value, m.size.height.measureLabel(), m.size.width.measureLabel(), m.size.unit.name.lowercase())
+    }
+    Surface(shape = RoundedCornerShape(14.dp), color = MaterialTheme.colorScheme.extended.surfaceHigher, modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Fact(Res.string.detail_category, m.category.name)
+            Fact(Res.string.detail_condition, stringResource(m.condition.label()))
+            Fact(Res.string.detail_location, m.location)
+            Fact(Res.string.detail_size, size)
+            Fact(Res.string.detail_color, m.color)
+            Fact(Res.string.detail_material, m.physicalMaterial)
+            Fact(Res.string.detail_price, stringResource(Res.string.detail_price_value, m.unitPrice.priceLabel()))
+            Fact(Res.string.detail_supplier, m.supplier)
+            Fact(Res.string.detail_created, m.createdAt.dateLabel())
+            Fact(Res.string.detail_updated, m.updatedAt.dateLabel())
+        }
+    }
+}
+
+@Composable
+private fun Fact(label: org.jetbrains.compose.resources.StringResource, value: String) {
+    Row {
+        Text(stringResource(label), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.extended.textSecondary, modifier = Modifier.weight(1f))
+        Text(value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.extended.textPrimary, modifier = Modifier.weight(1.4f))
+    }
+}
+
+@Composable
+private fun History(entries: List<MaterialHistoryEntry>) {
+    Text(
+        stringResource(Res.string.history_title),
+        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+        color = MaterialTheme.colorScheme.extended.textPrimary,
+        modifier = Modifier.padding(top = 8.dp).semantics { heading() }
+    )
+    if (entries.isEmpty()) {
+        Text(stringResource(Res.string.history_empty), color = MaterialTheme.colorScheme.extended.textPlaceholder)
+        return
+    }
+    entries.forEach { e ->
+        Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.extended.surfaceHigher, modifier = Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Row {
+                    Text(stringResource(e.type.label()), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.extended.textPrimary, modifier = Modifier.weight(1f))
+                    Text(e.at.dateLabel(), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.extended.textSecondary)
                 }
-            }
-        }
-
-        if (state.isQuantitySheetVisible) {
-            AppBottomSheet(onDismiss = { onAction(OnDismissQuantitySheet) }) {
-                QuantityUpdateContent(
-                    currentQuantity = material.quantity,
-                    newQuantityState = newQuantityState,
-                    reasonState = reasonState,
-                    isSubmitting = state.isUpdatingQuantity,
-                    onConfirm = { onAction(OnConfirmQuantityUpdate) }
-                )
+                if (e.previousValue != null || e.newValue != null) {
+                    Text(stringResource(Res.string.history_change, e.previousValue ?: "–", e.newValue ?: "–"), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.extended.textPrimary)
+                }
+                Text(e.reason, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.extended.textSecondary)
             }
         }
     }
 }
 
-@Composable
-private fun QuantityUpdateContent(
-    currentQuantity: Int,
-    newQuantityState: TextFieldState,
-    reasonState: TextFieldState,
-    isSubmitting: Boolean,
-    onConfirm: () -> Unit
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Text(
-            text = "Actualizar cantidad",
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
-        )
-        Text(
-            text = "Cantidad actual: $currentQuantity",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.extended.textPlaceholder
-        )
-        AppTextField(
-            state = newQuantityState,
-            title = "Nueva cantidad",
-            singleLine = true,
-            keyboardType = KeyboardType.Number,
-            modifier = Modifier.fillMaxWidth()
-        )
-        AppTextField(
-            state = reasonState,
-            title = "Motivo (obligatorio)",
-            placeholder = "Ej: entrada de proveedor, uso en evento…",
-            modifier = Modifier.fillMaxWidth()
-        )
-        AppButton(
-            text = "Guardar cambio",
-            onClick = onConfirm,
-            isLoading = isSubmitting,
-            enabled = !isSubmitting,
-            modifier = Modifier.fillMaxWidth()
-        )
-    }
-}
-
-@Composable
-private fun InfoRow(label: String, value: String) {
-    Column {
-        Text(text = label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.extended.textSecondary)
-        Text(text = value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.extended.textPrimary)
-    }
-}
-
-@Composable
-private fun StockMovementRow(movement: StockMovementModel) {
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-        Text(
-            text = "${movement.previousQuantity} → ${movement.newQuantity}",
-            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
-        )
-        Text(
-            text = "${movement.reason} · ${movement.changedByUsername}",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.extended.textPlaceholder
-        )
-    }
+private fun Instant.dateLabel(): String {
+    val d = toLocalDateTime(TimeZone.currentSystemDefault())
+    fun two(n: Int) = n.toString().padStart(2, '0')
+    return "${two(d.day)}/${two(d.month.ordinal + 1)}/${d.year} ${two(d.hour)}:${two(d.minute)}"
 }

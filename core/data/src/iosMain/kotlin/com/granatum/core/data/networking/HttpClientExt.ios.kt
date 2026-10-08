@@ -35,6 +35,9 @@ actual suspend fun <T> platformSafeCall(
         Result.Failure(DataError.Remote.REQUEST_TIMEOUT)
     } catch(e: SerializationException) {
         Result.Failure(DataError.Remote.SERIALIZATION)
+    } catch(e: kotlinx.io.IOException) {
+        // Same as Android: an I/O failure that is not one of the cases above is still connectivity.
+        Result.Failure(DataError.Remote.NO_INTERNET)
     } catch (e: Exception) {
         coroutineContext.ensureActive()
         Result.Failure(DataError.Remote.UNKNOWN)

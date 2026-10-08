@@ -1,5 +1,6 @@
 package com.granatum.feature.inventory.presentation.di
 
+import com.granatum.feature.inventory.presentation.category.CategoryListViewModel
 import com.granatum.feature.inventory.presentation.detail.MaterialDetailViewModel
 import com.granatum.feature.inventory.presentation.form.MaterialFormViewModel
 import com.granatum.feature.inventory.presentation.list.MaterialListViewModel
@@ -9,19 +10,7 @@ import org.koin.dsl.module
 
 val inventoryPresentationModule = module {
     viewModelOf(::MaterialListViewModel)
-    viewModel { parameters ->
-        MaterialDetailViewModel(
-            materialId = parameters.get(),
-            getMaterialDetailUseCase = get(),
-            getStockHistoryUseCase = get(),
-            updateMaterialQuantityUseCase = get()
-        )
-    }
-    viewModel { parameters ->
-        MaterialFormViewModel(
-            materialId = parameters.getOrNull(),
-            getMaterialDetailUseCase = get(),
-            saveMaterialUseCase = get()
-        )
-    }
+    viewModelOf(::CategoryListViewModel)
+    viewModel { (materialId: String) -> MaterialDetailViewModel(materialId, get()) }
+    viewModel { parameters -> MaterialFormViewModel(parameters.getOrNull(), get()) }
 }

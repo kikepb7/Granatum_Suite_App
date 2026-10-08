@@ -1,18 +1,17 @@
 package com.granatum.feature.inventory.presentation.detail
 
 import androidx.compose.foundation.text.input.TextFieldState
-import androidx.compose.foundation.text.input.clearText
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.granatum.core.domain.util.Result.Failure
-import com.granatum.core.domain.util.Result.Success
+import com.granatum.core.domain.util.Result
 import com.granatum.core.presentation.util.UiText
+import com.granatum.feature.inventory.domain.model.MaterialHistoryEntry
 import com.granatum.feature.inventory.domain.model.MaterialModel
-import com.granatum.feature.inventory.domain.model.StockMovementModel
-import com.granatum.feature.inventory.domain.usecase.GetMaterialDetailUseCase
-import com.granatum.feature.inventory.domain.usecase.GetStockHistoryUseCase
-import com.granatum.feature.inventory.domain.usecase.UpdateMaterialQuantityUseCase
-import com.granatum.feature.inventory.presentation.mapper.toUiText
+import com.granatum.feature.inventory.domain.usecase.InventoryUseCases
+import com.granatum.feature.inventory.domain.validation.AdjustmentIssue
+import com.granatum.feature.inventory.domain.validation.InventoryValidation
+import com.granatum.feature.inventory.presentation.common.toUiText
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -22,99 +21,110 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class MaterialDetailViewModel(
-    private val materialId: String,
-    private val getMaterialDetailUseCase: GetMaterialDetailUseCase,
-    private val getStockHistoryUseCase: GetStockHistoryUseCase,
-    private val updateMaterialQuantityUseCase: UpdateMaterialQuantityUseCase
-) : ViewModel() {
-
-    val newQuantityState = TextFieldState()
-    val reasonState = TextFieldState()
-
-    private val _uiState = MutableStateFlow(MaterialDetailUiState())
-
-    private val eventChannel = Channel<MaterialDetailEvent>()
-    val events = eventChannel.receiveAsFlow()
-
-    val state = combine(
-        _uiState,
-        getMaterialDetailUseCase(materialId = materialId),
-        getStockHistoryUseCase(materialId = materialId)
-    ) { uiState, material, history ->
-        uiState.copy(material = material, history = history)
-    }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000L),
-            initialValue = MaterialDetailUiState()
-        )
-
-    fun onAction(action: MaterialDetailAction) {
-        when (action) {
-            MaterialDetailAction.OnEditClick -> sendEvent(MaterialDetailEvent.NavigateToEdit(materialId))
-            MaterialDetailAction.OnUpdateQuantityClick -> openQuantitySheet()
-            MaterialDetailAction.OnDismissQuantitySheet -> dismissQuantitySheet()
-            MaterialDetailAction.OnConfirmQuantityUpdate -> confirmQuantityUpdate()
-        }
-    }
-
-    private fun openQuantitySheet() {
-        val current = state.value.material?.quantity ?: return
-        newQuantityState.edit { replace(0, length, current.toString()) }
-        reasonState.clearText()
-        _uiState.update { it.copy(isQuantitySheetVisible = true) }
-    }
-
-    private fun dismissQuantitySheet() {
-        _uiState.update { it.copy(isQuantitySheetVisible = false) }
-    }
-
-    private fun confirmQuantityUpdate() {
-        val material = state.value.material ?: return
-        val newQuantity = newQuantityState.text.toString().toIntOrNull()
-        if (newQuantity == null) {
-            sendEvent(MaterialDetailEvent.Error(UiText.DynamicString(value = "Introduce una cantidad válida")))
-            return
-        }
-
-        viewModelScope.launch {
-            _uiState.update { it.copy(isUpdatingQuantity = true) }
-            when (
-                val result = updateMaterialQuantityUseCase(
-                    materialId = material.id,
-                    currentQuantity = material.quantity,
-                    newQuantity = newQuantity,
-                    reason = reasonState.text.toString()
-                )
-            ) {
-                is Success -> _uiState.update { it.copy(isQuantitySheetVisible = false) }
-                is Failure -> eventChannel.send(MaterialDetailEvent.Error(result.error.toUiText()))
-            }
-            _uiState.update { it.copy(isUpdatingQuantity = false) }
-        }
-    }
-
-    private fun sendEvent(event: MaterialDetailEvent) {
-        viewModelScope.launch { eventChannel.send(event) }
-    }
-}
-
-data class MaterialDetailUiState(
+data class MaterialDetailState(
     val material: MaterialModel? = null,
-    val history: List<StockMovementModel> = emptyList(),
-    val isQuantitySheetVisible: Boolean = false,
-    val isUpdatingQuantity: Boolean = false
+    val loaded: Boolean = false,
+    val history: List<MaterialHistoryEntry> = emptyList(),
+    val isAdjusting: Boolean = false,
+    val adjustIssues: Set<AdjustmentIssue> = emptySet(),
+    val adjustNotANumber: Boolean = false,
+    val isConfirmingDelete: Boolean = false,
+    val isBusy: Boolean = false
 )
 
 sealed interface MaterialDetailAction {
-    data object OnEditClick : MaterialDetailAction
-    data object OnUpdateQuantityClick : MaterialDetailAction
-    data object OnDismissQuantitySheet : MaterialDetailAction
-    data object OnConfirmQuantityUpdate : MaterialDetailAction
+    data object OnAdjust : MaterialDetailAction
+    data object OnAdjustDismiss : MaterialDetailAction
+    data object OnAdjustSave : MaterialDetailAction
+    data object OnDelete : MaterialDetailAction
+    data object OnDeleteDismiss : MaterialDetailAction
+    data object OnDeleteConfirm : MaterialDetailAction
 }
 
 sealed interface MaterialDetailEvent {
-    data class NavigateToEdit(val materialId: String) : MaterialDetailEvent
-    data class Error(val message: UiText) : MaterialDetailEvent
+    data class Message(val text: UiText) : MaterialDetailEvent
+    data object Deleted : MaterialDetailEvent
+}
+
+class MaterialDetailViewModel(
+    private val materialId: String,
+    private val inventory: InventoryUseCases
+) : ViewModel() {
+
+    val newQuantity = TextFieldState()
+    val reason = TextFieldState()
+    private val ui = MutableStateFlow(MaterialDetailState())
+    private val events = Channel<MaterialDetailEvent>()
+    val eventFlow = events.receiveAsFlow()
+
+    val state = combine(
+        inventory.repository.observeMaterial(materialId),
+        inventory.repository.observeHistory(materialId),
+        ui
+    ) { material, history, ui -> ui.copy(material = material, history = history, loaded = true) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), MaterialDetailState())
+
+    init {
+        // Fresh data when coverage allows; the cached copy otherwise. A material deleted
+        // elsewhere disappears from the cache here (FR-015).
+        viewModelScope.launch {
+            inventory.repository.refreshMaterial(materialId)
+            inventory.repository.refreshHistory(materialId)
+        }
+    }
+
+    fun onAction(action: MaterialDetailAction) {
+        when (action) {
+            MaterialDetailAction.OnAdjust -> {
+                newQuantity.setTextAndPlaceCursorAtEnd(state.value.material?.available?.toString().orEmpty())
+                reason.setTextAndPlaceCursorAtEnd("")
+                ui.update { it.copy(isAdjusting = true, adjustIssues = emptySet(), adjustNotANumber = false) }
+            }
+            MaterialDetailAction.OnAdjustDismiss -> ui.update { it.copy(isAdjusting = false) }
+            MaterialDetailAction.OnAdjustSave -> saveAdjustment()
+            MaterialDetailAction.OnDelete -> ui.update { it.copy(isConfirmingDelete = true) }
+            MaterialDetailAction.OnDeleteDismiss -> ui.update { it.copy(isConfirmingDelete = false) }
+            MaterialDetailAction.OnDeleteConfirm -> delete()
+        }
+    }
+
+    private fun saveAdjustment() {
+        val material = state.value.material ?: return
+        if (ui.value.isBusy) return
+        val value = newQuantity.text.toString().trim().toIntOrNull()
+        if (value == null) {
+            ui.update { it.copy(adjustNotANumber = true, adjustIssues = emptySet()) }
+            return
+        }
+        val issues = InventoryValidation.validateAdjustment(material.available, material.total, value, reason.text.toString())
+        if (issues.isNotEmpty()) {
+            ui.update { it.copy(adjustIssues = issues, adjustNotANumber = false) }
+            return
+        }
+        ui.update { it.copy(isBusy = true, adjustIssues = emptySet(), adjustNotANumber = false) }
+        viewModelScope.launch {
+            when (val result = inventory.repository.adjustQuantity(materialId, value, reason.text.toString())) {
+                is Result.Success -> {
+                    ui.update { it.copy(isBusy = false, isAdjusting = false) }
+                    inventory.repository.refreshHistory(materialId)
+                }
+                is Result.Failure -> {
+                    ui.update { it.copy(isBusy = false) }
+                    events.send(MaterialDetailEvent.Message(result.error.toUiText()))
+                }
+            }
+        }
+    }
+
+    private fun delete() {
+        if (ui.value.isBusy) return
+        ui.update { it.copy(isBusy = true, isConfirmingDelete = false) }
+        viewModelScope.launch {
+            when (val result = inventory.repository.delete(materialId)) {
+                is Result.Success -> events.send(MaterialDetailEvent.Deleted)
+                is Result.Failure -> events.send(MaterialDetailEvent.Message(result.error.toUiText()))
+            }
+            ui.update { it.copy(isBusy = false) }
+        }
+    }
 }

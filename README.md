@@ -86,6 +86,23 @@ la hora a la que se pulsó, sin duplicarse aunque se reintente
 Para probar el rechazo por antigüedad sin esperar tres días, arranca el backend local con
 `--timetracking.reloj.tolerancia-pasado=PT2M`.
 
+## Inventario
+
+Solo para la administración y las encargadas. Materiales y categorías salen de `/api/materiales`
+y `/api/categorias`, tal como los guarda el servidor
+([spec 006](specs/006-inventario-real/spec.md)).
+
+- **Consultar funciona sin cobertura**: la app guarda la última lista descargada y avisa cuando
+  puede no estar al día. La búsqueda y los filtros se aplican en el móvil, porque el servidor no
+  pagina.
+- **Modificar exige conexión**: altas, ediciones, ajustes de cantidad, borrados y categorías van
+  directos al servidor. El inventario es compartido y el servidor no ofrece idempotencia, así que
+  reintentar más tarde podría duplicar un alta; sin conexión la app lo dice y no guarda nada.
+- Cada ajuste de cantidad lleva un motivo y queda en el historial del material.
+- Las fotos se muestran y se conservan al editar, pero no se pueden añadir: el servidor no tiene
+  forma de subirlas.
+- Una categoría con materiales no se puede borrar (el servidor respondería con un error 500).
+
 ## Entornos
 
 El entorno se elige **al compilar** y queda fijado en el binario. No se puede cambiar en ejecución, a propósito: así ningún binario de producción puede repuntarse a otro servidor.

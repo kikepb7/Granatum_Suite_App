@@ -31,6 +31,10 @@ actual suspend fun <T> platformSafeCall(
         Result.Failure(DataError.Remote.REQUEST_TIMEOUT)
     } catch(e: SerializationException) {
         Result.Failure(DataError.Remote.SERIALIZATION)
+    } catch(e: java.io.IOException) {
+        // Any other I/O failure on the way — a reset connection, a socket closed mid-response — is
+        // a connectivity problem for the person, not an unknown error.
+        Result.Failure(DataError.Remote.NO_INTERNET)
     } catch (e: Exception) {
         coroutineContext.ensureActive()
         Result.Failure(DataError.Remote.UNKNOWN)

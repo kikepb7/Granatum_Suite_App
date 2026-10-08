@@ -15,9 +15,16 @@ kotlin {
                 implementation(projects.core.presentation)
 
                 implementation(libs.bundles.koin.common)
+                implementation(libs.coil.compose)
 
                 implementation(compose.components.resources)
                 implementation(compose.components.uiToolingPreview)
+            }
+        }
+
+        commonTest {
+            dependencies {
+                implementation(libs.kotlinx.coroutines.test)
             }
         }
 

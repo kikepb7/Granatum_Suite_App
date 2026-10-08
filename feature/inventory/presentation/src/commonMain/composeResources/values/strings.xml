@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Lista -->
+    <string name="inventory_title">Inventario</string>
+    <string name="search_placeholder">Buscar por nombre, ubicación o proveedor</string>
+    <string name="filter_all_categories">Todas</string>
+    <string name="filter_out_of_stock">Agotados</string>
+    <string name="filter_any_condition">Cualquier estado</string>
+    <string name="list_empty">No hay materiales</string>
+    <string name="list_empty_filtered">Ningún material coincide con la búsqueda</string>
+    <string name="list_stale">Sin conexión: mostrando lo último descargado</string>
+    <string name="refresh">Actualizar</string>
+    <string name="add_material">Añadir material</string>
+    <string name="manage_categories">Categorías</string>
+    <string name="stock_of">%1$d de %2$d disponibles</string>
+    <string name="out_of_stock">Agotado</string>
+
+    <!-- Estados -->
+    <string name="condition_nuevo">Nuevo</string>
+    <string name="condition_usado">Usado</string>
+    <string name="condition_danado">Dañado</string>
+    <string name="condition_roto">Roto</string>
+    <string name="condition_en_reparacion">En reparación</string>
+
+    <!-- Detalle -->
+    <string name="detail_title">Material</string>
+    <string name="detail_category">Categoría</string>
+    <string name="detail_stock">Existencias</string>
+    <string name="detail_size">Medidas</string>
+    <string name="detail_size_value">%1$s × %2$s %3$s</string>
+    <string name="detail_size_value_diameter">%1$s × %2$s %3$s · Ø %4$s %3$s</string>
+    <string name="detail_color">Color</string>
+    <string name="detail_material">Material</string>
+    <string name="detail_condition">Estado</string>
+    <string name="detail_location">Ubicación</string>
+    <string name="detail_price">Precio unitario</string>
+    <string name="detail_price_value">%1$s €</string>
+    <string name="detail_supplier">Proveedor</string>
+    <string name="detail_photos">Fotos</string>
+    <string name="detail_photo">Foto %1$d de %2$s</string>
+    <string name="detail_created">Alta</string>
+    <string name="detail_updated">Última modificación</string>
+    <string name="detail_gone">Este material ya no existe</string>
+    <string name="adjust_quantity">Ajustar cantidad</string>
+    <string name="edit">Editar</string>
+    <string name="delete">Borrar</string>
+    <string name="delete_title">¿Borrar este material?</string>
+    <string name="delete_description">Se borrará «%1$s» del inventario. No se puede deshacer.</string>
+    <string name="delete_confirm">Borrar</string>
+    <string name="cancel">Cancelar</string>
+
+    <!-- Historial -->
+    <string name="history_title">Historial de cambios</string>
+    <string name="history_empty">Sin cambios registrados</string>
+    <string name="history_change">%1$s → %2$s</string>
+    <string name="change_cantidad">Cantidad</string>
+    <string name="change_estado">Estado</string>
+    <string name="change_ubicacion">Ubicación</string>
+    <string name="change_precio">Precio</string>
+    <string name="change_proveedor">Proveedor</string>
+    <string name="change_otro">Otro cambio</string>
+
+    <!-- Ajuste -->
+    <string name="adjust_title">Ajustar cantidad disponible</string>
+    <string name="adjust_current">Ahora: %1$d de %2$d</string>
+    <string name="adjust_new">Nueva cantidad disponible</string>
+    <string name="adjust_reason">Motivo</string>
+    <string name="adjust_reason_placeholder">Por ejemplo: pedido recibido, rotura…</string>
+    <string name="adjust_save">Guardar</string>
+    <string name="adjust_out_of_range">Tiene que estar entre 0 y %1$d</string>
+    <string name="adjust_unchanged">La cantidad es la misma que ahora</string>
+    <string name="adjust_reason_required">Escribe el motivo</string>
+    <string name="adjust_not_a_number">Escribe un número entero</string>
+
+    <!-- Formulario -->
+    <string name="form_new_title">Nuevo material</string>
+    <string name="form_edit_title">Editar material</string>
+    <string name="form_name">Nombre</string>
+    <string name="form_category">Categoría</string>
+    <string name="form_no_categories">Crea primero una categoría</string>
+    <string name="form_available">Cantidad disponible</string>
+    <string name="form_total">Cantidad total</string>
+    <string name="form_height">Alto</string>
+    <string name="form_width">Ancho</string>
+    <string name="form_diameter">Diámetro (opcional)</string>
+    <string name="form_unit">Unidad</string>
+    <string name="form_color">Color</string>
+    <string name="form_material">Material</string>
+    <string name="form_condition">Estado</string>
+    <string name="form_location">Ubicación</string>
+    <string name="form_price">Precio unitario (€)</string>
+    <string name="form_supplier">Proveedor</string>
+    <string name="form_photos_kept">Las fotos actuales se conservan. Todavía no se pueden añadir fotos desde la app.</string>
+    <string name="form_save">Guardar</string>
+    <string name="form_bad_number">Escribe un número válido</string>
+    <string name="issue_name_required">Escribe el nombre</string>
+    <string name="issue_name_too_long">Como máximo 140 caracteres</string>
+    <string name="issue_category_required">Elige una categoría</string>
+    <string name="issue_required">Este campo es obligatorio</string>
+    <string name="issue_negative_quantity">Las cantidades no pueden ser negativas</string>
+    <string name="issue_available_over_total">La disponible no puede superar la total</string>
+    <string name="issue_negative_price">El precio no puede ser negativo</string>
+    <string name="issue_negative_size">Las medidas no pueden ser negativas</string>
+
+    <!-- Categorías -->
+    <string name="categories_title">Categorías</string>
+    <string name="categories_empty">Todavía no hay categorías</string>
+    <string name="category_name">Nombre</string>
+    <string name="category_description">Descripción (opcional)</string>
+    <string name="category_new">Nueva categoría</string>
+    <string name="category_edit">Editar categoría</string>
+    <string name="category_save">Guardar</string>
+    <string name="category_in_use">Tiene %1$d materiales: no se puede borrar</string>
+    <string name="category_delete_title">¿Borrar esta categoría?</string>
+    <string name="category_delete_description">Se borrará «%1$s».</string>
+    <string name="category_name_required">Escribe el nombre</string>
+    <string name="category_name_too_long">Como máximo 100 caracteres</string>
+    <string name="category_description_too_long">Como máximo 500 caracteres</string>
+
+    <!-- Errores -->
+    <string name="error_no_internet">Necesitas conexión para hacer cambios en el inventario</string>
+    <string name="error_material_not_found">Este material ya no existe; puede que lo haya borrado otra persona</string>
+    <string name="error_category_not_found">Esa categoría ya no existe; elige otra</string>
+    <string name="error_quantity_out_of_range">La cantidad no puede ser negativa ni superar la total</string>
+    <string name="error_invalid">Revisa los datos e inténtalo de nuevo</string>
+    <string name="error_forbidden">Tu rol no permite hacer este cambio</string>
+    <string name="error_unknown">No se ha podido completar la operación</string>
+</resources>
