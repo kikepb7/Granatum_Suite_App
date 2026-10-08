@@ -2,33 +2,8 @@ package com.granatum.feature.clockin.data.dto
 
 import kotlinx.serialization.Serializable
 
-/**
- * Contract the backend needs to implement (not yet built — this is the
- * MVP's assumption, documented here so it's easy to align once the API
- * exists): POST /attendance/events must be idempotent on `id`, i.e. pushing
- * the same [ClockEventPushDto.id] twice must not create two punches. That's
- * what makes safe retries possible after a dropped connection.
- */
-@Serializable
-data class ClockEventPushDto(
-    val id: String,
-    val type: String,
-    val clientTimestamp: String
-)
-
-@Serializable
-data class ClockEventDto(
-    val id: String,
-    val type: String,
-    val clientTimestamp: String,
-    val serverTimestamp: String
-)
-
-@Serializable
-data class CorrectionRequestPushDto(
-    val clockEventId: String,
-    val reason: String
-)
+// What remains here backs the team screen, which moves to the real contract in the team
+// phase. The punch DTOs moved to FichajeDtos.kt (spec 005, FR-025).
 
 @Serializable
 data class CorrectionRequestDto(

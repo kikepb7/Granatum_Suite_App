@@ -1,6 +1,6 @@
 package com.granatum.feature.clockin.domain.model
 
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 enum class ClockEventType {
     CLOCK_IN,
@@ -10,15 +10,16 @@ enum class ClockEventType {
 }
 
 /**
- * Sync state of a single locally-recorded punch. Every event is written to
- * Room immediately (optimistic, offline-first) and only later pushed to the
- * backend by the sync engine — see `ClockEventSyncManager` in the data module.
+ * Sync state of a punch recorded on the device. Every punch is written locally first and sent
+ * later by the sync engine (specs/005-fichaje-real, research D2).
  */
 enum class SyncState {
     PENDING,
     SYNCING,
     SYNCED,
-    FAILED
+
+    /** Refused for good by the server; never retried (FR-009). */
+    REJECTED
 }
 
 enum class ShiftStatus {
@@ -28,16 +29,18 @@ enum class ShiftStatus {
 }
 
 data class ClockEventModel(
-    /** Client-generated UUID, also used as the idempotency key when syncing. */
+    /** Client-generated UUID, also the `clientEventId` sent to the server. */
     val id: String,
     val type: ClockEventType,
     val clientTimestamp: Instant,
-    val serverTimestamp: Instant?,
-    val syncState: SyncState
+    val syncState: SyncState,
+    val breakType: BreakType? = null,
+    val rejection: ClockRejection? = null
 )
 
-fun List<ClockEventModel>.currentShiftStatus(): ShiftStatus {
-    val last = maxByOrNull { it.clientTimestamp } ?: return ShiftStatus.CLOCKED_OUT
+/** The status after a sequence of punches, ignoring the ones the server refused. */
+fun List<TimelineItem>.currentShiftStatus(): ShiftStatus {
+    val last = filter { it.syncState != SyncState.REJECTED }.maxByOrNull { it.at } ?: return ShiftStatus.CLOCKED_OUT
     return when (last.type) {
         ClockEventType.CLOCK_IN, ClockEventType.BREAK_END -> ShiftStatus.CLOCKED_IN
         ClockEventType.BREAK_START -> ShiftStatus.ON_BREAK

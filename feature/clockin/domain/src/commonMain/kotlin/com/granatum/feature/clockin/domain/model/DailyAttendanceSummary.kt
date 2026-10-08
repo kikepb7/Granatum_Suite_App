@@ -2,14 +2,6 @@ package com.granatum.feature.clockin.domain.model
 
 import kotlinx.datetime.LocalDate
 
-data class DailyAttendanceSummary(
-    val date: LocalDate,
-    val events: List<ClockEventModel>,
-    val workedMinutes: Int,
-    val breakMinutes: Int,
-    val hasPendingSync: Boolean
-)
-
 enum class CorrectionStatus {
     PENDING,
     APPROVED,

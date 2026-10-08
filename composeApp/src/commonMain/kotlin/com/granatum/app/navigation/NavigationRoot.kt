@@ -114,7 +114,7 @@ private fun SignedInRoot(role: UserRole) {
             startDestination = tabs.first().route,
             modifier = Modifier.weight(1f)
         ) {
-            clockInGraph(canClockIn = role.canClockIn, canSeeTeam = role.canSeeTeam)
+            clockInGraph(navController = navController, canClockIn = role.canClockIn, canSeeTeam = role.canSeeTeam)
             if (role.canManageInventory) {
                 inventoryGraph(navController = navController)
             }

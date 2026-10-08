@@ -13,6 +13,9 @@ sealed interface ClockActionError : Error {
     data object AlreadyOnBreak : ClockActionError
     data object NotOnBreak : ClockActionError
 
+    /** Clocking out with a break still open; the server refuses it too (PAUSA_ABIERTA_AL_CERRAR). */
+    data object OnBreak : ClockActionError
+
     /** No session: a punch must belong to someone (spec 004, FR-028). */
     data object NoSession : ClockActionError
 }

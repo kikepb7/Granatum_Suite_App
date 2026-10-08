@@ -4,7 +4,11 @@ import com.granatum.feature.clockin.data.sync.ConnectivityObserver
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import com.granatum.feature.clockin.data.datasource.local.OfflineFirstClockInRepositoryImpl
 import com.granatum.feature.clockin.data.datasource.remote.KtorTeamAttendanceRepositoryImpl
-import com.granatum.feature.clockin.data.sync.ClockEventSyncManager
+import com.granatum.feature.clockin.data.sync.ShiftSyncEngine
+import com.granatum.feature.clockin.data.remote.FichajeRemoteDataSource
+import com.granatum.feature.clockin.database.dao.ShiftDao
+import com.granatum.feature.clockin.database.dao.ServerShiftDao
+import com.granatum.feature.clockin.database.migration.Migration2To3
 import com.granatum.feature.clockin.database.AppClockInDatabase
 import com.granatum.feature.clockin.database.DatabaseFactory
 import com.granatum.feature.clockin.database.dao.ClockEventDao
@@ -24,14 +28,20 @@ val clockInDataModule = module {
         get<DatabaseFactory>()
             .create()
             .setDriver(BundledSQLiteDriver())
+            .addMigrations(Migration2To3)
             .build()
     }
     single<ClockEventDao> { get<AppClockInDatabase>().clockEventDao }
+    single<ShiftDao> { get<AppClockInDatabase>().shiftDao }
+    single<ServerShiftDao> { get<AppClockInDatabase>().serverShiftDao }
+    single { FichajeRemoteDataSource(httpClient = get()) }
 
     single {
-        ClockEventSyncManager(
-            httpClient = get(),
-            dao = get(),
+        ShiftSyncEngine(
+            remote = get(),
+            eventDao = get(),
+            shiftDao = get(),
+            serverShiftDao = get(),
             sessionStorage = get(),
             connectivity = get<ConnectivityObserver>().observe(),
             logger = get()
@@ -40,10 +50,12 @@ val clockInDataModule = module {
 
     single {
         OfflineFirstClockInRepositoryImpl(
-            httpClient = get(),
-            dao = get(),
+            eventDao = get(),
+            shiftDao = get(),
+            serverShiftDao = get(),
+            remote = get(),
             sessionStorage = get(),
-            syncManager = get(),
+            syncEngine = get(),
             appScope = get()
         )
     } bind ClockInRepository::class

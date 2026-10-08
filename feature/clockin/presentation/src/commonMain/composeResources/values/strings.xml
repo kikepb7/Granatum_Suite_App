@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Estado del día -->
+    <string name="clockin_title">Fichaje</string>
+    <string name="status_clocked_out">Sin fichar</string>
+    <string name="status_clocked_in">Trabajando</string>
+    <string name="status_on_break">En pausa</string>
+    <string name="caption_clocked_out">Ficha tu entrada para empezar la jornada</string>
+    <string name="caption_clocked_in">Tu jornada está en curso</string>
+    <string name="caption_on_break">Tu jornada está pausada</string>
+    <string name="today_empty">Todavía no has fichado hoy</string>
+    <plurals name="pending_count">
+        <item quantity="one">%1$d fichaje sin enviar</item>
+        <item quantity="other">%1$d fichajes sin enviar</item>
+    </plurals>
+    <string name="pending_caption">Se enviarán solos al recuperar la conexión</string>
+    <string name="clock_skew_title">La hora de este dispositivo no es correcta</string>
+    <string name="clock_skew_caption">Ajústala en los ajustes del teléfono para que tus fichajes se registren.</string>
+    <plurals name="rejected_count">
+        <item quantity="one">%1$d fichaje no se ha podido registrar</item>
+        <item quantity="other">%1$d fichajes no se han podido registrar</item>
+    </plurals>
+    <string name="rejected_caption">Revisa el motivo en cada uno.</string>
+    <string name="action_clock_in">Fichar entrada</string>
+    <string name="action_clock_out">Fichar salida</string>
+    <string name="action_start_break">Iniciar pausa</string>
+    <string name="action_end_break">Terminar pausa</string>
+    <string name="end_break_first">Termina la pausa para poder fichar la salida</string>
+
+    <!-- Tipos de pausa -->
+    <string name="break_sheet_title">¿Qué tipo de pausa?</string>
+    <string name="break_comida">Comida</string>
+    <string name="break_descanso">Descanso</string>
+    <string name="break_otro">Otro</string>
+
+    <!-- Líneas de jornada -->
+    <string name="event_clock_in">Entrada</string>
+    <string name="event_clock_out">Salida</string>
+    <string name="event_break_start">Inicio de pausa</string>
+    <string name="event_break_end">Fin de pausa</string>
+    <string name="event_break_start_typed">Inicio de pausa · %1$s</string>
+    <string name="event_break_end_typed">Fin de pausa · %1$s</string>
+    <string name="sync_synced">Registrado</string>
+    <string name="sync_syncing">Enviando</string>
+    <string name="sync_pending">Pendiente</string>
+    <string name="sync_rejected">No registrado</string>
+
+    <!-- Rechazos -->
+    <string name="rejection_too_old">Este fichaje tiene más de 72 horas y ya no se puede registrar. Pide una corrección de la jornada.</string>
+    <string name="rejection_clock_skew">La hora de este dispositivo no es correcta. Ajústala para que tus fichajes se registren.</string>
+    <string name="rejection_inactive">Tu cuenta ya no está activa.</string>
+    <string name="rejection_invalid_transition">El registro ya no admitía este fichaje; quizá se fichó desde otro dispositivo.</string>
+    <string name="rejection_shift_not_registered">La entrada de esta jornada no se pudo registrar.</string>
+    <string name="rejection_unexpected">No se ha podido registrar este fichaje.</string>
+    <string name="request_correction">Pedir corrección</string>
+
+    <!-- Errores al fichar -->
+    <string name="error_already_clocked_in">Ya has fichado la entrada</string>
+    <string name="error_not_clocked_in">Todavía no has fichado la entrada</string>
+    <string name="error_already_on_break">Ya estás en pausa</string>
+    <string name="error_not_on_break">No estás en pausa</string>
+    <string name="error_on_break">Termina la pausa antes de fichar la salida</string>
+    <string name="error_no_session">Inicia sesión para fichar</string>
+
+    <!-- Historial -->
+    <string name="history_title">Mi historial</string>
+    <string name="history_empty">No hay jornadas en este mes</string>
+    <string name="history_previous_month">Mes anterior</string>
+    <string name="history_next_month">Mes siguiente</string>
+    <string name="worked_time">%1$dh %2$02dmin</string>
+    <string name="worked_time_provisional">%1$dh %2$02dmin (provisional)</string>
+    <string name="shift_in_progress">En curso</string>
+    <string name="flag_incomplete">Incompleta</string>
+    <string name="flag_corrected">Corregida</string>
+    <string name="flag_reconstructed">Reconstruida</string>
+    <string name="flag_pending">Pendiente de enviar</string>
+    <string name="flag_rejected">Con fichajes no registrados</string>
+    <string name="open_shift">Ver jornada</string>
+
+    <!-- Detalle de jornada -->
+    <string name="shift_detail_title">Jornada</string>
+    <string name="shift_not_found">Esta jornada ya no está disponible</string>
+    <string name="corrections_title">Correcciones</string>
+    <string name="corrections_empty">No has pedido ninguna corrección para esta jornada</string>
+    <string name="corrections_offline">Sin conexión: no se pueden consultar las correcciones</string>
+    <string name="correction_state_pendiente">Pendiente</string>
+    <string name="correction_state_aprobada">Aprobada</string>
+    <string name="correction_state_rechazada">Rechazada</string>
+    <string name="correction_resolution">Motivo: %1$s</string>
+    <string name="correction_only_closed">Solo se pueden corregir jornadas cerradas y ya registradas</string>
+
+    <!-- Pedir corrección -->
+    <string name="correction_title">Pedir corrección</string>
+    <string name="correction_entry">Entrada (HH:MM)</string>
+    <string name="correction_exit">Salida (HH:MM)</string>
+    <string name="correction_break_start">Inicio de pausa (HH:MM)</string>
+    <string name="correction_break_end">Fin de pausa (HH:MM)</string>
+    <string name="correction_add_break">Añadir pausa</string>
+    <string name="correction_remove_break">Quitar pausa</string>
+    <string name="correction_reason">Motivo</string>
+    <string name="correction_reason_placeholder">Por ejemplo: olvidé fichar la salida</string>
+    <string name="correction_submit">Enviar solicitud</string>
+    <string name="correction_sent">Solicitud enviada</string>
+    <string name="correction_bad_time">Escribe la hora como HH:MM</string>
+    <string name="issue_missing_reason">Escribe el motivo</string>
+    <string name="issue_exit_before_entry">La salida tiene que ser posterior a la entrada</string>
+    <string name="issue_break_ends_before_start">Cada pausa tiene que terminar después de empezar</string>
+    <string name="issue_break_outside_shift">Las pausas tienen que estar dentro de la jornada</string>
+    <string name="issue_breaks_overlap">Las pausas no pueden solaparse</string>
+    <string name="correction_error_not_finished">Solo se pueden corregir jornadas cerradas</string>
+    <string name="correction_error_inactive">Tu cuenta ya no está activa</string>
+    <string name="correction_error_no_internet">Necesitas conexión para pedir una corrección</string>
+    <string name="correction_error_invalid">El servidor considera incoherentes estos valores</string>
+    <string name="correction_error_unknown">No se ha podido enviar la solicitud</string>
+</resources>

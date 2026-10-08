@@ -8,7 +8,7 @@ import org.koin.core.component.inject
 
 /**
  * Backstop for when the app process isn't alive to run
- * [ClockEventSyncManager]'s connectivity-triggered sync — e.g. the OS killed
+ * [ShiftSyncEngine]'s connectivity-triggered sync — e.g. the OS killed
  * the app while a punch was still queued. WorkManager guarantees this runs
  * (subject to its own battery/Doze constraints) even then, which is why
  * Android gets real offline resilience where the iOS MVP only re-syncs in
@@ -19,13 +19,10 @@ class ClockSyncWorker(
     workerParams: WorkerParameters
 ) : CoroutineWorker(context, workerParams), KoinComponent {
 
-    private val syncManager: ClockEventSyncManager by inject()
+    private val syncManager: ShiftSyncEngine by inject()
 
     override suspend fun doWork(): Result {
-        val result = syncManager.syncNow()
-        return when (result) {
-            is com.granatum.core.domain.util.Result.Success -> Result.success()
-            is com.granatum.core.domain.util.Result.Failure -> Result.retry()
-        }
+        // Temporary failures ask WorkManager to back off and retry; everything else is done.
+        return if (syncManager.syncNow()) Result.success() else Result.retry()
     }
 }

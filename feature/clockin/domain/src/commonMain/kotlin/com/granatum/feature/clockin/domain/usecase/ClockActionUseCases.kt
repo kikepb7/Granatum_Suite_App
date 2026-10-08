@@ -1,6 +1,7 @@
 package com.granatum.feature.clockin.domain.usecase
 
 import com.granatum.core.domain.util.Result
+import com.granatum.feature.clockin.domain.model.BreakType
 import com.granatum.feature.clockin.domain.model.ClockActionError
 import com.granatum.feature.clockin.domain.repository.ClockInRepository
 
@@ -13,7 +14,7 @@ class ClockOutUseCase(private val repository: ClockInRepository) {
 }
 
 class StartBreakUseCase(private val repository: ClockInRepository) {
-    suspend operator fun invoke(): Result<Unit, ClockActionError> = repository.startBreak()
+    suspend operator fun invoke(type: BreakType): Result<Unit, ClockActionError> = repository.startBreak(type)
 }
 
 class EndBreakUseCase(private val repository: ClockInRepository) {

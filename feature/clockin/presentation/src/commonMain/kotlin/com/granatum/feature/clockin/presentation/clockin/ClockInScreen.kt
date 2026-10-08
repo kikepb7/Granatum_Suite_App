@@ -43,20 +43,20 @@ import com.granatum.core.designsystem.components.buttons.AppButtonStyle
 import com.granatum.core.designsystem.components.topbar.AppTopBar
 import com.granatum.core.designsystem.theme.extended
 import com.granatum.core.presentation.util.ObserveAsEvents
-import com.granatum.feature.clockin.domain.model.ClockEventModel
-import com.granatum.feature.clockin.domain.model.ClockEventType
+import com.granatum.feature.clockin.domain.model.ClockRejection
 import com.granatum.feature.clockin.domain.model.ShiftStatus
-import com.granatum.feature.clockin.domain.model.SyncState
-import com.granatum.feature.clockin.presentation.clockin.ClockInAction.OnBreakToggleClick
-import com.granatum.feature.clockin.presentation.clockin.ClockInAction.OnPrimaryButtonClick
-import com.granatum.feature.clockin.presentation.clockin.ClockInEvent.Error
+import com.granatum.feature.clockin.domain.model.TimelineItem
+import com.granatum.feature.clockin.presentation.common.TimelineRow
+import granatumsuite.feature.clockin.presentation.generated.resources.Res
+import granatumsuite.feature.clockin.presentation.generated.resources.*
 import kotlinx.coroutines.launch
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun ClockInRoot(
+    onOpenShift: (String) -> Unit,
     viewModel: ClockInViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -65,7 +65,8 @@ fun ClockInRoot(
 
     ObserveAsEvents(flow = viewModel.events) { event ->
         when (event) {
-            is Error -> scope.launch { snackbarHostState.showSnackbar(event.message.asStringAsync()) }
+            is ClockInEvent.Error -> scope.launch { snackbarHostState.showSnackbar(event.message.asStringAsync()) }
+            is ClockInEvent.OpenShift -> onOpenShift(event.shiftKey)
         }
     }
 
@@ -73,9 +74,8 @@ fun ClockInRoot(
 }
 
 /**
- * Layout follows how the screen is actually used: glance at the state, see today's punches,
- * then act. The action sits at the bottom, within thumb reach, rather than floating in the
- * middle of the screen.
+ * Glance at the state, see today's punches with whether each one is registered, then act. The
+ * action sits at the bottom, within thumb reach.
  */
 @Composable
 fun ClockInScreen(
@@ -83,63 +83,96 @@ fun ClockInScreen(
     onAction: (ClockInAction) -> Unit,
     snackbarHostState: SnackbarHostState
 ) {
+    val today = state.today
+    val items = today.shifts.flatMap { it.items }
     Scaffold(
         containerColor = MaterialTheme.colorScheme.extended.surfaceLower,
         contentWindowInsets = WindowInsets.safeDrawing,
-        topBar = { AppTopBar(title = "Fichaje") },
+        topBar = { AppTopBar(title = stringResource(Res.string.clockin_title)) },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-
             StatusHeader(status = state.status)
 
-            if (state.pendingSyncCount > 0) {
-                PendingSyncNotice(
-                    count = state.pendingSyncCount,
-                    modifier = Modifier.padding(horizontal = 24.dp)
-                )
+            Column(
+                modifier = Modifier.padding(horizontal = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                if (today.hasClockSkew) {
+                    Notice(
+                        title = stringResource(Res.string.clock_skew_title),
+                        caption = stringResource(Res.string.clock_skew_caption),
+                        background = MaterialTheme.colorScheme.extended.redCardBackground,
+                        content = MaterialTheme.colorScheme.extended.redCardText
+                    )
+                }
+                if (today.pendingCount > 0) {
+                    Notice(
+                        title = pluralStringResource(Res.plurals.pending_count, today.pendingCount, today.pendingCount),
+                        caption = stringResource(Res.string.pending_caption),
+                        background = MaterialTheme.colorScheme.extended.yellowCardBackground,
+                        content = MaterialTheme.colorScheme.extended.yellowCardText
+                    )
+                }
+                val tooOld = today.rejected.firstOrNull { it.rejection == ClockRejection.TooOld }
+                if (today.rejected.isNotEmpty()) {
+                    Notice(
+                        title = pluralStringResource(Res.plurals.rejected_count, today.rejected.size, today.rejected.size),
+                        caption = stringResource(Res.string.rejected_caption),
+                        background = MaterialTheme.colorScheme.extended.redCardBackground,
+                        content = MaterialTheme.colorScheme.extended.redCardText
+                    )
+                }
+                if (tooOld != null) {
+                    val shiftKey = today.shifts.firstOrNull { tooOld in it.items }?.takeIf { it.canRequestCorrection }?.key
+                    if (shiftKey != null) {
+                        AppButton(
+                            text = stringResource(Res.string.request_correction),
+                            onClick = { onAction(ClockInAction.OnRequestCorrection(shiftKey)) },
+                            style = AppButtonStyle.SECONDARY,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
             }
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(16.dp))
 
-            TodayTimeline(
-                events = state.todayEvents,
-                modifier = Modifier.weight(1f).fillMaxWidth()
-            )
+            TodayTimeline(items = items, modifier = Modifier.weight(1f).fillMaxWidth())
 
             ActionBar(
-                status = state.status,
-                isProcessing = state.isProcessing,
-                onPrimaryClick = { onAction(OnPrimaryButtonClick) },
-                onBreakClick = { onAction(OnBreakToggleClick) }
+                state = state,
+                onPrimaryClick = { onAction(ClockInAction.OnPrimaryButtonClick) },
+                onBreakClick = { onAction(ClockInAction.OnBreakToggleClick) }
             )
         }
     }
+
+    if (state.isChoosingBreak) {
+        BreakTypeSheet(
+            onChoose = { onAction(ClockInAction.OnBreakTypeChosen(it)) },
+            onDismiss = { onAction(ClockInAction.OnBreakSheetDismissed) }
+        )
+    }
 }
 
-/** The state you came to check, stated plainly rather than squeezed into a chip. */
 @Composable
 private fun StatusHeader(status: ShiftStatus) {
-    val accent = status.accentColor()
-
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 28.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Box(Modifier.size(10.dp).background(accent, CircleShape))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Box(Modifier.size(10.dp).background(status.accentColor(), CircleShape))
             Text(
-                text = status.headline(),
+                text = stringResource(status.headline()),
                 style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.extended.textPrimary
             )
         }
         Text(
-            text = status.caption(),
+            text = stringResource(status.caption()),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.extended.textSecondary,
             textAlign = TextAlign.Center
@@ -147,152 +180,82 @@ private fun StatusHeader(status: ShiftStatus) {
     }
 }
 
-/**
- * Unsent punches are the one thing this screen must never bury: the whole offline-first
- * promise is that a punch is never lost, so the count gets a card, not grey micro-copy.
- */
+/** Unsent and refused punches are the things this screen must never bury. */
 @Composable
-private fun PendingSyncNotice(count: Int, modifier: Modifier = Modifier) {
-    Surface(
-        shape = RoundedCornerShape(14.dp),
-        color = MaterialTheme.colorScheme.extended.yellowCardBackground,
-        modifier = modifier.fillMaxWidth()
-    ) {
+private fun Notice(title: String, caption: String, background: Color, content: Color) {
+    Surface(shape = RoundedCornerShape(14.dp), color = background, modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Box(
-                Modifier.size(8.dp).background(
-                    MaterialTheme.colorScheme.extended.yellowCardText,
-                    CircleShape
-                )
-            )
+            Box(Modifier.size(8.dp).background(content, CircleShape))
             Column {
-                Text(
-                    text = if (count == 1) "1 fichaje sin enviar" else "$count fichajes sin enviar",
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = MaterialTheme.colorScheme.extended.yellowCardText
-                )
-                Text(
-                    text = "Se enviarán solos al recuperar la conexión",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.extended.yellowCardText
-                )
+                Text(text = title, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = content)
+                Text(text = caption, style = MaterialTheme.typography.bodySmall, color = content)
             }
         }
     }
 }
 
-/** Today's punches. The ViewModel already loaded these; the old screen simply discarded them. */
 @Composable
-private fun TodayTimeline(events: List<ClockEventModel>, modifier: Modifier = Modifier) {
-    if (events.isEmpty()) {
+private fun TodayTimeline(items: List<TimelineItem>, modifier: Modifier = Modifier) {
+    if (items.isEmpty()) {
         Box(modifier = modifier, contentAlignment = Alignment.Center) {
             Text(
-                text = "Todavía no has fichado hoy",
+                text = stringResource(Res.string.today_empty),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.extended.textPlaceholder
             )
         }
         return
     }
-
     LazyColumn(
         modifier = modifier,
         contentPadding = PaddingValues(horizontal = 24.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(items = events, key = { it.id }) { event ->
-            TimelineRow(event = event)
-        }
+        items(items = items, key = { it.eventId ?: "${it.type}-${it.at}" }) { TimelineRow(it) }
     }
 }
 
 @Composable
-private fun TimelineRow(event: ClockEventModel) {
-    Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.extended.surfaceHigher,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            Text(
-                text = event.clientTimestamp.toLocalTimeLabel(),
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.extended.textPrimary
-            )
-            Text(
-                text = event.type.label(),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.extended.textSecondary,
-                modifier = Modifier.weight(1f)
-            )
-            SyncBadge(syncState = event.syncState)
-        }
-    }
-}
-
-/** Per-punch sync state, so "did that one go through?" is answerable at a glance. */
-@Composable
-private fun SyncBadge(syncState: SyncState) {
-    val (label, color) = when (syncState) {
-        SyncState.SYNCED -> "Enviado" to MaterialTheme.colorScheme.extended.success
-        SyncState.SYNCING -> "Enviando" to MaterialTheme.colorScheme.extended.textSecondary
-        SyncState.PENDING -> "Pendiente" to MaterialTheme.colorScheme.extended.yellowCardText
-        SyncState.FAILED -> "Fallido" to MaterialTheme.colorScheme.extended.redCardText
-    }
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        Box(Modifier.size(7.dp).background(color, CircleShape))
-        Text(text = label, style = MaterialTheme.typography.labelMedium, color = color)
-    }
-}
-
-/** Actions live at the bottom: that is where the thumb is, and where the eye ends up. */
-@Composable
-private fun ActionBar(
-    status: ShiftStatus,
-    isProcessing: Boolean,
-    onPrimaryClick: () -> Unit,
-    onBreakClick: () -> Unit
-) {
+private fun ActionBar(state: ClockInUiState, onPrimaryClick: () -> Unit, onBreakClick: () -> Unit) {
+    val status = state.status
     Column(
         modifier = Modifier.fillMaxWidth().padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         if (status != ShiftStatus.CLOCKED_OUT) {
             AppButton(
-                text = if (status == ShiftStatus.ON_BREAK) "Terminar pausa" else "Iniciar pausa",
+                text = stringResource(if (status == ShiftStatus.ON_BREAK) Res.string.action_end_break else Res.string.action_start_break),
                 style = AppButtonStyle.SECONDARY,
                 onClick = onBreakClick,
-                enabled = !isProcessing,
+                enabled = !state.isProcessing,
                 modifier = Modifier.fillMaxWidth()
             )
         }
-
+        if (status == ShiftStatus.ON_BREAK) {
+            Text(
+                text = stringResource(Res.string.end_break_first),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.extended.textSecondary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
         Button(
             onClick = onPrimaryClick,
-            enabled = !isProcessing,
+            enabled = !state.isProcessing && (status == ShiftStatus.CLOCKED_OUT || state.canClockOut),
             shape = RoundedCornerShape(18.dp),
             colors = ButtonDefaults.buttonColors(containerColor = status.accentColor()),
             modifier = Modifier.fillMaxWidth().height(68.dp)
         ) {
-            if (isProcessing) {
-                CircularProgressIndicator(
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(24.dp)
-                )
+            if (state.isProcessing) {
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(24.dp))
             } else {
                 Text(
-                    text = if (status == ShiftStatus.CLOCKED_OUT) "Fichar entrada" else "Fichar salida",
+                    text = stringResource(if (status == ShiftStatus.CLOCKED_OUT) Res.string.action_clock_in else Res.string.action_clock_out),
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                 )
             }
@@ -300,10 +263,7 @@ private fun ActionBar(
     }
 }
 
-/**
- * Not being clocked in is a resting state, not a failure — the old screen painted it with the
- * error colour, which told the user something had gone wrong when nothing had.
- */
+/** Not being clocked in is a resting state, not a failure: it does not get the error colour. */
 @Composable
 private fun ShiftStatus.accentColor(): Color = when (this) {
     ShiftStatus.CLOCKED_OUT -> MaterialTheme.colorScheme.primary
@@ -311,26 +271,14 @@ private fun ShiftStatus.accentColor(): Color = when (this) {
     ShiftStatus.ON_BREAK -> MaterialTheme.colorScheme.extended.yellowCardText
 }
 
-private fun ShiftStatus.headline(): String = when (this) {
-    ShiftStatus.CLOCKED_OUT -> "Sin fichar"
-    ShiftStatus.CLOCKED_IN -> "Trabajando"
-    ShiftStatus.ON_BREAK -> "En pausa"
+private fun ShiftStatus.headline() = when (this) {
+    ShiftStatus.CLOCKED_OUT -> Res.string.status_clocked_out
+    ShiftStatus.CLOCKED_IN -> Res.string.status_clocked_in
+    ShiftStatus.ON_BREAK -> Res.string.status_on_break
 }
 
-private fun ShiftStatus.caption(): String = when (this) {
-    ShiftStatus.CLOCKED_OUT -> "Ficha tu entrada para empezar la jornada"
-    ShiftStatus.CLOCKED_IN -> "Tu jornada está en curso"
-    ShiftStatus.ON_BREAK -> "Tu jornada está pausada"
-}
-
-private fun ClockEventType.label(): String = when (this) {
-    ClockEventType.CLOCK_IN -> "Entrada"
-    ClockEventType.CLOCK_OUT -> "Salida"
-    ClockEventType.BREAK_START -> "Inicio de pausa"
-    ClockEventType.BREAK_END -> "Fin de pausa"
-}
-
-private fun kotlin.time.Instant.toLocalTimeLabel(): String {
-    val time = toLocalDateTime(TimeZone.currentSystemDefault()).time
-    return "${time.hour.toString().padStart(2, '0')}:${time.minute.toString().padStart(2, '0')}"
+private fun ShiftStatus.caption() = when (this) {
+    ShiftStatus.CLOCKED_OUT -> Res.string.caption_clocked_out
+    ShiftStatus.CLOCKED_IN -> Res.string.caption_clocked_in
+    ShiftStatus.ON_BREAK -> Res.string.caption_on_break
 }
