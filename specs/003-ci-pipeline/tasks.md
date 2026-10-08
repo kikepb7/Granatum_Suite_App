@@ -136,7 +136,8 @@ Quedan 5 tareas:
 
 - [X] T025 [P] Añadir a `README.md` una sección de CI: qué jobs hay, qué bloquea y qué no, cómo subir el trinquete de cobertura, y el paso del administrador para exigir el job `summary` en la protección de `main` (D12)
 - [X] T026 Validar en local los escenarios 1, 2 y 3 de `quickstart.md`, y validar la sintaxis de `.github/workflows/ci.yml`
-- [ ] T027 ⚠️ **Requiere confirmación.** Subir la rama y abrir la PR contra `main`; comprobar en GitHub Actions que los cinco jobs terminan, `summary` en verde, cobertura y tests visibles y APK descargable (quickstart escenario 4)
+- [X] T027 ⚠️ **Requiere confirmación.** Subir la rama y abrir la PR contra `main`; comprobar en GitHub Actions que los cinco jobs terminan, `summary` en verde, cobertura y tests visibles y APK descargable (quickstart escenario 4)
+  - *Verificado el 2026-10-08 en el push a `main` de `2c12045` (ejecución 37740968401), no en una PR: los cinco jobs en verde en 14 min —iOS 13, Android 2, tests 2, ktlint 1— y los cuatro artefactos publicados. La primera ejecución, la de `cc8df07`, falló en ktlint por la causa de research D13.*
 - [ ] T028 ⚠️ **Requiere confirmación.** En una rama de prueba, romper solo `iosMain` y comprobar que `build-ios` y `summary` fallan mientras Android sigue en verde (quickstart escenario 5, SC-002)
 - [ ] T029 ⚠️ **Requiere confirmación.** En una rama de prueba, borrar el único test y comprobar que `unit-tests` falla por cero tests (quickstart escenario 6, FR-017)
 - [ ] T030 ⚠️ **Requiere confirmación.** Dos pushes seguidos a la rama de la PR: la primera ejecución se cancela (quickstart escenario 8)
