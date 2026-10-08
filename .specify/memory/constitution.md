@@ -83,8 +83,12 @@ Las credenciales reales de Firebase (`google-services.json`,
 
 ### VI. El contrato de API manda
 
-El contrato es `docs/openapi.json` del backend. La app NO inventa endpoints,
-campos ni códigos de estado.
+El contrato es `docs/openapi.json` del backend. La app trabaja con una copia en
+su propio `docs/openapi.json`, fijada a un commit del backend en `docs/openapi.pin`
+y actualizada solo con `scripts/sync-openapi.sh`, nunca a mano. Los códigos de
+error y el contenido del token, que OpenAPI no describe, se leen en la
+documentación del backend de ese mismo commit (ver `docs/api-contract.md`). La
+app NO inventa endpoints, campos ni códigos de estado.
 
 Si una feature necesita algo que el contrato no ofrece, la PR se bloquea hasta
 que el contrato se actualice. Adivinar la forma de la respuesta y "ya lo
@@ -258,7 +262,7 @@ listan de forma explícita para que nadie las dé por satisfechas.
 | 1 | No existía pipeline de CI (`.github/workflows` ausente) | VIII | **Cerrada** por `003-ci-pipeline` |
 | 2 | ktlint y Kover no estaban configurados en el build | VIII | **Cerrada** por `003-ci-pipeline` |
 | 3 | Los tokens se guardaban en claro en `DataStoreSessionStorage` | VII | **Cerrada** por `002-secure-session-storage` |
-| 4 | `docs/openapi.json` no existe; `docs/` está vacío | VI | Abierta — bloquea las specs de inventario y panel de encargado |
+| 4 | `docs/openapi.json` no existía; `docs/` estaba vacío | VI | **Cerrada** — el backend lo publica y la app guarda una copia fijada |
 | 5 | `specs/` no existía | X | **Cerrada** — existen 001, 002 y 003 |
 
 Las brechas 1 y 2 se cerraron con un workflow de GitHub Actions que compila Android
@@ -268,9 +272,14 @@ principio VIII es exigible desde entonces. Que la CI sea una puerta y no una
 sugerencia depende de la protección de la rama `main`, que configura quien
 administra el repositorio.
 
+La brecha 4 se cerró cuando el backend empezó a generar el contrato con springdoc y
+a versionarlo, con un test que rompe su build si el documento y los controladores
+divergen. La app guarda una copia fijada a un commit concreto, de modo que un cambio
+de contrato llega a la app como un diff revisable y nunca por sorpresa.
+
 La brecha 3 se cerró con las credenciales en el Android Keystore y el iOS Keychain,
 verificado en dispositivo, incluida la purga del Keychain al reinstalar. Fue una
 mejora sobre el proyecto de referencia, no una paridad: Squadfy_KMM tampoco usa
 almacén seguro.
 
-**Version**: 1.1.1 | **Ratified**: 2026-10-04 | **Last Amended**: 2026-10-08
+**Version**: 1.1.2 | **Ratified**: 2026-10-04 | **Last Amended**: 2026-10-08

@@ -63,6 +63,19 @@ Android e iOS resuelven direcciones distintas en `local` porque `10.0.2.2` es un
 
 Cada clave se resuelve en este orden: propiedad de Gradle (`-PCLAVE=valor`, cómodo desde CI), luego `local.properties`, luego el valor por defecto. Todas están documentadas en [`local.properties.example`](./local.properties.example).
 
+## Contrato de API
+
+La app consume la API del [backend de Granatum](https://github.com/kikepb7/Granatum_Suite_Backend)
+según una copia de su contrato OpenAPI en [`docs/openapi.json`](docs/openapi.json), fijada al
+commit que indica [`docs/openapi.pin`](docs/openapi.pin). Para actualizarla:
+
+```bash
+scripts/sync-openapi.sh <commit-del-backend>
+```
+
+Qué cubre esa copia, qué hay que leer en la documentación del backend (códigos de error,
+contenido del token) y por qué el pin es un commit y no una rama: [`docs/api-contract.md`](docs/api-contract.md).
+
 ## Integración continua
 
 [`.github/workflows/ci.yml`](.github/workflows/ci.yml) se ejecuta en cada PR contra `main` y en cada push a `main`.
