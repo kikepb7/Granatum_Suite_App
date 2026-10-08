@@ -38,6 +38,10 @@ kotlin {
             implementation(projects.feature.clockin.domain)
             implementation(projects.feature.clockin.presentation)
 
+            implementation(projects.feature.invoicing.data)
+            implementation(projects.feature.invoicing.domain)
+            implementation(projects.feature.invoicing.presentation)
+
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material3)

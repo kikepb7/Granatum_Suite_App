@@ -10,6 +10,10 @@
 	     add a shorter CFBundleName here rather than changing Android. -->
 	<key>CFBundleDisplayName</key>
 	<string>Granatum Suite</string>
+	<!-- Invoicing photographs paper invoices to upload them (specs/008-facturacion). The
+	     gallery uses PHPicker, which needs no permission. -->
+	<key>NSCameraUsageDescription</key>
+	<string>Granatum usa la cámara para fotografiar las facturas que subes.</string>
 	<!-- TODO: replace with your own custom URI scheme, matching AndroidManifest.xml -->
 	<key>CFBundleURLTypes</key>
 	<array>
