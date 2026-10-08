@@ -92,4 +92,16 @@ class LoginViewModelTest {
         Snapshot.sendApplyNotifications()
         assertNull(vm.state.value.error)
     }
+
+    @Test
+    fun a_demo_account_signs_in_with_one_tap_and_other_builds_offer_none() = runTest {
+        val account = com.granatum.core.domain.auth.model.DemoAccount(
+            com.granatum.core.domain.auth.model.UserRole.ADMIN, "Lucía", "admin@demo.granatum.es", "Demo-Admin-2026!"
+        )
+        val demo = LoginViewModel(repository) { listOf(account) }
+        demo.onAction(LoginAction.OnDemoAccount(account))
+        assertEquals(listOf("admin@demo.granatum.es" to "Demo-Admin-2026!"), repository.loginCalls)
+
+        assertTrue(LoginViewModel(repository).demoAccounts.isEmpty())
+    }
 }

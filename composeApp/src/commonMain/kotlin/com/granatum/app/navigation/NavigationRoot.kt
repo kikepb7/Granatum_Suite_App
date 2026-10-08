@@ -28,6 +28,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.granatum.app.account.AccountScreenRoot
 import com.granatum.core.data.auth.SessionStateHolder
+import com.granatum.core.data.demo.DemoAutoLogin
 import com.granatum.core.designsystem.components.brand.AppBrandSplash
 import com.granatum.core.designsystem.components.navigation.AppBottomBar
 import com.granatum.core.designsystem.components.topbar.AccountAction
@@ -79,8 +80,10 @@ fun NavigationRoot() {
     val authRepository = koinInject<AuthRepository>()
     val scope = rememberCoroutineScope()
     val sessionState by sessionStateHolder.state.collectAsStateWithLifecycle()
+    // The demo build signs in by itself at start: no login screen flashes in between.
+    val demoSigningIn by koinInject<DemoAutoLogin>().pending.collectAsStateWithLifecycle()
 
-    Crossfade(targetState = sessionState is SessionState.Loading, label = "splash") { loading ->
+    Crossfade(targetState = sessionState is SessionState.Loading || demoSigningIn, label = "splash") { loading ->
         if (loading) Splash() else Gate(sessionState, authRepository, scope)
     }
 }

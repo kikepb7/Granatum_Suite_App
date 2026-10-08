@@ -17,4 +17,7 @@ data class LoginState(
 sealed interface LoginAction {
     data object OnSubmit : LoginAction
     data object OnTogglePasswordVisibility : LoginAction
+
+    /** Demo build only: sign in straight away with a ready-made account. */
+    data class OnDemoAccount(val account: com.granatum.core.domain.auth.model.DemoAccount) : LoginAction
 }

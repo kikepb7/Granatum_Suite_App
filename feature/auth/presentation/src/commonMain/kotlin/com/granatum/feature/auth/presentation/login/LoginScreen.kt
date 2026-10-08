@@ -1,5 +1,16 @@
 package com.granatum.feature.auth.presentation.login
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Surface
+import com.granatum.core.designsystem.components.buttons.AppButtonStyle
+import com.granatum.core.domain.auth.model.UserRole
+import granatumsuite.feature.auth.presentation.generated.resources.demo_title
+import granatumsuite.feature.auth.presentation.generated.resources.demo_description
+import granatumsuite.feature.auth.presentation.generated.resources.demo_enter_admin
+import granatumsuite.feature.auth.presentation.generated.resources.demo_enter_employee
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -68,6 +79,10 @@ private fun LoginScreen(
         errorText = bannerText,
         logo = { AppBrandLogo() }
     ) {
+        if (viewModel.demoAccounts.isNotEmpty()) {
+            DemoAccounts(viewModel, enabled = !state.isLoading)
+            Spacer(modifier = Modifier.height(24.dp))
+        }
         AppTextField(
             state = viewModel.emailState,
             title = stringResource(Res.string.login_email),
@@ -132,4 +147,39 @@ private fun emailErrorText(error: EmailFieldError): String = when (error) {
 private fun passwordErrorText(error: PasswordFieldError): String = when (error) {
     PasswordFieldError.REQUIRED -> stringResource(Res.string.login_password_required)
     PasswordFieldError.TOO_LONG -> stringResource(Res.string.login_password_too_long, LoginViewModel.PASSWORD_MAX_LENGTH)
+}
+
+/** Demo build only: one tap per role, no typing. The whole app runs on in-memory sample data. */
+@Composable
+private fun DemoAccounts(viewModel: LoginViewModel, enabled: Boolean) {
+    Surface(
+        shape = RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.primaryContainer,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(
+                text = stringResource(Res.string.demo_title),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+            Text(
+                text = stringResource(Res.string.demo_description),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+            viewModel.demoAccounts.forEach { account ->
+                AppButton(
+                    text = stringResource(
+                        if (account.role == UserRole.ADMIN) Res.string.demo_enter_admin else Res.string.demo_enter_employee,
+                        account.displayName
+                    ),
+                    onClick = { viewModel.onAction(LoginAction.OnDemoAccount(account)) },
+                    enabled = enabled,
+                    style = if (account.role == UserRole.ADMIN) AppButtonStyle.PRIMARY else AppButtonStyle.SECONDARY,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+    }
 }

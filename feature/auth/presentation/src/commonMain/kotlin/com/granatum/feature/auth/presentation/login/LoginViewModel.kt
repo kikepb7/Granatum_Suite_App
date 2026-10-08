@@ -4,6 +4,9 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.runtime.snapshotFlow
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
+import com.granatum.core.domain.auth.model.DemoAccount
+import com.granatum.core.domain.auth.model.DemoAccounts
 import com.granatum.core.domain.auth.repository.AuthRepository
 import com.granatum.core.domain.util.Result
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,8 +24,12 @@ import kotlinx.coroutines.launch
  * navigation gate reacts to that. This screen only has to get the credentials to the server.
  */
 class LoginViewModel(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    demoAccounts: DemoAccounts = DemoAccounts { emptyList() }
 ) : ViewModel() {
+
+    /** Ready-made accounts of the demo build; empty in every other build. */
+    val demoAccounts: List<DemoAccount> = demoAccounts.accounts()
 
     val emailState = TextFieldState()
     val passwordState = TextFieldState()
@@ -44,6 +51,11 @@ class LoginViewModel(
         when (action) {
             LoginAction.OnSubmit -> submit()
             LoginAction.OnTogglePasswordVisibility -> _state.update { it.copy(isPasswordVisible = !it.isPasswordVisible) }
+            is LoginAction.OnDemoAccount -> {
+                emailState.setTextAndPlaceCursorAtEnd(action.account.email)
+                passwordState.setTextAndPlaceCursorAtEnd(action.account.password)
+                submit()
+            }
         }
     }
 
