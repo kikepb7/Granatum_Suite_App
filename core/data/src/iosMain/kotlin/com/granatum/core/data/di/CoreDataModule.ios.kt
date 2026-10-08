@@ -12,7 +12,7 @@ import org.koin.dsl.module
 actual val platformCoreDataModule = module {
     single<HttpClientEngine> { Darwin.create() }
     single<DataStore<Preferences>> {
-        createDataStore()
+        createDataStore(get())
     }
     single<SecureStore> { KeychainSecureStore(get()) }
 }

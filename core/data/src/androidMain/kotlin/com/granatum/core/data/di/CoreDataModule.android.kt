@@ -13,7 +13,7 @@ import org.koin.dsl.module
 actual val platformCoreDataModule = module {
     single<HttpClientEngine> { OkHttp.create() }
     single<DataStore<Preferences>> {
-        createDataStore(androidContext())
+        createDataStore(androidContext(), get())
     }
     single<SecureStore> { KeystoreSecureStore(get(), get()) }
 }

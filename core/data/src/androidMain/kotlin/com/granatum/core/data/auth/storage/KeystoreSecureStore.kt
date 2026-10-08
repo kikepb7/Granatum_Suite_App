@@ -39,14 +39,24 @@ class KeystoreSecureStore(
     private val logger: AppLogger
 ) : SecureStore {
 
-    override suspend fun read(key: String): String? =
-        runCatching {
-            val stored = dataStore.data.first()[stringPreferencesKey(key)] ?: return null
-            decrypt(stored)
-        }.getOrElse { throwable ->
-            logger.warn("Could not read the session from secure storage: ${throwable.message}")
+    override suspend fun read(key: String): String? {
+        val stored = runCatching { dataStore.data.first()[stringPreferencesKey(key)] }
+            .getOrElse { throwable ->
+                logger.warn("Could not read the session from secure storage: ${throwable.describe()}")
+                return null
+            } ?: return null
+
+        return runCatching { decrypt(stored) }.getOrElse { throwable ->
+            // Ciphertext this key cannot open will never open: it is corrupt, or the Keystore
+            // key was invalidated. Discard it instead of failing on every launch.
+            logger.warn("Stored session could not be decrypted; discarding it: ${throwable.describe()}")
+            delete(key)
             null
         }
+    }
+
+    private fun Throwable.describe(): String = message?.let { "${this::class.simpleName}: $it" }
+        ?: this::class.simpleName.orEmpty()
 
     override suspend fun write(key: String, value: String) {
         runCatching {
