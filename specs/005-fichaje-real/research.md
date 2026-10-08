@@ -168,6 +168,10 @@ En `commonTest`:
 - **Validación de correcciones** (D9).
 - **ViewModels**: estado del día, historial, corrección.
 
+**Medido al terminar (2026-10-08)**: 104 tests, en verde en JVM y en el simulador de iOS
+(36 nuevos en esta feature). Cobertura de líneas 1.094 / 7.191 = **15,21 %**;
+`granatum.coverage.minLine` pasa de 9 a **15**.
+
 ## D13 — Verificación contra el backend real
 
 El backend local, como en la spec 004, con dos ajustes por argumento de arranque:

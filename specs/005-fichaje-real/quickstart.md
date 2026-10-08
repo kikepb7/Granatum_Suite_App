@@ -78,10 +78,14 @@ agrupan en su jornada y se envían con el formato nuevo; los antiguos sin dueño
 
 ## Lista de verificación final
 
+Recorrida en parte el 2026-10-08 en el emulador Android, contra el backend `d1857ad` en local.
+Los demás escenarios quedan pendientes: el emulador pasó a estar en uso por otra app y se dejó
+de tocar.
+
 | | Escenario | Criterio |
 |---|---|---|
 | ☐ | Jornada con cobertura | SC-001 |
-| ☐ | Jornada sin cobertura | SC-002 |
+| ✅ | Jornada sin cobertura | SC-002 — una sola jornada `CERRADO`, con la pausa, con las horas de cuando se pulsó (19:07) y no las del envío (19:09) |
 | ☐ | Reintento sin duplicar | SC-003 |
 | ☐ | Adopción | FR-011 |
 | ☐ | Historial real | SC-005 |
@@ -89,4 +93,4 @@ agrupan en su jornada y se envían con el formato nuevo; los antiguos sin dueño
 | ☐ | Demasiado antiguo | FR-013 |
 | ☐ | Reloj adelantado | US4-2 |
 | ☐ | Corrección | US5 |
-| ☐ | Migración | FR-023 |
+| ✅ | Migración | FR-023 — con fichajes pendientes de la versión 2, al actualizar: sin cierre inesperado, «Fallido» pasa a pendiente, la pausa sin tipo queda como «Otro» y todo se envía al recuperar la red |

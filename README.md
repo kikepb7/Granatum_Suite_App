@@ -67,6 +67,25 @@ En iOS, desde Xcode, se pasa por entorno, porque la fase de build de Xcode llama
 Para probar la renovación de la sesión sin esperar 15 minutos, arranca el backend con
 `JWT_EXPIRATION_MINUTES=1`.
 
+## Fichaje
+
+Cada fichaje (entrada, pausa con su tipo, fin de pausa, salida) se guarda primero en el móvil y
+se registra después en el servidor como parte de una **jornada** (`/api/fichajes`). Funciona sin
+cobertura: lo pendiente se envía solo al recuperar la conexión, en el orden en que ocurrió y con
+la hora a la que se pulsó, sin duplicarse aunque se reintente
+([spec 005](specs/005-fichaje-real/spec.md)).
+
+- Lo que el servidor rechaza para siempre se muestra con su motivo y deja de reintentarse. El
+  servidor no acepta fichajes con más de 72 horas ni con el reloj del móvil adelantado más de
+  5 minutos.
+- Una jornada cerrada con un error se arregla pidiendo una corrección desde su detalle en el
+  historial; la aprueba una encargada o la administración.
+- En Android, WorkManager envía lo pendiente aunque la app esté cerrada. En iOS se envía al abrir
+  la app o al recuperar la conexión.
+
+Para probar el rechazo por antigüedad sin esperar tres días, arranca el backend local con
+`--timetracking.reloj.tolerancia-pasado=PT2M`.
+
 ## Entornos
 
 El entorno se elige **al compilar** y queda fijado en el binario. No se puede cambiar en ejecución, a propósito: así ningún binario de producción puede repuntarse a otro servidor.

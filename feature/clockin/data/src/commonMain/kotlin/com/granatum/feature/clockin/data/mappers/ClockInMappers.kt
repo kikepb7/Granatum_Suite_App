@@ -72,7 +72,7 @@ fun CorrectionRequestDto.toDomain(): CorrectionRequestModel = CorrectionRequestM
     employeeId = employeeId,
     employeeName = employeeName,
     reason = reason,
-    requestedClientTimestamp = kotlinx.datetime.Instant.parse(requestedClientTimestamp),
+    requestedClientTimestamp = Instant.parse(requestedClientTimestamp),
     status = runCatching { CorrectionStatus.valueOf(status) }.getOrDefault(CorrectionStatus.PENDING)
 )
 

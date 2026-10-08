@@ -14,7 +14,7 @@ data class CorrectionRequestModel(
     val employeeId: String,
     val employeeName: String,
     val reason: String,
-    val requestedClientTimestamp: kotlinx.datetime.Instant,
+    val requestedClientTimestamp: kotlin.time.Instant,
     val status: CorrectionStatus
 )
 

@@ -14,6 +14,7 @@ import kotlin.uuid.Uuid
  * 3. Each person's punches are grouped into shifts ([groupLegacyEvents]); punches before a
  *    person's first entry belong to no shift and are rejected.
  * 4. FAILED no longer exists: it becomes PENDING and is sent again with the new format.
+ * 5. Breaks recorded without a type get OTRO, because the server requires one.
  */
 object Migration2To3 : Migration(2, 3) {
 
@@ -37,6 +38,9 @@ object Migration2To3 : Migration(2, 3) {
         )
 
         connection.execSQL("UPDATE clock_event SET syncState = 'PENDING' WHERE syncState = 'FAILED'")
+        // Version 2 recorded breaks without a type, and the server requires one. Unknown is OTRO;
+        // the person can still correct the shift if it matters.
+        connection.execSQL("UPDATE clock_event SET breakType = 'OTRO' WHERE type = 'BREAK_START' AND breakType IS NULL")
 
         val legacy = buildList {
             connection.prepare("SELECT id, employeeId, type, clientTimestampEpochMillis FROM clock_event").use { st ->

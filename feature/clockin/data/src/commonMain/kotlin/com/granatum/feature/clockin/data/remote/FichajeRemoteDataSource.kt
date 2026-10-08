@@ -55,7 +55,8 @@ class FichajeRemoteDataSource(private val httpClient: HttpClient) {
                     setBody(EntradaRequestDto(event.id, occurredAt))
                 }
                 "BREAK_START" -> httpClient.post(constructRoute("/fichajes/${requireNotNull(serverShiftId)}/pausa/inicio")) {
-                    setBody(InicioPausaRequestDto(event.id, occurredAt, requireNotNull(event.breakType)))
+                    // Never null after migration 2 -> 3; OTRO rather than a crash that would block the queue.
+                    setBody(InicioPausaRequestDto(event.id, occurredAt, event.breakType ?: "OTRO"))
                 }
                 "BREAK_END" -> httpClient.post(constructRoute("/fichajes/${requireNotNull(serverShiftId)}/pausa/fin")) {
                     setBody(FinPausaRequestDto(event.id, occurredAt))
