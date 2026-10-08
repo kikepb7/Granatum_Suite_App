@@ -39,12 +39,12 @@ jobs:
     outputs:
       violations: ${{ steps.count.outputs.violations }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 17
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v5
 
       # Reports only: QualityConventionPlugin sets ignoreFailures, because the code predates
       # ktlint. This job therefore stays green whatever it finds.
@@ -60,7 +60,7 @@ jobs:
           echo "violations=${violations}" >> "$GITHUB_OUTPUT"
           echo "### ktlint: ${violations} violations (informative)" >> "$GITHUB_STEP_SUMMARY"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: always()
         with:
           name: ktlint-reports
@@ -75,12 +75,12 @@ jobs:
       tests: ${{ steps.tests.outputs.count }}
       coverage: ${{ steps.coverage.outputs.line }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 17
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v5
 
       - name: Run unit tests
         run: ./gradlew testDebugUnitTest
@@ -124,7 +124,7 @@ jobs:
       - name: Coverage ratchet
         run: ./gradlew :koverVerify
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: always()
         with:
           name: unit-test-and-coverage-reports
@@ -139,17 +139,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 17
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v5
 
       - name: Assemble debug
         run: ./gradlew :composeApp:assembleDebug
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: debug-apk
           path: composeApp/build/outputs/apk/debug/composeApp-debug.apk
@@ -160,15 +160,15 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 17
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v5
 
       # The Kotlin/Native toolchain is a large download that would otherwise happen on every run.
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         with:
           path: ~/.konan
           key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
@@ -181,7 +181,7 @@ jobs:
       - name: Link framework and run tests on the iOS simulator
         run: ./gradlew :composeApp:linkDebugFrameworkIosSimulatorArm64 iosSimulatorArm64Test
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: always()
         with:
           name: ios-test-reports

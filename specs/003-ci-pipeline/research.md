@@ -173,6 +173,36 @@ obligatoria, pero **no** activa la protección de rama.
 repositorio y requiere permisos de administración. El quickstart documenta el paso para que lo
 haga quien administra el repositorio.
 
+## D13 — ktlint no debe compilar nada (corrección tras la primera ejecución real)
+
+**Hallazgo (2026-10-08)**: la primera ejecución en `main` terminó en rojo por el job de
+ktlint, con **cero** errores de estilo implicados. Reproducido en un contenedor Linux x86_64:
+`ktlintCheck` ejecutaba KSP y las compilaciones de iOS de los módulos `database`. KSP registra
+sus directorios de salida como fuentes *junto con* la tarea que los produce; el filtro de
+ktlint descarta esos ficheros, pero no la dependencia de la tarea. En un runner Linux KSP no
+genera el `actual` de Room para iOS, y la compilación falla con *«Expected
+AppClockInDatabaseConstructor has no actual declaration»*. En macOS compila, por eso en local
+pasaba.
+
+**Decisión**: `QualityConventionPlugin` apunta cada tarea de ktlint a los directorios escritos a
+mano de su source set (como ficheros simples, sin `build/`), en un `afterEvaluate` para que se
+aplique después de la configuración del propio ktlint-gradle, que si no la vuelve a pisar.
+
+**Verificado**: `ktlintCheck --dry-run` ya no incluye ninguna tarea `compile*` ni `ksp*`; el
+recuento base sigue siendo exactamente 1.464 violaciones y ningún fichero de `build/` aparece en
+los informes; en el contenedor Linux el job termina en verde. Efecto secundario: ktlint deja de
+compilar y es mucho más rápido.
+
+## D14 — Actions en Node 24
+
+**Hallazgo**: GitHub avisa de que Node 20 está obsoleto en los runners y de que
+`actions/setup-java@v4` ya no recibe actualizaciones.
+
+**Decisión**: `actions/checkout@v5`, `actions/setup-java@v5`, `actions/upload-artifact@v6`,
+`actions/cache@v5` y `gradle/actions/setup-gradle@v5`. Son las primeras majors que declaran
+`node24` en su `action.yml` (comprobado), con meses de publicación; no se salta a las más
+recientes para no mezclar cambios de comportamiento con esta corrección.
+
 ## Resumen
 
 Ninguna incógnita queda abierta. Las dos decisiones de gobernanza se cerraron en la spec y la

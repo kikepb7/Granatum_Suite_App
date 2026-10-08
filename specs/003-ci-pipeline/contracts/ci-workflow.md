@@ -34,7 +34,7 @@ lo exige para configurar, pero ningún test lo usa contra un servidor real.
 | `build-ios` | macos-latest | `:composeApp:linkDebugFrameworkIosSimulatorArm64`, `iosSimulatorArm64Test` | 45 min | informes de tests de iOS |
 | `summary` | ubuntu-latest | evalúa `needs.*.result` | 5 min | — |
 
-Todos con JDK 17 (temurin) y `gradle/actions/setup-gradle@v4`. `build-ios` cachea además
+Todos con JDK 17 (temurin) y `gradle/actions/setup-gradle@v5` (D14). `build-ios` cachea además
 `~/.konan`.
 
 ## 4. Puertas
@@ -48,7 +48,8 @@ Todos con JDK 17 (temurin) y `gradle/actions/setup-gradle@v4`. `build-ios` cache
 | iOS | el framework no enlaza o falla algún test en el simulador |
 | Resumen | cualquier job bloqueante termina en `failure` o `cancelled` |
 
-ktlint **no** es puerta: su job publica resultados y siempre termina en verde.
+ktlint **no** es puerta: su job publica resultados y siempre termina en verde. Tampoco compila
+nada: analiza solo las fuentes escritas a mano (D13).
 
 ## 5. Salida visible
 
