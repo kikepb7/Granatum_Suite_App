@@ -255,20 +255,22 @@ listan de forma explícita para que nadie las dé por satisfechas.
 
 | # | Brecha | Principio | Estado |
 |---|---|---|---|
-| 1 | No existe pipeline de CI (`.github/workflows` ausente) | VIII | Abierta — en curso en `003-ci-pipeline` |
-| 2 | ktlint y Kover no están configurados en el build | VIII | Abierta — en curso en `003-ci-pipeline` |
+| 1 | No existía pipeline de CI (`.github/workflows` ausente) | VIII | **Cerrada** por `003-ci-pipeline` |
+| 2 | ktlint y Kover no estaban configurados en el build | VIII | **Cerrada** por `003-ci-pipeline` |
 | 3 | Los tokens se guardaban en claro en `DataStoreSessionStorage` | VII | **Cerrada** por `002-secure-session-storage` |
 | 4 | `docs/openapi.json` no existe; `docs/` está vacío | VI | Abierta — bloquea las specs de inventario y panel de encargado |
 | 5 | `specs/` no existía | X | **Cerrada** — existen 001, 002 y 003 |
 
-Las brechas 1 y 2 son de mayor prioridad: hasta que existan, el principio VIII no
-es exigible y el resto depende de la disciplina manual. Las specs 1 y 2 lo
-demostraron: en ambas, un build en verde convivió con un defecto real que solo
-apareció al ejecutar en dispositivo.
+Las brechas 1 y 2 se cerraron con un workflow de GitHub Actions que compila Android
+e iOS, ejecuta los tests en JVM y en el simulador de iOS, mide la cobertura con el
+trinquete de `granatum.coverage.minLine` y publica ktlint en modo informativo. El
+principio VIII es exigible desde entonces. Que la CI sea una puerta y no una
+sugerencia depende de la protección de la rama `main`, que configura quien
+administra el repositorio.
 
 La brecha 3 se cerró con las credenciales en el Android Keystore y el iOS Keychain,
 verificado en dispositivo, incluida la purga del Keychain al reinstalar. Fue una
 mejora sobre el proyecto de referencia, no una paridad: Squadfy_KMM tampoco usa
 almacén seguro.
 
-**Version**: 1.1.0 | **Ratified**: 2026-10-04 | **Last Amended**: 2026-10-08
+**Version**: 1.1.1 | **Ratified**: 2026-10-04 | **Last Amended**: 2026-10-08
