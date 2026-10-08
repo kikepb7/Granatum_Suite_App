@@ -109,20 +109,43 @@ Repetir el escenario 2 con el log de depuración abierto (Logcat o la consola de
 
 ## Lista de verificación final
 
-| | Escenario | Criterio |
-|---|---|---|
-| ☐ | Sin sesión solo hay login | FR-001 |
-| ☐ | Entrar con cada rol | SC-003 |
-| ☐ | Mensaje idéntico | SC-002 |
-| ☐ | Demasiados intentos | FR-004 |
-| ☐ | Sin conexión al entrar | US1-5 |
-| ☐ | Sobrevive al reinicio | US1-7 |
-| ☐ | Cambio obligatorio | US3 |
-| ☐ | Sin cobertura con acceso caducado | SC-004, SC-005 |
-| ☐ | Rechazo definitivo | FR-021 |
-| ☐ | Cerrar sesión con y sin red | FR-026 |
-| ☐ | Fichajes de otra persona | SC-008 |
-| ☐ | Nada sensible en el log | SC-009 |
+Recorrida el 2026-10-08 contra el backend `d1857ad` en local, puerto 8090, con la caducidad del
+acceso a 1 minuto. Cuentas creadas con el flujo real: primer `ADMIN` por código de arranque y el
+resto por registro y aprobación.
+
+| Escenario | Criterio | Android (Pixel 8, emulador) | iOS (iPhone 17 Pro, simulador) |
+|---|---|---|---|
+| Sin sesión solo hay login | FR-001 | ✅ | ✅ también tras reinstalar: no hereda sesión |
+| Entrar con cada rol | SC-003 | ✅ `ENCARGADO` 5 pestañas, `EMPLEADO` 3, `REPRESENTANTE` 2 sin fichar | ⏳ |
+| Mensaje idéntico | SC-002 | ✅ correo inexistente, contraseña mala y cuenta desactivada | ⏳ |
+| Demasiados intentos | FR-004 | ✅ «… dentro de 6 segundos», del `Retry-After` | ⏳ |
+| Sin conexión al entrar | US1-5 | ✅ | ⏳ |
+| Sobrevive al reinicio | US1-7 | ✅ sin destello del login | ⏳ |
+| Cambio obligatorio | US3 | ✅ sigue tras reiniciar; contraseña actual mala conserva la nueva; el cambio correcto entra sin volver a iniciar sesión | ⏳ |
+| Sin cobertura con acceso caducado | SC-004, SC-005 | ✅ abre y ficha en modo avión; al volver la red renueva y sigue dentro | ⏳ |
+| Rechazo definitivo | FR-021 | ✅ persona desactivada → «Tu cuenta ya no está activa»; contraseña cambiada en otro dispositivo → «Tu sesión ha terminado» | ⏳ |
+| Cerrar sesión con y sin red | FR-026, FR-027 | ✅ aviso con los fichajes pendientes, en plural correcto | ⏳ |
+| Fichajes de otra persona | SC-008 | ✅ la encargada no ve ni envía el fichaje pendiente de la empleada; al volver la empleada, lo ve | ⏳ |
+| Nada sensible en el log | SC-009 | ✅ 8.354 líneas: 0 contraseñas, 0 JWT, 0 peticiones `/auth/`, `Authorization: ***` | ⏳ |
+
+**iOS, pendiente de recorrer a mano.** Las pruebas de iOS se automatizaron inyectando pulsaciones
+de teclado. El simulador interpreta esas pulsaciones con la distribución española del Mac, de modo
+que la `@` llega como `"`, y el menú «Pegar» de Compose no responde a toques inyectados. No se pudo
+iniciar sesión desde la UI de iOS. Lo que sí está verificado en iOS:
+
+- la app compila y enlaza;
+- el escenario 1 se cumple, incluida la reinstalación sin heredar sesión;
+- los 67 tests pasan en el simulador de iOS. Cubren la decodificación del token, el mapeo de
+  errores, la renovación (diez peticiones simultáneas producen una sola), el cierre por rechazo
+  definitivo, el log sin secretos y la propiedad de los fichajes.
+
+Lo único específico de iOS que falta comprobar con una persona al teclado es que la sesión real
+sobrevive al reinicio en el Keychain. El almacén ya se verificó en dispositivo en la spec 002.
+
+**Lo que esta verificación no cubre.** El fichaje sigue enviándose a `/attendance/events`, que el
+backend no tiene, así que los fichajes quedan pendientes o fallidos. Conectarlos a
+`/api/fichajes` es la fase 4. Lo que aquí importa, y se ha comprobado, es que esa petición llega
+con la sesión de quien fichó y que su fallo no cierra la sesión.
 
 Y las comprobaciones que hace la CI: `testDebugUnitTest`, `iosSimulatorArm64Test`,
 `:composeApp:assembleDebug` y `:composeApp:linkDebugFrameworkIosSimulatorArm64`.

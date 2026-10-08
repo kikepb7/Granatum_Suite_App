@@ -10,7 +10,7 @@
     <!-- Cuenta -->
     <string name="account_title">Tu cuenta</string>
     <string name="account_signed_in_as">Has iniciado sesión como</string>
-    <string name="account_role">Rol</string>
+    <string name="account_role">Rol: %1$s</string>
     <string name="account_change_password">Cambiar contraseña</string>
     <string name="account_sign_out">Cerrar sesión</string>
     <string name="account_password_changed">Contraseña cambiada</string>
@@ -22,8 +22,11 @@
 
     <!-- Aviso al cerrar sesión con fichajes pendientes -->
     <string name="sign_out_pending_title">Tienes fichajes sin enviar</string>
-    <string name="sign_out_pending_description">Hay %1$d fichajes que todavía no han llegado al servidor. Si cierras sesión no se enviarán hasta que vuelvas a entrar con tu cuenta.</string>
-    <string name="sign_out_pending_confirm">Cerrar sesión igualmente</string>
+    <plurals name="sign_out_pending_description">
+        <item quantity="one">Hay %1$d fichaje que todavía no ha llegado al servidor. Si cierras sesión no se enviará hasta que vuelvas a entrar con tu cuenta.</item>
+        <item quantity="other">Hay %1$d fichajes que todavía no han llegado al servidor. Si cierras sesión no se enviarán hasta que vuelvas a entrar con tu cuenta.</item>
+    </plurals>
+    <string name="sign_out_pending_confirm">Cerrar sesión</string>
     <string name="sign_out_pending_cancel">Seguir dentro</string>
 
     <!-- Arranque -->

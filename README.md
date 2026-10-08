@@ -13,7 +13,7 @@ Las reglas técnicas no negociables están en la **[constitución del proyecto](
 - **Koin** para inyección, un módulo por cada capa de cada feature
 - **Ktor** con JSON, logging, timeouts y renovación automática del token
 - **Room** (KMP) para la caché local, con el `DatabaseFactory` expect/actual ya resuelto
-- **Autenticación** en `core/data`: login, cambio de contraseña, cierre de sesión y renovación de token. Sin registro, verificación por correo ni recuperación: las cuentas las crea la empresa
+- **Inicio de sesión real** contra el backend, con navegación por rol (`ADMIN`, `ENCARGADO`, `EMPLEADO`, `REPRESENTANTE`), cambio de contraseña obligatorio y voluntario, y una sesión que no se pierde por quedarse sin cobertura ([spec 004](specs/004-login-roles/spec.md)). Sin registro ni recuperación de contraseña: las cuentas las crea y restablece la administración
 - **Design system** propio (`core/designsystem`)
 - **`Result<D, E>` / `DataError`** en vez de excepciones entre capas
 - **BuildKonfig** para la configuración por entorno, leída de `local.properties` y nunca commiteada
@@ -40,6 +40,32 @@ Las reglas técnicas no negociables están en la **[constitución del proyecto](
    - iOS: abre `iosApp/iosApp.xcodeproj` en Xcode y ejecuta.
 
 No hace falta configurar ninguna URL: el entorno `local` ya apunta a la máquina anfitriona en ambas plataformas.
+
+## Iniciar sesión en local
+
+La app ya no entra sin credenciales: necesita una cuenta real del backend. En local se crean así
+(los detalles, en el `README` del backend, secciones «El primer administrador» y «Registro del
+personal»):
+
+1. Arranca el backend con `AUTH_CODIGO_ARRANQUE` definido y crea el primer `ADMIN` con
+   `POST /api/auth/registro` incluyendo `codigoArranque`.
+2. Cada persona se registra con `POST /api/auth/registro`, y el `ADMIN` la aprueba con
+   `POST /api/auth/registros/{id}/aprobar` eligiendo su rol.
+3. Para probar el cambio de contraseña obligatorio, el `ADMIN` restablece una cuenta con
+   `POST /api/auth/cuentas/{empleadoId}/restablecer`: la contraseña temporal obliga a cambiarla al
+   entrar.
+
+Si el backend no está en el 8080, la URL se cambia al compilar, sin tocar ningún fichero:
+
+```bash
+./gradlew :composeApp:installDebug -PBASE_URL_HTTP=http://10.0.2.2:8090/api
+```
+
+En iOS, desde Xcode, se pasa por entorno, porque la fase de build de Xcode llama a Gradle:
+`ORG_GRADLE_PROJECT_BASE_URL_HTTP_IOS=http://localhost:8090/api`.
+
+Para probar la renovación de la sesión sin esperar 15 minutos, arranca el backend con
+`JWT_EXPIRATION_MINUTES=1`.
 
 ## Entornos
 

@@ -228,6 +228,10 @@ la CI:
 declara en el catálogo (principio XI). El trinquete de cobertura se sube a la cifra medida al
 terminar, redondeada hacia abajo (principio VIII).
 
+**Medido al terminar (2026-10-08)**: 67 tests, en verde en JVM y en el simulador de iOS.
+Cobertura de líneas 529 / 5.740 = **9,22 %** (antes, 0 / 4.843). `granatum.coverage.minLine`
+pasa de 0 a **9**.
+
 ## D12 — Verificación contra el backend real
 
 **Decisión**: el backend de Granatum se levanta en local en el puerto **8090**. El 8080 lo ocupa

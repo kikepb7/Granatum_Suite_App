@@ -1,6 +1,8 @@
 package com.granatum.app.account
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -24,6 +27,7 @@ import com.granatum.core.designsystem.components.avatar.AvatarSize
 import com.granatum.core.designsystem.components.buttons.AppButton
 import com.granatum.core.designsystem.components.buttons.AppButtonStyle
 import com.granatum.core.designsystem.components.dialogs.AppDestructiveConfirmationDialog
+import com.granatum.core.designsystem.components.topbar.AppTopBar
 import com.granatum.core.designsystem.theme.extended
 import com.granatum.core.domain.auth.model.UserRole
 import granatumsuite.composeapp.generated.resources.Res
@@ -41,6 +45,7 @@ import granatumsuite.composeapp.generated.resources.sign_out_pending_cancel
 import granatumsuite.composeapp.generated.resources.sign_out_pending_confirm
 import granatumsuite.composeapp.generated.resources.sign_out_pending_description
 import granatumsuite.composeapp.generated.resources.sign_out_pending_title
+import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -51,60 +56,61 @@ fun AccountScreenRoot(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 32.dp)
-    ) {
-        Text(
-            text = stringResource(Res.string.account_title),
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.extended.textPrimary,
-            modifier = Modifier.semantics { heading() }
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        AppAvatarPhoto(displayText = state.initial, size = AvatarSize.LARGE)
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = stringResource(Res.string.account_signed_in_as),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.extended.textSecondary
-        )
-        Text(
-            text = state.email,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.extended.textPrimary
-        )
-        Text(
-            text = "${stringResource(Res.string.account_role)}: ${roleName(state.role)}",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.extended.textSecondary
-        )
-        Spacer(modifier = Modifier.height(24.dp))
-        AppButton(
-            text = stringResource(Res.string.account_change_password),
-            onClick = onChangePasswordClick,
-            style = AppButtonStyle.SECONDARY,
-            enabled = !state.isSigningOut,
-            modifier = Modifier.fillMaxWidth()
-        )
-        AppButton(
-            text = stringResource(Res.string.account_sign_out),
-            onClick = { viewModel.onAction(AccountAction.OnSignOutClick) },
-            style = AppButtonStyle.DESTRUCTIVE_SECONDARY,
-            isLoading = state.isSigningOut,
-            enabled = !state.isSigningOut,
-            modifier = Modifier.fillMaxWidth()
-        )
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.extended.surfaceLower,
+        contentWindowInsets = WindowInsets.safeDrawing,
+        topBar = { AppTopBar(title = stringResource(Res.string.account_title)) }
+    ) { padding ->
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp, vertical = 32.dp)
+        ) {
+            AppAvatarPhoto(displayText = state.initial, size = AvatarSize.LARGE)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = stringResource(Res.string.account_signed_in_as),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.extended.textSecondary
+            )
+            Text(
+                text = state.email,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.extended.textPrimary,
+                modifier = Modifier.semantics { heading() }
+            )
+            Text(
+                text = stringResource(Res.string.account_role, roleName(state.role)),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.extended.textSecondary
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            AppButton(
+                text = stringResource(Res.string.account_change_password),
+                onClick = onChangePasswordClick,
+                style = AppButtonStyle.SECONDARY,
+                enabled = !state.isSigningOut,
+                modifier = Modifier.fillMaxWidth()
+            )
+            AppButton(
+                text = stringResource(Res.string.account_sign_out),
+                onClick = { viewModel.onAction(AccountAction.OnSignOutClick) },
+                style = AppButtonStyle.DESTRUCTIVE_SECONDARY,
+                isLoading = state.isSigningOut,
+                enabled = !state.isSigningOut,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
     }
 
     if (state.showPendingWarning) {
         AppDestructiveConfirmationDialog(
             title = stringResource(Res.string.sign_out_pending_title),
-            description = stringResource(Res.string.sign_out_pending_description, state.pendingCount),
+            description = pluralStringResource(Res.plurals.sign_out_pending_description, state.pendingCount, state.pendingCount),
             confirmButtonText = stringResource(Res.string.sign_out_pending_confirm),
             cancelButtonText = stringResource(Res.string.sign_out_pending_cancel),
             onConfirmClick = { viewModel.onAction(AccountAction.OnConfirmSignOut) },
