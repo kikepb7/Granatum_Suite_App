@@ -80,9 +80,10 @@ class HttpClientFactory(
                 // Passwords and tokens travel in the bodies of the auth routes, so those calls
                 // are not logged at all, request or response (FR-030). Neither are invoicing
                 // calls: third parties' tax data and whole documents (specs/008-facturacion).
+                // Nor staff records: names and ID documents (specs/009-personal).
                 filter { request ->
                     val path = request.url.encodedPath
-                    !path.contains("/auth/") && !path.contains("/facturacion/")
+                    !path.contains("/auth/") && !path.contains("/facturacion/") && !path.contains("/empleados")
                 }
                 sanitizeHeader { name -> name == HttpHeaders.Authorization || name == API_KEY_HEADER }
             }

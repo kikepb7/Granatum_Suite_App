@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Lista -->
+    <string name="staff_title">Personal</string>
+    <string name="staff_search">Buscar por nombre, DNI o puesto</string>
+    <string name="filter_active">Activos</string>
+    <string name="filter_inactive">De baja</string>
+    <string name="filter_all">Todos</string>
+    <string name="staff_empty">Aún no hay nadie más. Da de alta a la primera persona.</string>
+    <string name="staff_empty_filtered">Nadie coincide con la búsqueda</string>
+    <string name="staff_onboard">Dar de alta</string>
+    <string name="staff_team_attendance">Jornada del equipo</string>
+    <string name="staff_inactive">De baja</string>
+    <string name="refresh">Actualizar</string>
+    <string name="retry">Reintentar</string>
+    <string name="back">Volver</string>
+
+    <!-- Contratos y roles -->
+    <string name="contract_full_time">Jornada completa</string>
+    <string name="contract_part_time">Parcial</string>
+    <string name="contract_hourly">Por horas</string>
+    <string name="role_admin">Administración</string>
+    <string name="role_manager">Encargada/o</string>
+    <string name="role_employee">Empleada/o</string>
+    <string name="role_representative">Representante</string>
+
+    <!-- Campos -->
+    <string name="field_name">Nombre y apellidos</string>
+    <string name="field_document">DNI o NIE</string>
+    <string name="field_position">Puesto</string>
+    <string name="field_contract">Contrato</string>
+    <string name="field_start_date">Fecha de alta</string>
+    <string name="field_email">Correo para entrar</string>
+    <string name="field_role">Rol en la app</string>
+    <string name="choose_date">Elegir fecha</string>
+    <string name="required">Obligatorio</string>
+    <string name="too_long">Máximo %1$d caracteres</string>
+    <string name="email_invalid">Escribe un correo válido</string>
+    <string name="document_not_editable">El DNI no se puede cambiar.</string>
+    <string name="done">Hecho</string>
+    <string name="cancel">Cancelar</string>
+
+    <!-- Alta -->
+    <string name="onboard_title">Dar de alta</string>
+    <string name="onboard_intro">Se crean su ficha y su acceso. Te daremos una contraseña provisional para que se la entregues; al entrar tendrá que cambiarla.</string>
+    <string name="onboard_submit">Dar de alta</string>
+
+    <!-- Credenciales -->
+    <string name="credentials_title">Credenciales de %1$s</string>
+    <string name="credentials_email">Correo: %1$s</string>
+    <string name="credentials_password">Contraseña provisional</string>
+    <string name="credentials_once">Apúntala o cópiala ahora: no se volverá a mostrar. Si se pierde, restablécela.</string>
+    <string name="credentials_linked">Ya tenía ficha con este DNI: la cuenta se ha vinculado a ella.</string>
+    <string name="credentials_copy">Copiar contraseña</string>
+    <string name="credentials_copied">Copiada.</string>
+    <string name="credentials_show">Mostrar</string>
+    <string name="credentials_hide">Ocultar</string>
+
+    <!-- Ficha -->
+    <string name="detail_title">Ficha</string>
+    <string name="detail_save">Guardar cambios</string>
+    <string name="detail_saved">Guardado.</string>
+    <string name="detail_deactivate">Dar de baja</string>
+    <string name="detail_reactivate">Reactivar</string>
+    <string name="detail_deactivate_title">¿Dar de baja a %1$s?</string>
+    <string name="detail_deactivate_description">No podrá entrar ni fichar. Si tiene la app abierta, su sesión caduca en unos minutos, no al instante.</string>
+    <string name="detail_deactivated">Dada de baja.</string>
+    <string name="detail_reactivated">Reactivada: ya puede entrar.</string>
+    <string name="detail_self">Es tu propia ficha: no puedes darte de baja.</string>
+    <string name="detail_reset">Restablecer contraseña</string>
+    <string name="detail_reset_title">¿Restablecer la contraseña de %1$s?</string>
+    <string name="detail_reset_description">Se cerrarán sus sesiones abiertas y recibirás una contraseña provisional nueva.</string>
+    <string name="detail_reset_confirm">Restablecer</string>
+    <string name="detail_no_account_title">%1$s aún no tiene acceso</string>
+    <string name="detail_no_account_description">Elige su correo y su rol para darle acceso a la app.</string>
+    <string name="detail_grant">Dar acceso</string>
+
+    <!-- Errores -->
+    <string name="error_no_internet">No pudimos conectar. Revisa tu conexión e inténtalo de nuevo.</string>
+    <string name="error_not_found">Esta persona ya no existe.</string>
+    <string name="error_invalid_document">El DNI o NIE no es válido: revisa la letra.</string>
+    <string name="error_duplicate_document">Ya hay una ficha con este DNI o NIE.</string>
+    <string name="error_email_taken">Este correo ya tiene cuenta.</string>
+    <string name="error_account_exists">Esta persona ya tiene cuenta. Si ha perdido la contraseña, restablécela.</string>
+    <string name="error_incoherent">Los datos no son coherentes.</string>
+    <string name="error_invalid">Hay datos no válidos.</string>
+    <string name="error_forbidden">Solo la administración gestiona el personal.</string>
+    <string name="error_rate_limited">Demasiadas peticiones. Espera un momento.</string>
+    <string name="error_unknown">No pudimos completar la operación. Inténtalo de nuevo.</string>
+</resources>

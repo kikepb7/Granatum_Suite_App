@@ -12,6 +12,9 @@ import com.granatum.feature.inventory.presentation.di.inventoryPresentationModul
 import com.granatum.feature.invoicing.data.di.invoicingDataModule
 import com.granatum.feature.invoicing.domain.di.invoicingDomainModule
 import com.granatum.feature.invoicing.presentation.di.invoicingPresentationModule
+import com.granatum.feature.staff.data.di.staffDataModule
+import com.granatum.feature.staff.domain.di.staffDomainModule
+import com.granatum.feature.staff.presentation.di.staffPresentationModule
 import org.koin.core.context.startKoin
 import org.koin.dsl.KoinAppDeclaration
 
@@ -35,6 +38,9 @@ fun initKoin(config: KoinAppDeclaration? = null) {
             invoicingDataModule,
             invoicingDomainModule,
             invoicingPresentationModule,
+            staffDataModule,
+            staffDomainModule,
+            staffPresentationModule,
             authPresentationModule
         )
     }

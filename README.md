@@ -43,17 +43,14 @@ No hace falta configurar ninguna URL: el entorno `local` ya apunta a la máquina
 
 ## Iniciar sesión en local
 
-La app ya no entra sin credenciales: necesita una cuenta real del backend. En local se crean así
-(los detalles, en el `README` del backend, secciones «El primer administrador» y «Registro del
-personal»):
+La app ya no entra sin credenciales: necesita una cuenta real del backend. Solo el propietario se
+registra; al resto del personal lo da de alta él (backend `2ec33d0`, feature 009):
 
-1. Arranca el backend con `AUTH_CODIGO_ARRANQUE` definido y crea el primer `ADMIN` con
-   `POST /api/auth/registro` incluyendo `codigoArranque`.
-2. Cada persona se registra con `POST /api/auth/registro`, y el `ADMIN` la aprueba con
-   `POST /api/auth/registros/{id}/aprobar` eligiendo su rol.
-3. Para probar el cambio de contraseña obligatorio, el `ADMIN` restablece una cuenta con
-   `POST /api/auth/cuentas/{empleadoId}/restablecer`: la contraseña temporal obliga a cambiarla al
-   entrar.
+1. Arranca el backend con `AUTH_CODIGO_ARRANQUE` definido (24 caracteres o más) y, en la app, toca
+   «¿Eres el propietario…? Crea la cuenta» e introduce ese código. Entras como `ADMIN`.
+2. En **Equipo → Dar de alta**, crea a cada persona con su ficha, su correo y su rol. La app
+   muestra una vez la contraseña provisional: al entrar con ella, la persona tiene que cambiarla.
+3. Si alguien pierde la contraseña, ábrelo en **Equipo** y toca «Restablecer contraseña».
 
 Si el backend no está en el 8080, la URL se cambia al compilar, sin tocar ningún fichero:
 
@@ -66,6 +63,15 @@ En iOS, desde Xcode, se pasa por entorno, porque la fase de build de Xcode llama
 
 Para probar la renovación de la sesión sin esperar 15 minutos, arranca el backend con
 `JWT_EXPIRATION_MINUTES=1`.
+
+## Personal
+
+Solo para la administración, en la pestaña **Equipo** ([spec 009](specs/009-personal/spec.md)):
+lista del personal con búsqueda, alta de una persona en un paso (ficha y acceso), edición de la
+ficha (el DNI no cambia), bajas y reactivaciones, y restablecer la contraseña o dar acceso a una
+ficha que no lo tiene. La contraseña provisional solo se ve una vez y no se guarda en el móvil;
+las rutas de personal no salen en el log de red. Desactivar no echa al instante: la sesión abierta
+caduca en unos minutos (regla del backend). Desde el personal se llega a la jornada del equipo.
 
 ## Fichaje
 

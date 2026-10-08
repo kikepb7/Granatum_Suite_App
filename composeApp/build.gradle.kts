@@ -42,6 +42,10 @@ kotlin {
             implementation(projects.feature.invoicing.domain)
             implementation(projects.feature.invoicing.presentation)
 
+            implementation(projects.feature.staff.data)
+            implementation(projects.feature.staff.domain)
+            implementation(projects.feature.staff.presentation)
+
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material3)

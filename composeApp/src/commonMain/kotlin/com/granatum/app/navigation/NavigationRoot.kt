@@ -51,6 +51,9 @@ import com.granatum.feature.inventory.presentation.navigation.inventoryGraph
 import com.granatum.feature.invoicing.presentation.navigation.InvoicingGraphRoutes
 import com.granatum.feature.invoicing.presentation.navigation.InvoicingGraphRoutes.InvoiceListRoute
 import com.granatum.feature.invoicing.presentation.navigation.invoicingGraph
+import com.granatum.feature.staff.presentation.navigation.StaffGraphRoutes
+import com.granatum.feature.staff.presentation.navigation.StaffGraphRoutes.StaffListRoute
+import com.granatum.feature.staff.presentation.navigation.staffGraph
 import granatumsuite.composeapp.generated.resources.Res
 import granatumsuite.composeapp.generated.resources.splash_loading
 import granatumsuite.composeapp.generated.resources.tab_clock_in
@@ -155,6 +158,9 @@ private fun SignedInRoot(role: UserRole) {
             if (role.canManageInvoicing) {
                 invoicingGraph(navController = navController)
             }
+            if (role.canManageStaff) {
+                staffGraph(navController = navController, onOpenTeamAttendance = { navController.navigate(TeamAttendanceRoute) })
+            }
             composable<AccountRoute> {
                 AccountScreenRoot(
                     onChangePasswordClick = { navController.navigate(VoluntaryPasswordChangeRoute) },
@@ -195,12 +201,20 @@ private enum class RootTab(val label: StringResource, val route: Any, val qualif
     History(Res.string.tab_history, HistoryRoute, HistoryRoute::class.qualifiedName),
     Inventory(Res.string.tab_inventory, MaterialListRoute, MaterialListRoute::class.qualifiedName),
     Team(Res.string.tab_team, TeamAttendanceRoute, TeamAttendanceRoute::class.qualifiedName),
+
+    /** ADMIN's Team tab: the staff, with the team's working time one tap away (specs/009-personal). */
+    Staff(Res.string.tab_team, StaffListRoute, StaffGraphRoutes::class.qualifiedName),
     Invoicing(Res.string.tab_invoicing, InvoiceListRoute, InvoicingGraphRoutes::class.qualifiedName);
 
     // Every invoicing screen keeps its tab selected: their routes share the graph's prefix.
 
-    fun matches(currentRoute: String?): Boolean =
-        currentRoute != null && qualifiedName != null && currentRoute.startsWith(qualifiedName)
+    fun matches(currentRoute: String?): Boolean {
+        if (currentRoute == null) return false
+        if (qualifiedName != null && currentRoute.startsWith(qualifiedName)) return true
+        // The team's working time is opened from the staff list: Team stays selected for ADMIN.
+        val attendance = TeamAttendanceRoute::class.qualifiedName
+        return this == Staff && attendance != null && currentRoute.startsWith(attendance)
+    }
 
     @Composable
     fun toBottomBarItem(): AppBottomBarItemModel {
@@ -215,7 +229,7 @@ private enum class RootTab(val label: StringResource, val route: Any, val qualif
         ClockIn -> Icons.Default.Home
         History -> Icons.Default.DateRange
         Inventory -> Icons.Default.Inventory
-        Team -> Icons.Default.Groups
+        Team, Staff -> Icons.Default.Groups
         Invoicing -> Icons.Default.Receipt
     }
 
@@ -225,7 +239,7 @@ private enum class RootTab(val label: StringResource, val route: Any, val qualif
             if (role.canClockIn) add(ClockIn)
             add(History)
             if (role.canManageInventory) add(Inventory)
-            if (role.canSeeTeam) add(Team)
+            if (role.canManageStaff) add(Staff) else if (role.canSeeTeam) add(Team)
             if (role.canManageInvoicing) add(Invoicing)
         }
     }
