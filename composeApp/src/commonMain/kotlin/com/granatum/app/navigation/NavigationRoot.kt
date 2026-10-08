@@ -12,7 +12,10 @@ import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.rememberCoroutineScope
@@ -32,9 +35,11 @@ import com.granatum.core.designsystem.components.topbar.LocalAccountAction
 import com.granatum.core.domain.auth.repository.SessionStorage
 import com.granatum.core.designsystem.components.navigation.AppBottomBarItemModel
 import com.granatum.core.domain.auth.model.SessionState
+import com.granatum.core.domain.auth.model.SignOutReason
 import com.granatum.core.domain.auth.model.UserRole
 import com.granatum.core.domain.auth.repository.AuthRepository
 import com.granatum.feature.auth.presentation.login.LoginScreenRoot
+import com.granatum.feature.auth.presentation.signup.OwnerSignUpRoot
 import com.granatum.feature.auth.presentation.password.ChangePasswordMode
 import com.granatum.feature.auth.presentation.password.ChangePasswordScreenRoot
 import com.granatum.feature.clockin.presentation.navigation.ClockInGraphRoutes.ClockInRoute
@@ -81,7 +86,7 @@ fun NavigationRoot() {
 private fun Gate(sessionState: SessionState, authRepository: AuthRepository, scope: CoroutineScope) {
     when (val state = sessionState) {
         SessionState.Loading -> Unit
-        is SessionState.SignedOut -> LoginScreenRoot(signOutReason = state.reason)
+        is SessionState.SignedOut -> SignedOutRoot(reason = state.reason)
         SessionState.PasswordChangeRequired -> ChangePasswordScreenRoot(
             mode = ChangePasswordMode.MANDATORY,
             // The only other thing the server allows this session to do.
@@ -91,6 +96,17 @@ private fun Gate(sessionState: SessionState, authRepository: AuthRepository, sco
         )
         // A fresh nav controller per role, so a new sign-in never inherits the last back stack.
         is SessionState.Active -> key(state.role) { SignedInRoot(role = state.role) }
+    }
+}
+
+/** Without a session: sign in, or, only for the business owner, create the account. */
+@Composable
+private fun SignedOutRoot(reason: SignOutReason?) {
+    var signingUp by rememberSaveable { mutableStateOf(false) }
+    if (signingUp) {
+        OwnerSignUpRoot(onBackToLogin = { signingUp = false })
+    } else {
+        LoginScreenRoot(signOutReason = reason, onOwnerSignUp = { signingUp = true })
     }
 }
 

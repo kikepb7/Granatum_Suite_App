@@ -5,6 +5,10 @@ import com.granatum.core.domain.auth.model.SignOutReason
 import com.granatum.core.domain.validation.PasswordRequirement
 import com.granatum.core.presentation.util.UiText
 import granatumsuite.feature.auth.presentation.generated.resources.Res
+import granatumsuite.feature.auth.presentation.generated.resources.auth_error_account_exists
+import granatumsuite.feature.auth.presentation.generated.resources.auth_error_bootstrap_code
+import granatumsuite.feature.auth.presentation.generated.resources.auth_error_email_taken
+import granatumsuite.feature.auth.presentation.generated.resources.auth_error_invalid_document
 import granatumsuite.feature.auth.presentation.generated.resources.auth_error_invalid_credentials
 import granatumsuite.feature.auth.presentation.generated.resources.auth_error_invalid_session
 import granatumsuite.feature.auth.presentation.generated.resources.auth_error_no_internet
@@ -37,6 +41,10 @@ fun AuthError.toUiText(): UiText = when (this) {
         ?: UiText.Resource(Res.string.auth_error_service_busy_no_wait)
     is AuthError.WeakPassword -> UiText.Resource(Res.string.auth_error_weak_password)
     AuthError.Validation -> UiText.Resource(Res.string.auth_error_validation)
+    AuthError.InvalidBootstrapCode -> UiText.Resource(Res.string.auth_error_bootstrap_code)
+    AuthError.EmailTaken -> UiText.Resource(Res.string.auth_error_email_taken)
+    AuthError.AccountExists -> UiText.Resource(Res.string.auth_error_account_exists)
+    AuthError.InvalidDocument -> UiText.Resource(Res.string.auth_error_invalid_document)
     AuthError.NoInternet -> UiText.Resource(Res.string.auth_error_no_internet)
     AuthError.Timeout -> UiText.Resource(Res.string.auth_error_timeout)
     AuthError.InvalidSession -> UiText.Resource(Res.string.auth_error_invalid_session)

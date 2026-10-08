@@ -19,6 +19,17 @@ sealed interface AuthError : Error {
     data class ServiceBusy(val retryAfterSeconds: Long?) : AuthError
     data class WeakPassword(val requirements: Set<PasswordRequirement>) : AuthError
     data object Validation : AuthError
+
+    /**
+     * The owner's sign-up (backend feature 009): a wrong code, no code configured and an ADMIN
+     * already existing all get this one answer, on purpose.
+     */
+    data object InvalidBootstrapCode : AuthError
+    data object EmailTaken : AuthError
+    /** The staff record with that identity document already has an account. */
+    data object AccountExists : AuthError
+    /** DNI or NIE with the wrong check letter. */
+    data object InvalidDocument : AuthError
     data object NoInternet : AuthError
     data object Timeout : AuthError
 

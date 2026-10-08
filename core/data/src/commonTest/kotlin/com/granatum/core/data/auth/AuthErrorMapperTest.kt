@@ -78,6 +78,14 @@ class AuthErrorMapperTest {
     }
 
     @Test
+    fun owner_sign_up_codes() = runTest {
+        assertEquals(AuthError.InvalidBootstrapCode, response(HttpStatusCode.Forbidden, error("CODIGO_ARRANQUE_INVALIDO")).toAuthError())
+        assertEquals(AuthError.EmailTaken, response(HttpStatusCode.Conflict, error("EMAIL_YA_REGISTRADO")).toAuthError())
+        assertEquals(AuthError.AccountExists, response(HttpStatusCode.Conflict, error("CUENTA_YA_EXISTE")).toAuthError())
+        assertEquals(AuthError.InvalidDocument, response(HttpStatusCode.UnprocessableEntity, error("DOCUMENTO_INVALIDO")).toAuthError())
+    }
+
+    @Test
     fun transport_failures() {
         assertEquals(AuthError.NoInternet, DataError.Remote.NO_INTERNET.toAuthError())
         assertEquals(AuthError.Timeout, DataError.Remote.REQUEST_TIMEOUT.toAuthError())

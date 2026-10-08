@@ -6,6 +6,7 @@ import com.granatum.core.data.testing.errorJson
 import com.granatum.core.data.testing.json
 import com.granatum.core.data.testing.tokensJson
 import com.granatum.core.domain.auth.AuthError
+import com.granatum.core.domain.auth.model.OwnerRegistration
 import com.granatum.core.domain.auth.model.UserRole
 import com.granatum.core.domain.util.Result
 import io.ktor.http.HttpStatusCode
@@ -135,5 +136,38 @@ class KtorAuthRepositoryImplTest {
         h.repository.login("a@b.es", "x")
         h.repository.logout()
         assertEquals("""{"refreshToken":"r1"}""", h.requestsTo("/auth/logout").single().body.text())
+    }
+
+    @Test
+    fun the_owner_signs_up_with_every_field_and_is_signed_in_right_after() = runTest {
+        val h = AuthTestHarness { request ->
+            if (request.url.encodedPath.endsWith("/auth/registro")) {
+                json(HttpStatusCode.Created, """{"estado":"ACTIVA","mensaje":"ok"}""")
+            } else {
+                json(HttpStatusCode.OK, tokensJson(TestTokens.access(sub = "e-1", role = "ADMIN"), "r1"))
+            }
+        }
+
+        val result = h.repository.registerOwner(
+            OwnerRegistration(name = " Ana Martín ", identityDocument = "12345678Z", email = " Ana@Granatum.es", password = "Clave-2026!", bootstrapCode = " codigo ")
+        )
+
+        val sent = h.requestsTo("/auth/registro").single()
+        assertEquals(
+            """{"email":"ana@granatum.es","password":"Clave-2026!","nombre":"Ana Martín","documentoIdentidad":"12345678Z","codigoArranque":"codigo"}""",
+            sent.body.text()
+        )
+        assertTrue(!sent.headers.contains("Authorization"), "a public route")
+        assertEquals("""{"email":"ana@granatum.es","password":"Clave-2026!"}""", h.requestsTo("/auth/login").single().body.text())
+        assertEquals(UserRole.ADMIN, (result as Result.Success).data.role)
+    }
+
+    @Test
+    fun a_rejected_sign_up_does_not_try_to_sign_in() = runTest {
+        val h = AuthTestHarness { json(HttpStatusCode.Forbidden, errorJson("CODIGO_ARRANQUE_INVALIDO")) }
+        val result = h.repository.registerOwner(OwnerRegistration("Ana", "12345678Z", "a@b.es", "Clave-2026!", "mal"))
+        assertEquals(Result.Failure(AuthError.InvalidBootstrapCode), result)
+        assertTrue(h.requestsTo("/auth/login").isEmpty())
+        assertNull(h.storage.observeSession().first())
     }
 }

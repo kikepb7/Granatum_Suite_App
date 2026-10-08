@@ -3,6 +3,7 @@ package com.granatum.core.data.auth
 import com.granatum.core.data.auth.dto.CambioPasswordRequestDto
 import com.granatum.core.data.auth.dto.LoginRequestDto
 import com.granatum.core.data.auth.dto.LogoutRequestDto
+import com.granatum.core.data.auth.dto.RegistroRequestDto
 import com.granatum.core.data.auth.dto.ParTokensResponseDto
 import com.granatum.core.data.auth.provider.AuthRoutes
 import com.granatum.core.data.mappers.normaliseEmail
@@ -10,6 +11,7 @@ import com.granatum.core.data.mappers.toSession
 import com.granatum.core.data.networking.constructRoute
 import com.granatum.core.data.networking.platformSafeCall
 import com.granatum.core.domain.auth.AuthError
+import com.granatum.core.domain.auth.model.OwnerRegistration
 import com.granatum.core.domain.auth.model.Session
 import com.granatum.core.domain.auth.repository.AuthRepository
 import com.granatum.core.domain.auth.repository.SessionStorage
@@ -46,6 +48,30 @@ class KtorAuthRepositoryImpl(
                 setBody(LoginRequestDto(email = normalisedEmail, password = password))
             }
         }
+    }
+
+    override suspend fun registerOwner(registration: OwnerRegistration): Result<Session, AuthError> {
+        val email = normaliseEmail(registration.email)
+        val sent = exchange {
+            httpClient.post(constructRoute(AuthRoutes.REGISTER_ROUTE)) {
+                setBody(
+                    RegistroRequestDto(
+                        email = email,
+                        password = registration.password,
+                        nombre = registration.name.trim(),
+                        documentoIdentidad = registration.identityDocument.trim(),
+                        codigoArranque = registration.bootstrapCode.trim()
+                    )
+                )
+            }
+        }
+        val response = when (sent) {
+            is Result.Failure -> return sent
+            is Result.Success -> sent.data
+        }
+        if (!response.status.isSuccess()) return Result.Failure(response.toAuthError())
+        // The account exists and is active: sign in as anyone would.
+        return login(email = email, password = registration.password)
     }
 
     override suspend fun changePassword(currentPassword: String, newPassword: String): Result<Session, AuthError> {

@@ -52,4 +52,25 @@
     <string name="password_req_digit">Un número</string>
     <string name="password_req_symbol">Un símbolo, por ejemplo ! ? - _</string>
     <string name="password_changed">Contraseña cambiada</string>
+
+    <!-- Registro del propietario (backend 009) -->
+    <string name="login_owner_signup">¿Eres el propietario y es la primera vez? Crea la cuenta</string>
+    <string name="login_staff_hint">Si trabajas en la empresa, el propietario te da de alta y te entrega tus credenciales.</string>
+    <string name="signup_header">Cuenta del propietario</string>
+    <string name="signup_intro">Solo el propietario del negocio se registra, una vez, al poner en marcha Granatum. Al resto del personal lo das de alta tú después.</string>
+    <string name="signup_name">Nombre y apellidos</string>
+    <string name="signup_document">DNI o NIE</string>
+    <string name="signup_code">Código de arranque</string>
+    <string name="signup_code_hint">Te lo da quien instaló el servidor. Solo sirve mientras no haya ningún administrador.</string>
+    <string name="signup_submit">Crear la cuenta y entrar</string>
+    <string name="signup_back_to_login">Ya tengo cuenta: iniciar sesión</string>
+    <string name="signup_required">Obligatorio</string>
+    <string name="signup_too_long">Máximo %1$d caracteres</string>
+    <string name="signup_document_invalid">El DNI o NIE no es válido: revisa la letra.</string>
+    <string name="signup_document_taken">Ya hay una cuenta para este DNI o NIE.</string>
+    <string name="signup_email_taken">Este correo ya tiene cuenta.</string>
+    <string name="auth_error_bootstrap_code">El código de arranque no es válido o la instalación ya tiene propietario.</string>
+    <string name="auth_error_email_taken">Este correo ya tiene cuenta.</string>
+    <string name="auth_error_account_exists">Ya hay una cuenta para este DNI o NIE.</string>
+    <string name="auth_error_invalid_document">El DNI o NIE no es válido.</string>
 </resources>

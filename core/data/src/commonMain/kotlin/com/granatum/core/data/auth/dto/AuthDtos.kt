@@ -33,6 +33,18 @@ data class LogoutRequestDto(val refreshToken: String) {
     override fun toString(): String = "LogoutRequestDto(refreshToken=***)"
 }
 
+/** The owner's sign-up (backend 2ec33d0): every field required, the code included. */
+@Serializable
+data class RegistroRequestDto(
+    val email: String,
+    val password: String,
+    val nombre: String,
+    val documentoIdentidad: String,
+    val codigoArranque: String
+) {
+    override fun toString(): String = "RegistroRequestDto(email=$email, password=***, codigoArranque=***)"
+}
+
 @Serializable
 data class CambioPasswordRequestDto(val passwordActual: String, val passwordNueva: String) {
     override fun toString(): String = "CambioPasswordRequestDto(passwordActual=***, passwordNueva=***)"

@@ -1,6 +1,7 @@
 package com.granatum.feature.auth.presentation.testing
 
 import com.granatum.core.domain.auth.AuthError
+import com.granatum.core.domain.auth.model.OwnerRegistration
 import com.granatum.core.domain.auth.model.Session
 import com.granatum.core.domain.auth.model.UserRole
 import com.granatum.core.domain.auth.repository.AuthRepository
@@ -18,6 +19,14 @@ class FakeAuthRepository : AuthRepository {
 
     override suspend fun login(email: String, password: String): Result<Session, AuthError> {
         loginCalls += email to password
+        gate?.await()
+        return nextResult
+    }
+
+    val registrations = mutableListOf<OwnerRegistration>()
+
+    override suspend fun registerOwner(registration: OwnerRegistration): Result<Session, AuthError> {
+        registrations += registration
         gate?.await()
         return nextResult
     }

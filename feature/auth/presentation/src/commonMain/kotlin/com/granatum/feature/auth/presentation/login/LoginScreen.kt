@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -27,6 +28,8 @@ import granatumsuite.feature.auth.presentation.generated.resources.login_email_p
 import granatumsuite.feature.auth.presentation.generated.resources.login_email_required
 import granatumsuite.feature.auth.presentation.generated.resources.login_email_too_long
 import granatumsuite.feature.auth.presentation.generated.resources.login_forgot_hint
+import granatumsuite.feature.auth.presentation.generated.resources.login_owner_signup
+import granatumsuite.feature.auth.presentation.generated.resources.login_staff_hint
 import granatumsuite.feature.auth.presentation.generated.resources.login_header
 import granatumsuite.feature.auth.presentation.generated.resources.login_password
 import granatumsuite.feature.auth.presentation.generated.resources.login_password_required
@@ -38,13 +41,15 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun LoginScreenRoot(
     signOutReason: SignOutReason?,
+    onOwnerSignUp: () -> Unit,
     viewModel: LoginViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     LoginScreen(
         state = state,
         viewModel = viewModel,
-        signOutReason = signOutReason
+        signOutReason = signOutReason,
+        onOwnerSignUp = onOwnerSignUp
     )
 }
 
@@ -52,7 +57,8 @@ fun LoginScreenRoot(
 private fun LoginScreen(
     state: LoginState,
     viewModel: LoginViewModel,
-    signOutReason: SignOutReason?
+    signOutReason: SignOutReason?,
+    onOwnerSignUp: () -> Unit
 ) {
     // A server error wins over the reason the last session ended: it is about what just happened.
     val bannerText = state.error?.toUiText()?.asString() ?: signOutReason?.toUiText()?.asString()
@@ -100,6 +106,18 @@ private fun LoginScreen(
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth()
         )
+        Spacer(modifier = Modifier.height(8.dp))
+        // Employees never sign up: the owner onboards them (backend feature 009).
+        Text(
+            text = stringResource(Res.string.login_staff_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.extended.textSecondary,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
+        TextButton(onClick = onOwnerSignUp, enabled = !state.isLoading, modifier = Modifier.fillMaxWidth()) {
+            Text(text = stringResource(Res.string.login_owner_signup), textAlign = TextAlign.Center)
+        }
     }
 }
 

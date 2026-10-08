@@ -33,6 +33,10 @@ suspend fun HttpResponse.toAuthError(): AuthError {
             body.requisitos.orEmpty().mapNotNull(PasswordRequirement::fromBackend).toSet()
         )
         "VALIDACION" -> AuthError.Validation
+        "CODIGO_ARRANQUE_INVALIDO" -> AuthError.InvalidBootstrapCode
+        "EMAIL_YA_REGISTRADO" -> AuthError.EmailTaken
+        "CUENTA_YA_EXISTE" -> AuthError.AccountExists
+        "DOCUMENTO_INVALIDO" -> AuthError.InvalidDocument
         else -> AuthError.Unknown
     }
 }

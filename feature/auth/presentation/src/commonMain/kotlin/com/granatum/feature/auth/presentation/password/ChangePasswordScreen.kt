@@ -145,7 +145,7 @@ private fun ChangePasswordScreen(
 
 /** Icon and text, never colour alone, so the state reads without colour vision (principle IX). */
 @Composable
-private fun RequirementList(unmet: Set<PasswordRequirement>) {
+internal fun RequirementList(unmet: Set<PasswordRequirement>) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
         Text(
             text = stringResource(Res.string.password_requirements_title),
