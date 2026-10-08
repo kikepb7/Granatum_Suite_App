@@ -12,6 +12,9 @@ sealed interface ClockActionError : Error {
     data object NotClockedIn : ClockActionError
     data object AlreadyOnBreak : ClockActionError
     data object NotOnBreak : ClockActionError
+
+    /** No session: a punch must belong to someone (spec 004, FR-028). */
+    data object NoSession : ClockActionError
 }
 
 sealed interface RequestCorrectionError : Error {

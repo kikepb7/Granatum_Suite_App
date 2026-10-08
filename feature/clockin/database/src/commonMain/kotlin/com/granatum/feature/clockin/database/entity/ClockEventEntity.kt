@@ -18,5 +18,12 @@ data class ClockEventEntity(
     val serverTimestampEpochMillis: Long?,
     val syncState: String,
     val retryCount: Int,
-    val lastSyncAttemptEpochMillis: Long?
+    val lastSyncAttemptEpochMillis: Long?,
+    /**
+     * Who made the punch: the employee id of the session at the time (spec 004, FR-028). The
+     * server attributes a punch to whoever signs the request, so a punch must never be sent, or
+     * shown, under another person's session. Null only for rows written before sign-in existed;
+     * those are never sent.
+     */
+    val employeeId: String? = null
 )

@@ -1,5 +1,6 @@
 package com.granatum.feature.clockin.data.di
 
+import com.granatum.feature.clockin.data.sync.ConnectivityObserver
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import com.granatum.feature.clockin.data.datasource.local.OfflineFirstClockInRepositoryImpl
 import com.granatum.feature.clockin.data.datasource.remote.KtorTeamAttendanceRepositoryImpl
@@ -31,7 +32,8 @@ val clockInDataModule = module {
         ClockEventSyncManager(
             httpClient = get(),
             dao = get(),
-            connectivityObserver = get(),
+            sessionStorage = get(),
+            connectivity = get<ConnectivityObserver>().observe(),
             logger = get()
         ).also { it.start(scope = get<CoroutineScope>()) }
     }
@@ -40,6 +42,7 @@ val clockInDataModule = module {
         OfflineFirstClockInRepositoryImpl(
             httpClient = get(),
             dao = get(),
+            sessionStorage = get(),
             syncManager = get(),
             appScope = get()
         )

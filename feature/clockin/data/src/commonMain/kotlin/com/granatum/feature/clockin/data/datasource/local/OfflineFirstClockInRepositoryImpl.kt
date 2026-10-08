@@ -1,5 +1,10 @@
 package com.granatum.feature.clockin.data.datasource.local
 
+import com.granatum.core.domain.auth.repository.SessionStorage
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import com.granatum.core.data.networking.post
 import com.granatum.core.domain.util.DataError
 import com.granatum.core.domain.util.EmptyResult
@@ -38,33 +43,52 @@ import kotlin.time.Clock
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
+/**
+ * Every read and write is scoped to the person signed in (spec 004, FR-028): on a shared device
+ * one person never sees, nor sends, another's punches. Without a session there is nothing to
+ * show and nothing can be punched.
+ */
+@OptIn(ExperimentalCoroutinesApi::class)
 class OfflineFirstClockInRepositoryImpl(
     private val httpClient: HttpClient,
     private val dao: ClockEventDao,
+    private val sessionStorage: SessionStorage,
     private val syncManager: ClockEventSyncManager,
     private val appScope: CoroutineScope,
     private val clock: Clock = Clock.System,
     private val timeZone: TimeZone = TimeZone.currentSystemDefault()
 ) : ClockInRepository {
 
+    private val currentEmployeeId: Flow<String?> =
+        sessionStorage.observeSession().map { it?.employeeId }.distinctUntilChanged()
+
+    /** Re-subscribes whenever the person changes; emits [whenSignedOut] without a session. */
+    private fun <T> forCurrentEmployee(whenSignedOut: T, query: (String) -> Flow<T>): Flow<T> =
+        currentEmployeeId.flatMapLatest { employeeId ->
+            if (employeeId == null) flowOf(whenSignedOut) else query(employeeId)
+        }
+
     override fun observeCurrentStatus(): Flow<ShiftStatus> =
-        dao.observeLatestEvent().map { latest ->
+        forCurrentEmployee(whenSignedOut = null) { dao.observeLatestEvent(it) }.map { latest ->
             listOfNotNull(latest?.toDomain()).currentShiftStatus()
         }
 
     override fun observeTodayEvents(): Flow<List<ClockEventModel>> {
         val (start, end) = todayRangeEpochMillis()
-        return dao.observeEventsBetween(fromEpochMillis = start, toEpochMillis = end)
-            .map { entities -> entities.map { it.toDomain() } }
+        return forCurrentEmployee(whenSignedOut = emptyList()) {
+            dao.observeEventsBetween(employeeId = it, fromEpochMillis = start, toEpochMillis = end)
+        }.map { entities -> entities.map { it.toDomain() } }
     }
 
-    override fun observePendingSyncCount(): Flow<Int> = dao.observePendingCount()
+    override fun observePendingSyncCount(): Flow<Int> =
+        forCurrentEmployee(whenSignedOut = 0) { dao.observePendingCount(it) }
 
     override fun observeHistory(from: LocalDate, to: LocalDate): Flow<List<DailyAttendanceSummary>> {
         val fromMillis = from.atStartOfDayEpochMillis(timeZone)
         val toMillis = to.plusDaysAtStartOfDayEpochMillis(timeZone, days = 1)
-        return dao.observeEventsBetween(fromEpochMillis = fromMillis, toEpochMillis = toMillis - 1)
-            .map { entities -> entities.map { it.toDomain() }.groupByDay(timeZone) }
+        return forCurrentEmployee(whenSignedOut = emptyList()) {
+            dao.observeEventsBetween(employeeId = it, fromEpochMillis = fromMillis, toEpochMillis = toMillis - 1)
+        }.map { entities -> entities.map { it.toDomain() }.groupByDay(timeZone) }
     }
 
     override suspend fun clockIn(): Result<Unit, ClockActionError> =
@@ -101,6 +125,7 @@ class OfflineFirstClockInRepositoryImpl(
         isAllowed: (ShiftStatus) -> Boolean,
         error: ClockActionError
     ): Result<Unit, ClockActionError> {
+        val employeeId = currentEmployeeId.first() ?: return Failure(error = ClockActionError.NoSession)
         val currentStatus = observeCurrentStatus().first()
         if (!isAllowed(currentStatus)) return Failure(error = error)
 
@@ -112,7 +137,8 @@ class OfflineFirstClockInRepositoryImpl(
                 serverTimestampEpochMillis = null,
                 syncState = SyncState.PENDING.name,
                 retryCount = 0,
-                lastSyncAttemptEpochMillis = null
+                lastSyncAttemptEpochMillis = null,
+                employeeId = employeeId
             )
         )
 

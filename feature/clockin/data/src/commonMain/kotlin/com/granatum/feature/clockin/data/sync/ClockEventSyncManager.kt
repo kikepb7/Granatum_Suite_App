@@ -1,5 +1,9 @@
 package com.granatum.feature.clockin.data.sync
 
+import kotlinx.coroutines.flow.Flow
+import com.granatum.core.domain.auth.repository.SessionStorage
+import com.granatum.feature.clockin.database.entity.ClockEventEntity
+import kotlinx.coroutines.flow.firstOrNull
 import com.granatum.core.data.networking.post
 import com.granatum.core.domain.logger.AppLogger
 import com.granatum.core.domain.util.DataError
@@ -55,7 +59,9 @@ import kotlin.time.Clock
 class ClockEventSyncManager(
     private val httpClient: HttpClient,
     private val dao: ClockEventDao,
-    private val connectivityObserver: ConnectivityObserver,
+    private val sessionStorage: SessionStorage,
+    /** Online/offline, from [ConnectivityObserver.observe]. A flow rather than the platform class keeps this testable in common code. */
+    private val connectivity: Flow<Boolean>,
     private val logger: AppLogger,
     private val clock: Clock = Clock.System
 ) {
@@ -63,7 +69,7 @@ class ClockEventSyncManager(
 
     fun start(scope: CoroutineScope) {
         scope.launch(Dispatchers.Default) {
-            connectivityObserver.observe()
+            connectivity
                 .distinctUntilChanged()
                 .collectLatest { isOnline ->
                     if (isOnline) {
@@ -75,7 +81,7 @@ class ClockEventSyncManager(
     }
 
     private suspend fun pollWhilePending() {
-        while (dao.getPendingEvents().isNotEmpty()) {
+        while (pendingForCurrentEmployee().isNotEmpty()) {
             delay(POLL_INTERVAL_MS)
             syncNow()
         }
@@ -86,7 +92,7 @@ class ClockEventSyncManager(
         // result (e.g. a manual "sync now" button) must see the queue drained,
         // not silently no-op because a background pass was already in flight.
         return syncMutex.withLock {
-            val pending = dao.getPendingEvents()
+            val pending = pendingForCurrentEmployee()
             for (event in pending) {
                 dao.markSyncing(id = event.id)
                 val result = httpClient.post<ClockEventPushDto, ClockEventDto>(
@@ -110,6 +116,16 @@ class ClockEventSyncManager(
             }
             Result.Success(data = Unit)
         }
+    }
+
+    /**
+     * Only the signed-in person's punches, because the server attributes each one to whoever
+     * signs the request (spec 004, FR-028). Another person's pending punches wait, untouched,
+     * until they sign in again; rows with no owner are never sent.
+     */
+    private suspend fun pendingForCurrentEmployee(): List<ClockEventEntity> {
+        val employeeId = sessionStorage.observeSession().firstOrNull()?.employeeId ?: return emptyList()
+        return dao.getPendingEvents(employeeId)
     }
 
     private companion object {

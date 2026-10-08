@@ -1,5 +1,6 @@
 package com.granatum.feature.clockin.database
 
+import androidx.room.AutoMigration
 import androidx.room.ConstructedBy
 import androidx.room.Database
 import androidx.room.RoomDatabase
@@ -10,7 +11,11 @@ import com.granatum.feature.clockin.database.entity.ClockEventEntity
     entities = [
         ClockEventEntity::class
     ],
-    version = 1
+    version = 2,
+    autoMigrations = [
+        // 2: ClockEventEntity.employeeId (spec 004). A nullable column, so Room can derive it.
+        AutoMigration(from = 1, to = 2)
+    ]
 )
 @ConstructedBy(AppClockInDatabaseConstructor::class)
 abstract class AppClockInDatabase : RoomDatabase() {

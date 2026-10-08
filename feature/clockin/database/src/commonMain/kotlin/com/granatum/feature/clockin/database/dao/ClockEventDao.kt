@@ -9,26 +9,30 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface ClockEventDao {
 
-    @Query("SELECT * FROM clock_event ORDER BY clientTimestampEpochMillis ASC")
-    fun observeAllEvents(): Flow<List<ClockEventEntity>>
+    @Query("SELECT * FROM clock_event WHERE employeeId = :employeeId ORDER BY clientTimestampEpochMillis ASC")
+    fun observeAllEvents(employeeId: String): Flow<List<ClockEventEntity>>
 
     @Query(
-        "SELECT * FROM clock_event WHERE clientTimestampEpochMillis BETWEEN :fromEpochMillis AND :toEpochMillis " +
+        "SELECT * FROM clock_event WHERE employeeId = :employeeId " +
+            "AND clientTimestampEpochMillis BETWEEN :fromEpochMillis AND :toEpochMillis " +
             "ORDER BY clientTimestampEpochMillis ASC"
     )
-    fun observeEventsBetween(fromEpochMillis: Long, toEpochMillis: Long): Flow<List<ClockEventEntity>>
+    fun observeEventsBetween(employeeId: String, fromEpochMillis: Long, toEpochMillis: Long): Flow<List<ClockEventEntity>>
 
-    @Query("SELECT * FROM clock_event ORDER BY clientTimestampEpochMillis DESC LIMIT 1")
-    suspend fun getLatestEvent(): ClockEventEntity?
+    @Query("SELECT * FROM clock_event WHERE employeeId = :employeeId ORDER BY clientTimestampEpochMillis DESC LIMIT 1")
+    suspend fun getLatestEvent(employeeId: String): ClockEventEntity?
 
-    @Query("SELECT * FROM clock_event ORDER BY clientTimestampEpochMillis DESC LIMIT 1")
-    fun observeLatestEvent(): Flow<ClockEventEntity?>
+    @Query("SELECT * FROM clock_event WHERE employeeId = :employeeId ORDER BY clientTimestampEpochMillis DESC LIMIT 1")
+    fun observeLatestEvent(employeeId: String): Flow<ClockEventEntity?>
 
-    @Query("SELECT COUNT(*) FROM clock_event WHERE syncState IN ('PENDING', 'FAILED')")
-    fun observePendingCount(): Flow<Int>
+    @Query("SELECT COUNT(*) FROM clock_event WHERE employeeId = :employeeId AND syncState IN ('PENDING', 'FAILED')")
+    fun observePendingCount(employeeId: String): Flow<Int>
 
-    @Query("SELECT * FROM clock_event WHERE syncState IN ('PENDING', 'FAILED') ORDER BY clientTimestampEpochMillis ASC")
-    suspend fun getPendingEvents(): List<ClockEventEntity>
+    @Query(
+        "SELECT * FROM clock_event WHERE employeeId = :employeeId AND syncState IN ('PENDING', 'FAILED') " +
+            "ORDER BY clientTimestampEpochMillis ASC"
+    )
+    suspend fun getPendingEvents(employeeId: String): List<ClockEventEntity>
 
     @Upsert
     suspend fun upsertEvent(event: ClockEventEntity)

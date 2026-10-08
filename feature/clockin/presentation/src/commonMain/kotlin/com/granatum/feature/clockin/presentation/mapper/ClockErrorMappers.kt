@@ -11,6 +11,7 @@ fun ClockActionError.toUiText(): UiText = when (this) {
     ClockActionError.NotClockedIn -> DynamicString(value = "Todavía no has fichado la entrada")
     ClockActionError.AlreadyOnBreak -> DynamicString(value = "Ya estás en pausa")
     ClockActionError.NotOnBreak -> DynamicString(value = "No estás en pausa")
+    ClockActionError.NoSession -> DynamicString(value = "Inicia sesión para fichar")
 }
 
 fun RequestCorrectionError.toUiText(): UiText = when (this) {
