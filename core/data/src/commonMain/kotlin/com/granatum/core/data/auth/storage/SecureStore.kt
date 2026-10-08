@@ -36,7 +36,14 @@ interface SecureStore {
  * that was just written — a failure that would look like "the session does not persist"
  * rather than like a key clash.
  */
-const val SECURE_SESSION_KEY = "granatum.session.secure.v1"
+const val SECURE_SESSION_KEY = "granatum.session.secure.v2"
+
+/**
+ * Where sessions of the previous shape lived. They never came from a real sign-in — the app had
+ * no login screen, only a development seeder — so there is nothing to migrate: the key is
+ * deleted on start and the person signs in.
+ */
+const val PREVIOUS_SECURE_SESSION_KEY = "granatum.session.secure.v1"
 
 /**
  * The key the previous version wrote the session to, in plain text, in DataStore.

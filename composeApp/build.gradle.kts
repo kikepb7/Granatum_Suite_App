@@ -25,6 +25,9 @@ kotlin {
             implementation(libs.jetbrains.compose.material.icons.extended)
             implementation(libs.bundles.koin.common)
 
+            // AUTH feature
+            implementation(projects.feature.auth.presentation)
+
             // INVENTORY feature
             implementation(projects.feature.inventory.data)
             implementation(projects.feature.inventory.domain)

@@ -78,14 +78,6 @@ class BuildKonfigConventionPlugin: Plugin<Project> {
                         )
                     buildConfigField(FieldSpec.Type.STRING, "API_KEY", apiKey)
                     buildConfigField(FieldSpec.Type.STRING, "ENVIRONMENT", selectedFlavor)
-                    // Verification scaffold: seeds a session for the given role so role-gated
-                    // navigation can be exercised before a login screen exists. Empty unless
-                    // asked for, and only ever read by `local` builds.
-                    buildConfigField(
-                        FieldSpec.Type.STRING,
-                        "DEV_SESSION_ROLE",
-                        if (selectedFlavor == LOCAL) resolve("DEV_SESSION_ROLE").orEmpty() else ""
-                    )
                     buildConfigField(
                         FieldSpec.Type.STRING,
                         "BASE_URL_HTTP",

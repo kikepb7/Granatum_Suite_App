@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Inicio de sesión -->
+    <string name="auth_app_name">Granatum Suite</string>
+    <string name="login_header">Inicia sesión con la cuenta que te dio la empresa</string>
+    <string name="login_email">Correo electrónico</string>
+    <string name="login_email_placeholder">nombre@empresa.es</string>
+    <string name="login_password">Contraseña</string>
+    <string name="login_submit">Entrar</string>
+    <string name="login_email_required">Escribe tu correo</string>
+    <string name="login_email_invalid">Ese correo no tiene un formato válido</string>
+    <string name="login_email_too_long">El correo no puede superar los %1$d caracteres</string>
+    <string name="login_password_required">Escribe tu contraseña</string>
+    <string name="login_password_too_long">La contraseña no puede superar los %1$d caracteres</string>
+    <string name="login_forgot_hint">¿Has olvidado la contraseña? Pide a la administración que la restablezca.</string>
+
+    <!-- Errores de acceso: uno por AuthError -->
+    <string name="auth_error_invalid_credentials">Correo o contraseña incorrectos</string>
+    <string name="auth_error_too_many_attempts">Demasiados intentos. Vuelve a probar dentro de %1$d segundos.</string>
+    <string name="auth_error_too_many_attempts_no_wait">Demasiados intentos. Espera un momento antes de volver a probar.</string>
+    <string name="auth_error_service_busy">El servicio está saturado. Vuelve a probar dentro de %1$d segundos.</string>
+    <string name="auth_error_service_busy_no_wait">El servicio está saturado. Vuelve a probar en unos momentos.</string>
+    <string name="auth_error_validation">Revisa los datos e inténtalo de nuevo</string>
+    <string name="auth_error_no_internet">No hay conexión. Comprueba tu red e inténtalo de nuevo.</string>
+    <string name="auth_error_timeout">El servidor tarda demasiado en responder. Inténtalo de nuevo.</string>
+    <string name="auth_error_invalid_session">No se ha podido iniciar la sesión. Inténtalo de nuevo.</string>
+    <string name="auth_error_weak_password">La contraseña nueva no cumple los requisitos</string>
+    <string name="auth_error_unknown">Algo ha fallado. Inténtalo de nuevo.</string>
+
+    <!-- Motivos de cierre forzado -->
+    <string name="signout_reason_inactive">Tu cuenta ya no está activa. Habla con la administración.</string>
+    <string name="signout_reason_rejected">Tu sesión ha terminado. Vuelve a iniciar sesión.</string>
+
+    <!-- Cambio de contraseña -->
+    <string name="password_mandatory_header">Elige una contraseña propia para continuar</string>
+    <string name="password_voluntary_header">Cambiar contraseña</string>
+    <string name="password_current">Contraseña actual</string>
+    <string name="password_new">Contraseña nueva</string>
+    <string name="password_repeat">Repite la contraseña nueva</string>
+    <string name="password_submit">Cambiar contraseña</string>
+    <string name="password_sign_out">Cerrar sesión</string>
+    <string name="password_cancel">Cancelar</string>
+    <string name="password_mismatch">Las contraseñas no coinciden</string>
+    <string name="password_current_wrong">La contraseña actual no es correcta</string>
+    <string name="password_requirements_title">La contraseña nueva necesita:</string>
+    <string name="password_requirement_met">Cumplido</string>
+    <string name="password_requirement_unmet">Pendiente</string>
+    <string name="password_req_min_length">Al menos 8 caracteres</string>
+    <string name="password_req_max_length">Como máximo 128 caracteres</string>
+    <string name="password_req_uppercase">Una letra mayúscula</string>
+    <string name="password_req_lowercase">Una letra minúscula</string>
+    <string name="password_req_digit">Un número</string>
+    <string name="password_req_symbol">Un símbolo, por ejemplo ! ? - _</string>
+    <string name="password_changed">Contraseña cambiada</string>
+</resources>

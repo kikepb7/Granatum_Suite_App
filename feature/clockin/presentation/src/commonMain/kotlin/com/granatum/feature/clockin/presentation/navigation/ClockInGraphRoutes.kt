@@ -21,8 +21,13 @@ sealed interface ClockInGraphRoutes {
     data object TeamAttendanceRoute : ClockInGraphRoutes
 }
 
-fun NavGraphBuilder.clockInGraph() {
-    composable<ClockInRoute> { ClockInRoot() }
+/**
+ * Destinations a role may not use are not registered at all, so they cannot be reached by
+ * route either, not merely hidden from the bottom bar. History is always there: every role,
+ * REPRESENTANTE included, may read the time register.
+ */
+fun NavGraphBuilder.clockInGraph(canClockIn: Boolean, canSeeTeam: Boolean) {
+    if (canClockIn) composable<ClockInRoute> { ClockInRoot() }
     composable<HistoryRoute> { AttendanceHistoryRoot() }
-    composable<TeamAttendanceRoute> { TeamAttendanceRoot() }
+    if (canSeeTeam) composable<TeamAttendanceRoute> { TeamAttendanceRoot() }
 }

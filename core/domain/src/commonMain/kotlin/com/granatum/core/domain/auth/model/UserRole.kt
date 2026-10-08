@@ -1,9 +1,29 @@
 package com.granatum.core.domain.auth.model
 
-enum class UserRole {
-    ADMIN,
-    ENCARGADO,
-    EMPLEADO;
+/**
+ * The four roles the backend assigns, plus [DESCONOCIDO] for one this version of the app does
+ * not know yet.
+ *
+ * Each permission is spelled out per role instead of grouping roles together, so adding a role
+ * forces a decision on every permission rather than inheriting one by accident. They mirror
+ * the backend's `SecurityConfig`: inventory is ADMIN and ENCARGADO, writing to the time register
+ * is everyone but REPRESENTANTE, who only reads it.
+ */
+enum class UserRole(
+    val canClockIn: Boolean,
+    val canManageInventory: Boolean,
+    val canSeeTeam: Boolean
+) {
+    ADMIN(canClockIn = true, canManageInventory = true, canSeeTeam = true),
+    ENCARGADO(canClockIn = true, canManageInventory = true, canSeeTeam = true),
+    EMPLEADO(canClockIn = true, canManageInventory = false, canSeeTeam = false),
+    REPRESENTANTE(canClockIn = false, canManageInventory = false, canSeeTeam = false),
 
-    val canManageTeam: Boolean get() = this == ADMIN || this == ENCARGADO
+    /** Least privilege: a role the app cannot interpret gets nothing it cannot take back. */
+    DESCONOCIDO(canClockIn = false, canManageInventory = false, canSeeTeam = false);
+
+    companion object {
+        fun fromBackend(name: String?): UserRole =
+            entries.firstOrNull { it != DESCONOCIDO && it.name == name } ?: DESCONOCIDO
+    }
 }
