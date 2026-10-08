@@ -38,6 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.granatum.core.designsystem.components.textfields.AppTextField
+import com.granatum.core.designsystem.components.topbar.AppAccountButton
 import com.granatum.core.designsystem.theme.extended
 import com.granatum.feature.inventory.domain.model.MaterialCondition
 import com.granatum.feature.inventory.domain.model.MaterialModel
@@ -82,6 +83,7 @@ private fun MaterialListScreen(
                 )
                 IconButton(onClick = onCategories) { Icon(Icons.AutoMirrored.Filled.List, contentDescription = stringResource(Res.string.manage_categories)) }
                 IconButton(onClick = { viewModel.onAction(MaterialListAction.OnRefresh) }) { Icon(Icons.Default.Refresh, contentDescription = stringResource(Res.string.refresh)) }
+                AppAccountButton()
             }
         },
         floatingActionButton = {

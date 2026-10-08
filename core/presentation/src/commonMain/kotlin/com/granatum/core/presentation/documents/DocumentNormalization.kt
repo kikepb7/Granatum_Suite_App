@@ -7,7 +7,6 @@ package com.granatum.core.presentation.documents
  * side, so a large one becomes a JPEG too.
  */
 object DocumentNormalization {
-
     const val MAX_BYTES = 10L * 1024 * 1024
     const val MAX_WEBP_BYTES = 7L * 1024 * 1024
     const val MAX_IMAGE_SIDE = 3000
@@ -15,7 +14,10 @@ object DocumentNormalization {
 
     enum class Action { KEEP, TO_JPEG, REJECT }
 
-    fun decide(mimeType: String?, size: Long): Action {
+    fun decide(
+        mimeType: String?,
+        size: Long,
+    ): Action {
         val mime = mimeType?.lowercase().orEmpty()
         return when {
             mime == PDF -> if (size <= MAX_BYTES) Action.KEEP else Action.REJECT
@@ -28,15 +30,20 @@ object DocumentNormalization {
     }
 
     /** The name to upload under, with the extension of what is actually sent. */
-    fun fileName(original: String?, mimeType: String, index: Int): String {
+    fun fileName(
+        original: String?,
+        mimeType: String,
+        index: Int,
+    ): String {
         val base = original?.substringBeforeLast('.')?.takeIf { it.isNotBlank() } ?: "documento-${index + 1}"
-        val extension = when (mimeType) {
-            JPEG -> "jpg"
-            PNG -> "png"
-            WEBP -> "webp"
-            PDF -> "pdf"
-            else -> original?.substringAfterLast('.', "")?.takeIf { it.isNotBlank() } ?: "bin"
-        }
+        val extension =
+            when (mimeType) {
+                JPEG -> "jpg"
+                PNG -> "png"
+                WEBP -> "webp"
+                PDF -> "pdf"
+                else -> original?.substringAfterLast('.', "")?.takeIf { it.isNotBlank() } ?: "bin"
+            }
         return "$base.$extension"
     }
 

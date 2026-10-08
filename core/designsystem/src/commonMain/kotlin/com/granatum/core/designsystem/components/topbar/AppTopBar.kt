@@ -77,6 +77,8 @@ fun AppTopBar(
                             modifier = Modifier.size(size = 18.dp)
                         )
                     }
+                } else if (onBackClick == null && LocalAccountAction.current != null) {
+                    AppAccountButton()
                 } else {
                     Box(modifier = Modifier.size(size = 38.dp))
                 }

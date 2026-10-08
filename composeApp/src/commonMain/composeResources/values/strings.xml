@@ -3,9 +3,9 @@
     <!-- Pestañas -->
     <string name="tab_clock_in">Fichaje</string>
     <string name="tab_history">Historial</string>
+    <string name="tab_invoicing">Facturación</string>
     <string name="tab_inventory">Inventario</string>
     <string name="tab_team">Equipo</string>
-    <string name="tab_account">Cuenta</string>
 
     <!-- Cuenta -->
     <string name="account_title">Tu cuenta</string>

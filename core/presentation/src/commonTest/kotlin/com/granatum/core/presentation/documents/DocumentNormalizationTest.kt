@@ -6,7 +6,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class DocumentNormalizationTest {
-
     @Test
     fun supported_formats_under_the_cap_are_kept() {
         assertEquals(Action.KEEP, DocumentNormalization.decide("image/jpeg", 1_000))

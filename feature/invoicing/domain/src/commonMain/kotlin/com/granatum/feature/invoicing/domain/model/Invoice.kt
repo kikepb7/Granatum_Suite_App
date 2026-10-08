@@ -26,7 +26,10 @@ object InvoiceField {
     const val TOTAL = "total"
 }
 
-data class Party(val name: String?, val taxId: String?) {
+data class Party(
+    val name: String?,
+    val taxId: String?,
+) {
     val isEmpty: Boolean get() = name.isNullOrBlank() && taxId.isNullOrBlank()
 }
 
@@ -35,14 +38,22 @@ data class VatLine(
     val base: Money,
     val quota: Money,
     val surcharge: Money = Money.ZERO,
-    val noQuotaCause: NoQuotaCause? = null
+    val noQuotaCause: NoQuotaCause? = null,
 ) {
     val amount: Money get() = base + quota + surcharge
 }
 
-data class InvoiceWarning(val field: String, val code: String, val blocking: Boolean, val message: String)
+data class InvoiceWarning(
+    val field: String,
+    val code: String,
+    val blocking: Boolean,
+    val message: String,
+)
 
-data class RecognitionSummary(val result: String, val doubtfulFields: List<String>)
+data class RecognitionSummary(
+    val result: String,
+    val doubtfulFields: List<String>,
+)
 
 data class Invoice(
     val id: String,
@@ -61,25 +72,36 @@ data class Invoice(
     val total: Money?,
     val quarterClosed: Boolean,
     val recognition: RecognitionSummary?,
-    val warnings: List<InvoiceWarning>
+    val warnings: List<InvoiceWarning>,
 ) {
     val hasBlockingWarnings: Boolean get() = warnings.any { it.blocking }
 
     /** A confirmed invoice can still be corrected while its quarter is open; a discarded one never. */
-    val canEdit: Boolean get() = when (state) {
-        InvoiceState.PENDING_RECOGNITION, InvoiceState.DRAFT -> true
-        InvoiceState.CONFIRMED -> !quarterClosed
-        InvoiceState.DISCARDED -> false
-    }
+    val canEdit: Boolean get() =
+        when (state) {
+            InvoiceState.PENDING_RECOGNITION, InvoiceState.DRAFT -> true
+            InvoiceState.CONFIRMED -> !quarterClosed
+            InvoiceState.DISCARDED -> false
+        }
     val canConfirm: Boolean get() = state == InvoiceState.DRAFT
     val canDiscard: Boolean get() = canEdit
     val canRecognize: Boolean get() = state == InvoiceState.PENDING_RECOGNITION || state == InvoiceState.DRAFT
 
-    fun draft(): InvoiceDraft = InvoiceDraft(
-        type = type, issuer = issuer, recipient = recipient, number = number, issueDate = issueDate,
-        concept = concept, currency = currency, corrective = corrective, lines = lines,
-        withholding = withholding, total = total, version = version
-    )
+    fun draft(): InvoiceDraft =
+        InvoiceDraft(
+            type = type,
+            issuer = issuer,
+            recipient = recipient,
+            number = number,
+            issueDate = issueDate,
+            concept = concept,
+            currency = currency,
+            corrective = corrective,
+            lines = lines,
+            withholding = withholding,
+            total = total,
+            version = version,
+        )
 }
 
 /** What a save sends: every editable field plus the version it was read at (research D4). */
@@ -95,7 +117,7 @@ data class InvoiceDraft(
     val lines: List<VatLine>,
     val withholding: Money,
     val total: Money?,
-    val version: Int
+    val version: Int,
 ) {
     /** What the lines add up to once withholding is taken off: what the total should be. */
     val expectedTotal: Money get() = lines.fold(Money.ZERO) { acc, line -> acc + line.amount } - withholding
@@ -115,16 +137,22 @@ data class InvoiceSummary(
     val number: String?,
     val issueDate: LocalDate?,
     val total: Money?,
-    val warningCount: Int
+    val warningCount: Int,
 ) {
     /** The other party: whoever is not the company, as far as the type tells. */
-    val counterparty: Party? get() = when (type) {
-        InvoiceType.ISSUED -> recipient ?: issuer
-        else -> issuer ?: recipient
-    }
+    val counterparty: Party? get() =
+        when (type) {
+            InvoiceType.ISSUED -> recipient ?: issuer
+            else -> issuer ?: recipient
+        }
 }
 
-data class Page<T>(val items: List<T>, val page: Int, val size: Int, val total: Long) {
+data class Page<T>(
+    val items: List<T>,
+    val page: Int,
+    val size: Int,
+    val total: Long,
+) {
     val hasMore: Boolean get() = (page + 1).toLong() * size < total
 }
 
@@ -133,25 +161,50 @@ data class InvoiceFilter(
     val type: InvoiceType? = null,
     val from: LocalDate? = null,
     val to: LocalDate? = null,
-    val text: String = ""
+    val text: String = "",
 )
 
-class UploadDocument(val bytes: ByteArray, val fileName: String, val mimeType: String)
+class UploadDocument(
+    val bytes: ByteArray,
+    val fileName: String,
+    val mimeType: String,
+)
 
 enum class UploadOutcome { ACCEPTED, DUPLICATE, UNSUPPORTED_FORMAT, TOO_LARGE, EMPTY, UNREADABLE_PDF, UNKNOWN }
 
 /** [position] is 1-based, in the order the files were sent. */
-data class UploadResult(val position: Int, val outcome: UploadOutcome, val invoiceId: String?)
+data class UploadResult(
+    val position: Int,
+    val outcome: UploadOutcome,
+    val invoiceId: String?,
+)
 
-data class RecognitionAttempt(val result: String, val model: String, val createdAt: Instant, val error: String?)
+data class RecognitionAttempt(
+    val result: String,
+    val model: String,
+    val createdAt: Instant,
+    val error: String?,
+)
 
 enum class ChangeAction { CORRECTION, DISCARD, RECLASSIFICATION, OTHER }
 
-data class InvoiceChange(val action: ChangeAction, val authorId: String, val at: Instant, val previousValues: Map<String, String>)
+data class InvoiceChange(
+    val action: ChangeAction,
+    val authorId: String,
+    val at: Instant,
+    val previousValues: Map<String, String>,
+)
 
-data class InvoiceHistory(val recognitions: List<RecognitionAttempt>, val changes: List<InvoiceChange>)
+data class InvoiceHistory(
+    val recognitions: List<RecognitionAttempt>,
+    val changes: List<InvoiceChange>,
+)
 
 /** A downloaded file: the original document or a report. */
-class InvoicingFile(val bytes: ByteArray, val fileName: String, val mimeType: String) {
+class InvoicingFile(
+    val bytes: ByteArray,
+    val fileName: String,
+    val mimeType: String,
+) {
     val isImage: Boolean get() = mimeType.startsWith("image/")
 }

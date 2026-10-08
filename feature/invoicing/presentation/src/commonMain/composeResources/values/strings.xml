@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Lista -->
+    <string name="invoicing_title">Facturación</string>
+    <string name="search_placeholder">Buscar por nombre o NIF</string>
+    <string name="filter_all">Todas</string>
+    <string name="filter_issued">Emitidas</string>
+    <string name="filter_received">Recibidas</string>
+    <string name="filter_dates">Fechas</string>
+    <string name="filter_dates_range">%1$s – %2$s</string>
+    <string name="filter_clear_dates">Quitar fechas</string>
+    <string name="list_empty">Aún no hay facturas. Sube la primera.</string>
+    <string name="list_empty_filtered">Ninguna factura coincide con los filtros</string>
+    <string name="list_load_more_error">No se pudieron cargar más facturas</string>
+    <string name="retry">Reintentar</string>
+    <string name="refresh">Actualizar</string>
+    <string name="quarters">Trimestres</string>
+    <string name="reports">Reportes</string>
+    <string name="company">Empresa</string>
+    <string name="no_counterparty">Sin emisor</string>
+    <string name="no_number">Sin número</string>
+    <string name="no_date">Sin fecha</string>
+    <string name="warnings_count">%1$d avisos</string>
+    <string name="company_missing">Configura los datos fiscales de la empresa para poder confirmar facturas.</string>
+    <string name="company_missing_action">Configurar</string>
+
+    <!-- Estados y tipos -->
+    <string name="state_pending">Pendiente de reconocer</string>
+    <string name="state_draft">Borrador</string>
+    <string name="state_confirmed">Confirmada</string>
+    <string name="state_discarded">Descartada</string>
+    <string name="type_issued">Emitida</string>
+    <string name="type_received">Recibida</string>
+    <string name="type_unknown">Sin clasificar</string>
+    <string name="cause_exempt">Exenta</string>
+    <string name="cause_reverse_charge">Inversión del sujeto pasivo</string>
+    <string name="cause_intra_eu">Intracomunitaria</string>
+
+    <!-- Subida -->
+    <string name="upload">Subir facturas</string>
+    <string name="upload_camera">Hacer una foto</string>
+    <string name="upload_gallery">Elegir de la galería</string>
+    <string name="upload_files">Elegir archivos (PDF o imágenes)</string>
+    <string name="uploading">Subiendo %1$d documentos…</string>
+    <string name="upload_results_title">Resultado de la subida</string>
+    <string name="upload_accepted">Subida</string>
+    <string name="upload_duplicate">Ya estaba subida</string>
+    <string name="upload_unsupported">Formato no admitido: usa JPEG, PNG, WebP o PDF</string>
+    <string name="upload_too_large">Pesa más de 10 MB</string>
+    <string name="upload_empty">El archivo está vacío</string>
+    <string name="upload_unreadable_pdf">PDF protegido, dañado o de más de 20 páginas</string>
+    <string name="upload_unknown">No se pudo procesar</string>
+    <string name="upload_open">Ver</string>
+    <string name="upload_done">Hecho</string>
+
+    <!-- Detalle -->
+    <string name="invoice_title">Factura</string>
+    <string name="section_parties">Emisor y destinatario</string>
+    <string name="section_invoice">Datos de la factura</string>
+    <string name="section_lines">Líneas de IVA</string>
+    <string name="section_totals">Totales</string>
+    <string name="field_type">Tipo</string>
+    <string name="field_issuer_name">Emisor: nombre</string>
+    <string name="field_issuer_tax_id">Emisor: NIF</string>
+    <string name="field_recipient_name">Destinatario: nombre</string>
+    <string name="field_recipient_tax_id">Destinatario: NIF</string>
+    <string name="field_number">Número</string>
+    <string name="field_issue_date">Fecha de emisión</string>
+    <string name="field_concept">Concepto</string>
+    <string name="field_corrective">Rectificativa</string>
+    <string name="field_rate">IVA %</string>
+    <string name="field_base">Base</string>
+    <string name="field_quota">Cuota</string>
+    <string name="field_surcharge">Recargo</string>
+    <string name="field_no_quota_cause">Motivo sin cuota</string>
+    <string name="field_withholding">Retenciones</string>
+    <string name="field_total">Total</string>
+    <string name="choose_date">Elegir fecha</string>
+    <string name="add_line">Añadir línea</string>
+    <string name="remove_line">Quitar línea</string>
+    <string name="line_title">Línea %1$d</string>
+    <string name="balance_ok">Cuadra: líneas menos retenciones = %1$s €</string>
+    <string name="balance_gap">No cuadra: el total difiere %1$s € de las líneas menos retenciones (%2$s €)</string>
+    <string name="balance_use">Usar %1$s € como total</string>
+    <string name="invalid_amount">Importe no válido: hasta 10 enteros y 2 decimales</string>
+    <string name="invalid_rate">Tipo no válido: entre 0 y 100</string>
+    <string name="too_long">Máximo %1$d caracteres</string>
+    <string name="doubtful">Revisa este dato: el reconocimiento no está seguro</string>
+    <string name="warning_blocking">Impide confirmar</string>
+    <string name="quarter_closed_notice">El trimestre de esta factura está cerrado: no se puede modificar.</string>
+    <string name="discarded_notice">Factura descartada: se conserva para consulta.</string>
+    <string name="pending_notice">Reconociendo el documento… puedes rellenarla a mano si prefieres.</string>
+    <string name="save">Guardar</string>
+    <string name="confirm">Confirmar</string>
+    <string name="discard">Descartar</string>
+    <string name="recognize">Reconocer de nuevo</string>
+    <string name="original">Ver original</string>
+    <string name="history">Historial</string>
+    <string name="saved">Guardado.</string>
+    <string name="confirmed">Factura confirmada.</string>
+    <string name="discarded">Factura descartada.</string>
+    <string name="recognizing">Reconociendo de nuevo…</string>
+    <string name="fix_fields">Revisa los campos marcados.</string>
+    <string name="fix_blocking">Corrige los avisos que impiden confirmar.</string>
+    <string name="reloaded">La factura había cambiado: se ha recargado la última versión.</string>
+    <string name="discard_title">¿Descartar la factura?</string>
+    <string name="discard_description">Dejará de contar en los reportes y ya no se podrá editar. Se conserva para consulta.</string>
+    <string name="recognize_title">¿Reconocer de nuevo?</string>
+    <string name="recognize_description">Los datos leídos del documento sustituirán a los actuales del borrador.</string>
+    <string name="cancel">Cancelar</string>
+    <string name="unsaved_title">¿Salir sin guardar?</string>
+    <string name="unsaved_description">Perderás los cambios de esta factura.</string>
+    <string name="leave">Salir</string>
+
+    <!-- Original e historial -->
+    <string name="original_title">Documento original</string>
+    <string name="open">Abrir</string>
+    <string name="share">Compartir</string>
+    <string name="original_pdf">El documento es un PDF. Ábrelo con el visor del móvil.</string>
+    <string name="history_title">Historial</string>
+    <string name="history_recognitions">Reconocimientos</string>
+    <string name="history_changes">Cambios</string>
+    <string name="history_empty">Sin cambios registrados</string>
+    <string name="history_recognition_item">%1$s · %2$s</string>
+    <string name="history_author">Por %1$s</string>
+    <string name="history_previous">Antes: %1$s = %2$s</string>
+    <string name="change_correction">Corrección</string>
+    <string name="change_discard">Descarte</string>
+    <string name="change_reclassification">Reclasificación</string>
+    <string name="change_other">Cambio</string>
+
+    <!-- Trimestres -->
+    <string name="quarters_title">Trimestres</string>
+    <string name="quarter_label">%1$dT %2$d</string>
+    <string name="quarter_open">Abierto</string>
+    <string name="quarter_closed">Cerrado</string>
+    <string name="quarter_close">Cerrar</string>
+    <string name="quarter_reopen">Reabrir</string>
+    <string name="quarter_close_title">¿Cerrar el %1$dT %2$d?</string>
+    <string name="quarter_close_description">No se podrán confirmar, corregir ni descartar facturas de este trimestre hasta reabrirlo.</string>
+    <string name="quarter_reopen_title">Reabrir el %1$dT %2$d</string>
+    <string name="quarter_reopen_reason">Motivo (10 a 500 caracteres)</string>
+    <string name="quarter_reason_invalid">Escribe un motivo de 10 a 500 caracteres</string>
+    <string name="quarter_event_close">Cerrado el %1$s</string>
+    <string name="quarter_event_reopen">Reabierto el %1$s: %2$s</string>
+    <string name="quarter_done_close">Trimestre cerrado.</string>
+    <string name="quarter_done_reopen">Trimestre reabierto.</string>
+    <string name="previous_year">Año anterior</string>
+    <string name="next_year">Año siguiente</string>
+
+    <!-- Reportes -->
+    <string name="report_title">Reportes</string>
+    <string name="period_monthly">Mensual</string>
+    <string name="period_quarterly">Trimestral</string>
+    <string name="period_yearly">Anual</string>
+    <string name="report_range">Del %1$s al %2$s</string>
+    <string name="report_issued">Emitidas</string>
+    <string name="report_received">Recibidas</string>
+    <string name="report_count">Facturas</string>
+    <string name="report_base">Base imponible</string>
+    <string name="report_vat_rate">IVA %1$s %%</string>
+    <string name="report_surcharge">Recargo de equivalencia</string>
+    <string name="report_withholding">Retenciones</string>
+    <string name="report_total">Total</string>
+    <string name="report_no_quota">Base sin cuota (%1$s)</string>
+    <string name="report_pending">%1$d facturas del periodo siguen sin confirmar y no cuentan.</string>
+    <string name="report_closed_quarters">Trimestres cerrados: %1$s</string>
+    <string name="report_download_csv">Descargar CSV</string>
+    <string name="report_download_pdf">Descargar PDF</string>
+    <string name="amount_eur">%1$s €</string>
+
+    <!-- Empresa -->
+    <string name="company_title">Datos fiscales</string>
+    <string name="company_legal_name">Razón social</string>
+    <string name="company_tax_id">NIF</string>
+    <string name="company_recognition_on">Reconocimiento automático activo: el servidor lee las facturas que subes.</string>
+    <string name="company_recognition_off">Reconocimiento automático desactivado: las facturas se rellenan a mano.</string>
+    <string name="company_saved">Datos guardados.</string>
+    <string name="required">Obligatorio</string>
+    <string name="back">Volver</string>
+
+    <!-- Errores -->
+    <string name="error_no_internet">No pudimos conectar. Revisa tu conexión e inténtalo de nuevo.</string>
+    <string name="error_not_found">La factura ya no existe.</string>
+    <string name="error_company_not_configured">Configura antes los datos fiscales de la empresa.</string>
+    <string name="error_invalid_tax_id">El NIF no es válido.</string>
+    <string name="error_stale_version">La factura había cambiado. Revisa la última versión.</string>
+    <string name="error_state_not_allowed">La factura ya no admite este cambio.</string>
+    <string name="error_quarter_closed">El trimestre está cerrado.</string>
+    <string name="error_quarter_open">El trimestre ya estaba abierto.</string>
+    <string name="error_quarter_pending">No se puede cerrar: %1$s</string>
+    <string name="error_duplicate">Ya hay una factura confirmada con el mismo emisor, número y fecha.</string>
+    <string name="error_incoherent">La factura tiene avisos que impiden guardarla así: %1$s</string>
+    <string name="error_recognition_unavailable">El reconocimiento automático no está activo en el servidor.</string>
+    <string name="error_invalid_period">Periodo no válido.</string>
+    <string name="error_invalid">Hay datos no válidos.</string>
+    <string name="error_too_large">El envío es demasiado grande.</string>
+    <string name="error_forbidden">No tienes permiso para facturación.</string>
+    <string name="error_rate_limited">Demasiadas peticiones. Espera un momento.</string>
+    <string name="error_unknown">No pudimos completar la operación. Inténtalo de nuevo.</string>
+</resources>

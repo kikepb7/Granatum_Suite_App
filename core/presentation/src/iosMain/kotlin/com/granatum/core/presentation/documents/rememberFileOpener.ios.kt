@@ -12,12 +12,14 @@ import platform.darwin.NSObject
 @Composable
 actual fun rememberFileOpener(): FileOpener {
     // Held here because UIKit keeps the interaction controller's delegate weakly.
-    val previewDelegate = remember {
-        object : NSObject(), UIDocumentInteractionControllerDelegateProtocol {
-            override fun documentInteractionControllerViewControllerForPreview(controller: UIDocumentInteractionController): UIViewController =
-                topViewController() ?: UIViewController()
+    val previewDelegate =
+        remember {
+            object : NSObject(), UIDocumentInteractionControllerDelegateProtocol {
+                override fun documentInteractionControllerViewControllerForPreview(
+                    controller: UIDocumentInteractionController,
+                ): UIViewController = topViewController() ?: UIViewController()
+            }
         }
-    }
     val holder = remember { arrayOfNulls<UIDocumentInteractionController>(1) }
     return remember {
         FileOpener(
@@ -28,7 +30,7 @@ actual fun rememberFileOpener(): FileOpener {
                 holder[0] = controller
                 if (!controller.presentPreviewAnimated(true)) share(file)
             },
-            onShare = { file -> share(file) }
+            onShare = { file -> share(file) },
         )
     }
 }

@@ -7,4 +7,6 @@ import com.granatum.feature.invoicing.domain.repository.InvoicingRepository
  * one-to-one with the server's routes, as in inventory. Rules that grow later (the owner will add
  * features) get their own use case here.
  */
-class InvoicingUseCases(val repository: InvoicingRepository)
+class InvoicingUseCases(
+    val repository: InvoicingRepository,
+)

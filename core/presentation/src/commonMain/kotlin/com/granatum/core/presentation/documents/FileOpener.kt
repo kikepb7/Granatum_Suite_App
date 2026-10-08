@@ -6,12 +6,12 @@ import androidx.compose.runtime.Composable
 class SharedFile(
     val bytes: ByteArray,
     val fileName: String,
-    val mimeType: String
+    val mimeType: String,
 )
 
 class FileOpener(
     private val onOpen: (SharedFile) -> Unit,
-    private val onShare: (SharedFile) -> Unit
+    private val onShare: (SharedFile) -> Unit,
 ) {
     /** Shows the file with the system viewer (a PDF reader, for instance). */
     fun open(file: SharedFile) = onOpen(file)

@@ -12,10 +12,12 @@ enum class DocumentSource { CAMERA, GALLERY, FILES }
 class PickedDocument(
     val bytes: ByteArray,
     val fileName: String,
-    val mimeType: String
+    val mimeType: String,
 )
 
-class DocumentPicker(private val onLaunch: (DocumentSource) -> Unit) {
+class DocumentPicker(
+    private val onLaunch: (DocumentSource) -> Unit,
+) {
     fun launch(source: DocumentSource) = onLaunch(source)
 }
 

@@ -7,15 +7,15 @@ import kotlin.test.assertEquals
 class UserRoleTest {
 
     private fun permissions(role: UserRole) =
-        Triple(role.canClockIn, role.canManageInventory, role.canSeeTeam)
+        listOf(role.canClockIn, role.canManageInventory, role.canSeeTeam, role.canManageInvoicing)
 
     @Test
     fun permissions_match_what_the_backend_allows() {
-        assertEquals(Triple(true, true, true), permissions(UserRole.ADMIN))
-        assertEquals(Triple(true, true, true), permissions(UserRole.ENCARGADO))
-        assertEquals(Triple(true, false, false), permissions(UserRole.EMPLEADO))
-        assertEquals(Triple(false, false, false), permissions(UserRole.REPRESENTANTE))
-        assertEquals(Triple(false, false, false), permissions(UserRole.DESCONOCIDO))
+        assertEquals(listOf(true, true, true, true), permissions(UserRole.ADMIN))
+        assertEquals(listOf(true, true, true, false), permissions(UserRole.ENCARGADO))
+        assertEquals(listOf(true, false, false, false), permissions(UserRole.EMPLEADO))
+        assertEquals(listOf(false, false, false, false), permissions(UserRole.REPRESENTANTE))
+        assertEquals(listOf(false, false, false, false), permissions(UserRole.DESCONOCIDO))
     }
 
     @Test

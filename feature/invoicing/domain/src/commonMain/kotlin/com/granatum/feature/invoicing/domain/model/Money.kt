@@ -9,11 +9,15 @@ import kotlin.math.absoluteValue
  * (specs/008-facturacion, research D2). VAT rates use it too, as a percentage with two decimals.
  */
 @JvmInline
-value class Money(val cents: Long) : Comparable<Money> {
-
+value class Money(
+    val cents: Long,
+) : Comparable<Money> {
     operator fun plus(other: Money) = Money(cents + other.cents)
+
     operator fun minus(other: Money) = Money(cents - other.cents)
+
     operator fun unaryMinus() = Money(-cents)
+
     override fun compareTo(other: Money) = cents.compareTo(other.cents)
 
     val isZero: Boolean get() = cents == 0L
@@ -30,7 +34,13 @@ value class Money(val cents: Long) : Comparable<Money> {
     fun format(): String {
         val sign = if (cents < 0) "-" else ""
         val abs = cents.absoluteValue
-        val whole = (abs / 100).toString().reversed().chunked(3).joinToString(".").reversed()
+        val whole =
+            (abs / 100)
+                .toString()
+                .reversed()
+                .chunked(3)
+                .joinToString(".")
+                .reversed()
         return "$sign$whole,${(abs % 100).toString().padStart(2, '0')}"
     }
 

@@ -9,6 +9,9 @@ import com.granatum.feature.auth.presentation.di.authPresentationModule
 import com.granatum.feature.inventory.data.di.inventoryDataModule
 import com.granatum.feature.inventory.domain.di.inventoryDomainModule
 import com.granatum.feature.inventory.presentation.di.inventoryPresentationModule
+import com.granatum.feature.invoicing.data.di.invoicingDataModule
+import com.granatum.feature.invoicing.domain.di.invoicingDomainModule
+import com.granatum.feature.invoicing.presentation.di.invoicingPresentationModule
 import org.koin.core.context.startKoin
 import org.koin.dsl.KoinAppDeclaration
 
@@ -29,6 +32,9 @@ fun initKoin(config: KoinAppDeclaration? = null) {
             clockInDataModule,
             clockInDomainModule,
             clockInPresentationModule,
+            invoicingDataModule,
+            invoicingDomainModule,
+            invoicingPresentationModule,
             authPresentationModule
         )
     }

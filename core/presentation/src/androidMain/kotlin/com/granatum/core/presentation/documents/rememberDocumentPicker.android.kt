@@ -37,11 +37,12 @@ actual fun rememberDocumentPicker(onResult: (List<PickedDocument>) -> Unit): Doc
 
     val gallery = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(MAX_PICKED)) { read(it) }
     val files = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { read(it) }
-    val camera = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { taken ->
-        val photo = pendingPhoto
-        pendingPhoto = null
-        if (taken && photo != null) read(listOf(Uri.parse(photo)))
-    }
+    val camera =
+        rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { taken ->
+            val photo = pendingPhoto
+            pendingPhoto = null
+            if (taken && photo != null) read(listOf(Uri.parse(photo)))
+        }
 
     return remember {
         DocumentPicker { source ->

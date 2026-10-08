@@ -14,9 +14,10 @@ actual fun rememberFileOpener(): FileOpener {
         FileOpener(
             onOpen = { file ->
                 val uri = context.write(file)
-                val view = Intent(Intent.ACTION_VIEW)
-                    .setDataAndType(uri, file.mimeType)
-                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+                val view =
+                    Intent(Intent.ACTION_VIEW)
+                        .setDataAndType(uri, file.mimeType)
+                        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
                 try {
                     context.startActivity(view)
                 } catch (_: ActivityNotFoundException) {
@@ -24,7 +25,7 @@ actual fun rememberFileOpener(): FileOpener {
                     context.share(file)
                 }
             },
-            onShare = { file -> context.share(file) }
+            onShare = { file -> context.share(file) },
         )
     }
 }
@@ -32,9 +33,10 @@ actual fun rememberFileOpener(): FileOpener {
 private fun Context.write(file: SharedFile) = uriFor(cacheFile("shared", file.fileName).apply { writeBytes(file.bytes) })
 
 private fun Context.share(file: SharedFile) {
-    val send = Intent(Intent.ACTION_SEND)
-        .setType(file.mimeType)
-        .putExtra(Intent.EXTRA_STREAM, write(file))
-        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    val send =
+        Intent(Intent.ACTION_SEND)
+            .setType(file.mimeType)
+            .putExtra(Intent.EXTRA_STREAM, write(file))
+            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     startActivity(Intent.createChooser(send, null).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
 }

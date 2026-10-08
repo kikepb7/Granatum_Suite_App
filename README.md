@@ -103,6 +103,24 @@ y `/api/categorias`, tal como los guarda el servidor
   forma de subirlas.
 - Una categoría con materiales no se puede borrar (el servidor respondería con un error 500).
 
+## Facturación
+
+Solo para la administración: registra las facturas emitidas y recibidas del negocio contra
+`/api/facturacion` ([spec 008](specs/008-facturacion/spec.md)). No emite facturas.
+
+- **Subir**: foto con la cámara, imágenes de la galería o PDF, varios a la vez. Las fotos HEIC del
+  iPhone se convierten a JPEG y las imágenes de más de 10 MB se reducen antes de enviarlas.
+- **Revisar y confirmar**: el servidor lee el documento en segundo plano (si tiene
+  `ANTHROPIC_API_KEY`; sin ella, las facturas se rellenan a mano) y deja un borrador con avisos.
+  Los que impiden confirmar salen en rojo junto a su campo; la app ayuda a cuadrar el total. Todo
+  cambio viaja con su versión: si otra persona tocó la factura, la app recarga en lugar de pisarla.
+- **Trimestres y reportes**: cerrar un trimestre bloquea sus facturas hasta reabrirlo con un motivo.
+  Los reportes mensuales, trimestrales y anuales se descargan en PDF o CSV.
+- **Solo con conexión**: son datos fiscales de terceros y no se guardan en el móvil. Tampoco salen
+  en el log de red.
+- La cuenta se abre ahora desde el botón con la inicial de la barra superior, para que la barra
+  inferior no pase de cinco pestañas.
+
 ## Entornos
 
 El entorno se elige **al compilar** y queda fijado en el binario. No se puede cambiar en ejecución, a propósito: así ningún binario de producción puede repuntarse a otro servidor.

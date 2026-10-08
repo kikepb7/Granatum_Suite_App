@@ -52,6 +52,7 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun AccountScreenRoot(
     onChangePasswordClick: () -> Unit,
+    onNavigateBack: () -> Unit,
     viewModel: AccountViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -59,7 +60,7 @@ fun AccountScreenRoot(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.extended.surfaceLower,
         contentWindowInsets = WindowInsets.safeDrawing,
-        topBar = { AppTopBar(title = stringResource(Res.string.account_title)) }
+        topBar = { AppTopBar(title = stringResource(Res.string.account_title), onBackClick = onNavigateBack) }
     ) { padding ->
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,

@@ -6,7 +6,8 @@ import com.granatum.feature.invoicing.domain.repository.InvoicingRepository
 import org.koin.dsl.bind
 import org.koin.dsl.module
 
-val invoicingDataModule = module {
-    single { InvoicingRemoteDataSource(get()) }
-    single { KtorInvoicingRepository(get()) } bind InvoicingRepository::class
-}
+val invoicingDataModule =
+    module {
+        single { InvoicingRemoteDataSource(get()) }
+        single { KtorInvoicingRepository(get()) } bind InvoicingRepository::class
+    }

@@ -4,6 +4,7 @@ import com.granatum.feature.invoicing.domain.usecase.InvoicingUseCases
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 
-val invoicingDomainModule = module {
-    singleOf(::InvoicingUseCases)
-}
+val invoicingDomainModule =
+    module {
+        singleOf(::InvoicingUseCases)
+    }

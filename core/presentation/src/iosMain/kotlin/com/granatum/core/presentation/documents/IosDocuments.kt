@@ -33,17 +33,19 @@ internal fun NSData.toByteArray(): ByteArray {
     return bytes
 }
 
-internal fun ByteArray.toNSData(): NSData = usePinned {
-    NSData.create(bytes = it.addressOf(0), length = size.toULong())
-}
+internal fun ByteArray.toNSData(): NSData =
+    usePinned {
+        NSData.create(bytes = it.addressOf(0), length = size.toULong())
+    }
 
 /** The view controller on top, to present pickers and sheets from. */
 internal fun topViewController(): UIViewController? {
-    val window = UIApplication.sharedApplication.connectedScenes
-        .filterIsInstance<UIWindowScene>()
-        .flatMap { scene -> scene.windows.filterIsInstance<UIWindow>() }
-        .firstOrNull { it.isKeyWindow() }
-        ?: UIApplication.sharedApplication.keyWindow
+    val window =
+        UIApplication.sharedApplication.connectedScenes
+            .filterIsInstance<UIWindowScene>()
+            .flatMap { scene -> scene.windows.filterIsInstance<UIWindow>() }
+            .firstOrNull { it.isKeyWindow() }
+            ?: UIApplication.sharedApplication.keyWindow
     var top = window?.rootViewController
     while (top?.presentedViewController != null) top = top.presentedViewController
     return top
@@ -54,30 +56,41 @@ internal fun UIImage.toJpeg(): ByteArray? {
     val maxSide = DocumentNormalization.MAX_IMAGE_SIDE.toDouble()
     val (width, height) = size.useContents { width to height }
     val longest = max(width, height)
-    val image = if (longest > maxSide) {
-        val scale = maxSide / longest
-        val target = CGSizeMake(width * scale, height * scale)
-        UIGraphicsBeginImageContextWithOptions(target, false, 1.0)
-        drawInRect(CGRectMake(0.0, 0.0, width * scale, height * scale))
-        val scaled = UIGraphicsGetImageFromCurrentImageContext()
-        UIGraphicsEndImageContext()
-        scaled ?: this
-    } else {
-        this
-    }
+    val image =
+        if (longest > maxSide) {
+            val scale = maxSide / longest
+            val target = CGSizeMake(width * scale, height * scale)
+            UIGraphicsBeginImageContextWithOptions(target, false, 1.0)
+            drawInRect(CGRectMake(0.0, 0.0, width * scale, height * scale))
+            val scaled = UIGraphicsGetImageFromCurrentImageContext()
+            UIGraphicsEndImageContext()
+            scaled ?: this
+        } else {
+            this
+        }
     return UIImageJPEGRepresentation(image, DocumentNormalization.JPEG_QUALITY / 100.0)?.toByteArray()
 }
 
 /** Normalises picked bytes for upload; null when they cannot be read or fixed. */
-internal fun normalise(data: ByteArray, mimeType: String?, originalName: String?, index: Int): PickedDocument? =
+internal fun normalise(
+    data: ByteArray,
+    mimeType: String?,
+    originalName: String?,
+    index: Int,
+): PickedDocument? =
     when (DocumentNormalization.decide(mimeType, data.size.toLong())) {
         DocumentNormalization.Action.KEEP -> {
             val sent = mimeType ?: "application/octet-stream"
             PickedDocument(data, DocumentNormalization.fileName(originalName, sent, index), sent)
         }
-        DocumentNormalization.Action.TO_JPEG -> UIImage.imageWithData(data.toNSData())?.toJpeg()?.let {
-            PickedDocument(it, DocumentNormalization.fileName(originalName, DocumentNormalization.JPEG, index), DocumentNormalization.JPEG)
-        }
+        DocumentNormalization.Action.TO_JPEG ->
+            UIImage.imageWithData(data.toNSData())?.toJpeg()?.let {
+                PickedDocument(
+                    it,
+                    DocumentNormalization.fileName(originalName, DocumentNormalization.JPEG, index),
+                    DocumentNormalization.JPEG,
+                )
+            }
         DocumentNormalization.Action.REJECT -> {
             val sent = mimeType ?: "application/octet-stream"
             PickedDocument(data, DocumentNormalization.fileName(originalName, sent, index), sent)

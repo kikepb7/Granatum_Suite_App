@@ -13,7 +13,6 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class InvoicingDomainTest {
-
     @Test
     fun money_reads_dots_and_commas_and_rejects_the_rest() {
         assertEquals(Money(123456), Money.parse("1234.56"))
@@ -46,11 +45,12 @@ class InvoicingDomainTest {
 
     @Test
     fun the_balance_is_lines_minus_withholding_with_a_cent_of_tolerance() {
-        val draft = invoice(InvoiceState.DRAFT).draft().copy(
-            lines = listOf(VatLine(rate = Money(2100), base = Money(10000), quota = Money(2100))),
-            withholding = Money(1500),
-            total = Money(10601)
-        )
+        val draft =
+            invoice(InvoiceState.DRAFT).draft().copy(
+                lines = listOf(VatLine(rate = Money(2100), base = Money(10000), quota = Money(2100))),
+                withholding = Money(1500),
+                total = Money(10601),
+            )
         assertEquals(Money(10600), draft.expectedTotal)
         assertEquals(Money(1), draft.balanceGap)
         assertTrue(draft.isBalanced)
@@ -78,9 +78,26 @@ class InvoicingDomainTest {
         assertFalse(Page(listOf(1), page = 1, size = 50, total = 100).hasMore)
     }
 
-    private fun invoice(state: InvoiceState, quarterClosed: Boolean = false) = Invoice(
-        id = "f1", state = state, type = null, version = 0, issuer = null, recipient = null, number = null,
-        issueDate = null, concept = null, currency = "EUR", corrective = false, lines = emptyList(),
-        withholding = Money.ZERO, total = null, quarterClosed = quarterClosed, recognition = null, warnings = emptyList()
+    private fun invoice(
+        state: InvoiceState,
+        quarterClosed: Boolean = false,
+    ) = Invoice(
+        id = "f1",
+        state = state,
+        type = null,
+        version = 0,
+        issuer = null,
+        recipient = null,
+        number = null,
+        issueDate = null,
+        concept = null,
+        currency = "EUR",
+        corrective = false,
+        lines = emptyList(),
+        withholding = Money.ZERO,
+        total = null,
+        quarterClosed = quarterClosed,
+        recognition = null,
+        warnings = emptyList(),
     )
 }

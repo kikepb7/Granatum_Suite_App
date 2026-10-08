@@ -5,16 +5,36 @@ import kotlin.time.Instant
 
 enum class QuarterAction { CLOSE, REOPEN, OTHER }
 
-data class QuarterEvent(val action: QuarterAction, val authorId: String, val at: Instant, val reason: String?)
+data class QuarterEvent(
+    val action: QuarterAction,
+    val authorId: String,
+    val at: Instant,
+    val reason: String?,
+)
 
-data class Quarter(val year: Int, val quarter: Int, val closed: Boolean, val events: List<QuarterEvent>)
+data class Quarter(
+    val year: Int,
+    val quarter: Int,
+    val closed: Boolean,
+    val events: List<QuarterEvent>,
+)
 
 sealed interface ReportPeriod {
     val year: Int
 
-    data class Monthly(override val year: Int, val month: Int) : ReportPeriod
-    data class Quarterly(override val year: Int, val quarter: Int) : ReportPeriod
-    data class Yearly(override val year: Int) : ReportPeriod
+    data class Monthly(
+        override val year: Int,
+        val month: Int,
+    ) : ReportPeriod
+
+    data class Quarterly(
+        override val year: Int,
+        val quarter: Int,
+    ) : ReportPeriod
+
+    data class Yearly(
+        override val year: Int,
+    ) : ReportPeriod
 }
 
 enum class ReportFormat { CSV, PDF }
@@ -27,7 +47,7 @@ data class ReportGroup(
     val surcharge: Money,
     val withholding: Money,
     val total: Money,
-    val noQuota: Map<NoQuotaCause, Money>
+    val noQuota: Map<NoQuotaCause, Money>,
 )
 
 data class Report(
@@ -38,10 +58,14 @@ data class Report(
     val received: ReportGroup,
     val pending: Int,
     val closedQuarters: List<Pair<Int, Int>>,
-    val computedAt: Instant
+    val computedAt: Instant,
 )
 
-data class Company(val legalName: String, val taxId: String, val recognitionEnabled: Boolean)
+data class Company(
+    val legalName: String,
+    val taxId: String,
+    val recognitionEnabled: Boolean,
+)
 
 object FiscalLimits {
     const val NAME = 200
