@@ -1,9 +1,8 @@
 package com.granatum.app.navigation
 
-import androidx.compose.foundation.layout.Box
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.DateRange
@@ -15,11 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -28,7 +23,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.granatum.app.account.AccountScreenRoot
 import com.granatum.core.data.auth.SessionStateHolder
-import com.granatum.core.designsystem.components.brand.AppBrandLogo
+import com.granatum.core.designsystem.components.brand.AppBrandSplash
 import com.granatum.core.designsystem.components.navigation.AppBottomBar
 import com.granatum.core.designsystem.components.navigation.AppBottomBarItemModel
 import com.granatum.core.domain.auth.model.SessionState
@@ -50,6 +45,7 @@ import granatumsuite.composeapp.generated.resources.tab_clock_in
 import granatumsuite.composeapp.generated.resources.tab_history
 import granatumsuite.composeapp.generated.resources.tab_inventory
 import granatumsuite.composeapp.generated.resources.tab_team
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import org.jetbrains.compose.resources.StringResource
@@ -68,8 +64,15 @@ fun NavigationRoot() {
     val scope = rememberCoroutineScope()
     val sessionState by sessionStateHolder.state.collectAsStateWithLifecycle()
 
+    Crossfade(targetState = sessionState is SessionState.Loading, label = "splash") { loading ->
+        if (loading) Splash() else Gate(sessionState, authRepository, scope)
+    }
+}
+
+@Composable
+private fun Gate(sessionState: SessionState, authRepository: AuthRepository, scope: CoroutineScope) {
     when (val state = sessionState) {
-        SessionState.Loading -> Splash()
+        SessionState.Loading -> Unit
         is SessionState.SignedOut -> LoginScreenRoot(signOutReason = state.reason)
         SessionState.PasswordChangeRequired -> ChangePasswordScreenRoot(
             mode = ChangePasswordMode.MANDATORY,
@@ -83,15 +86,13 @@ fun NavigationRoot() {
     }
 }
 
+/**
+ * The brand splash continues the system one while the stored session is read, and is cut the
+ * moment the gate knows where to go: it never holds anyone back (brand guide).
+ */
 @Composable
 private fun Splash() {
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = Modifier.fillMaxSize()
-    ) {
-        val loading = stringResource(Res.string.splash_loading)
-        AppBrandLogo(modifier = Modifier.size(96.dp).semantics { contentDescription = loading })
-    }
+    AppBrandSplash(contentDescription = stringResource(Res.string.splash_loading))
 }
 
 @Serializable

@@ -2,13 +2,29 @@ package com.granatum.core.designsystem.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Brand colors
-val AppBrand1000 = Color(0xFF092E2D)
-val AppBrand900 = Color(0xFF106461)
-val AppBrand600 = Color(0xFF19BA87)
-val AppBrand500 = Color(0xFF4DDEAB)
-val AppBrand500Alpha40 = Color(0x664DDEAB)
-val AppBrand100 = Color(0xFFCEF5E4)
+// Brand colors (Branding de Granatum, 2026-10-08): coral granada as the accent, deep petróleo
+// as the base and warm bone as the canvas. White text on coral only at large sizes; on light
+// grounds, coral text uses GranatumCoralDeep (AA).
+val GranatumCoral = Color(0xFFFF6470) // Granada
+val GranatumCoralDeep = Color(0xFFC8283A) // Granada profundo
+val GranatumPulp = Color(0xFFFFE6E8) // Pulpa
+val GranatumTeal = Color(0xFF022D3B) // Petróleo
+val GranatumTealMid = Color(0xFF11404F) // Petróleo medio
+val GranatumBone = Color(0xFFF7F3F0) // Hueso
+val GranatumStone = Color(0xFF52707C) // Piedra
+val GranatumMist = Color(0xFFEEF2F3) // Niebla
+val GranatumLeaf = Color(0xFF1B6E50) // Hoja
+val GranatumLeafLight = Color(0xFFD3EDE2)
+val GranatumRuby = Color(0xFFC42B3C) // Rubí
+val GranatumCoralAlpha40 = Color(0x66FF6470)
+
+// Dark mode grounds and their lighter accents
+val GranatumNight = Color(0xFF021B25)
+val GranatumNightSurface = Color(0xFF0A2F3D)
+val GranatumBoneWarm = Color(0xFFF7F1EC)
+val GranatumLeafDark = Color(0xFF5FD4A5)
+val GranatumLeafDarkAlpha40 = Color(0x665FD4A5)
+val GranatumRubyDark = Color(0xFFFF8A92)
 
 // Base Colors
 val AppBase1000 = Color(0xFF101C28)

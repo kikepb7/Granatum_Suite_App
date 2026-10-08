@@ -9,4 +9,6 @@
     <string name="dismiss_dialog">Dismiss dialog</string>
     <string name="app_topbar_back">Volver</string>
     <string name="app_topbar_settings">Ajustes</string>
+    <!-- The brand name as the logo writes it: lower case, not translated. -->
+    <string name="brand_wordmark">granatum</string>
 </resources>

@@ -1,4 +1,5 @@
 <resources>
-    <!-- Garnet, for granatum. Placeholder until the brand palette lands. -->
-    <color name="ic_launcher_background">#8C1D3F</color>
+    <!-- Granada, the brand coral: the launcher shows the white star on it, as the brand kit does. -->
+    <color name="ic_launcher_background">#FF6470</color>
+    <color name="splash_background">#022D3B</color>
 </resources>
