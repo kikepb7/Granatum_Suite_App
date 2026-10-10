@@ -1,5 +1,5 @@
 <resources>
     <!-- Granada, the brand coral: the launcher shows the white star on it, as the brand kit does. -->
-    <color name="ic_launcher_background">#FF6470</color>
-    <color name="splash_background">#022D3B</color>
+    <color name="ic_launcher_background">#FF636C</color>
+    <color name="splash_background">#002C39</color>
 </resources>

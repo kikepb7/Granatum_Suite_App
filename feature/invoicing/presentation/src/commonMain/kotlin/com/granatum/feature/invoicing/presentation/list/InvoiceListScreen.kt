@@ -1,47 +1,37 @@
 package com.granatum.feature.invoicing.presentation.list
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DateRangePicker
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDateRangePickerState
@@ -60,10 +50,21 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.granatum.core.designsystem.components.buttons.AppButton
 import com.granatum.core.designsystem.components.buttons.AppButtonStyle
+import com.granatum.core.designsystem.components.buttons.AppFloatingActionButton
+import com.granatum.core.designsystem.components.cards.AppAccentCard
+import com.granatum.core.designsystem.components.chips.AppFilterChip
+import com.granatum.core.designsystem.components.chips.AppStatusChip
+import com.granatum.core.designsystem.components.chips.AppTone
+import com.granatum.core.designsystem.components.feedback.AppBanner
+import com.granatum.core.designsystem.components.feedback.AppEmptyState
+import com.granatum.core.designsystem.components.icons.AppTabIcons
+import com.granatum.core.designsystem.components.inputs.AppSearchField
 import com.granatum.core.designsystem.components.dialogs.AppBottomSheet
-import com.granatum.core.designsystem.components.textfields.AppTextField
-import com.granatum.core.designsystem.components.topbar.AppAccountButton
-import com.granatum.core.designsystem.theme.extended
+import com.granatum.core.designsystem.components.lists.AppIconBadge
+import com.granatum.core.designsystem.components.motion.appEntrance
+import com.granatum.core.designsystem.components.topbar.AppTopBar
+import com.granatum.core.designsystem.components.topbar.TopBarIconButton
+import com.granatum.core.designsystem.theme.AppTheme
 import com.granatum.core.presentation.documents.DocumentSource
 import com.granatum.core.presentation.documents.rememberDocumentPicker
 import com.granatum.feature.invoicing.domain.model.InvoiceState
@@ -73,7 +74,6 @@ import com.granatum.feature.invoicing.domain.model.UploadDocument
 import com.granatum.feature.invoicing.domain.model.UploadOutcome
 import com.granatum.feature.invoicing.presentation.common.ErrorState
 import com.granatum.feature.invoicing.presentation.common.LoadingState
-import com.granatum.feature.invoicing.presentation.common.Pill
 import com.granatum.feature.invoicing.presentation.common.StateBadge
 import com.granatum.feature.invoicing.presentation.common.label
 import granatumsuite.feature.invoicing.presentation.generated.resources.*
@@ -110,13 +110,13 @@ fun InvoiceListRoot(
         }
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.extended.surfaceLower,
+        containerColor = AppTheme.colors.background,
         contentWindowInsets = WindowInsets.safeDrawing,
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = { Header(onRefresh = { viewModel.onAction(InvoiceListAction.OnRefresh) }, onOpenQuarters, onOpenReports, onOpenCompany) },
         floatingActionButton = {
             if (state.uploadingCount == 0) {
-                FloatingActionButton(onClick = { choosingSource = true }) {
+                AppFloatingActionButton(onClick = { choosingSource = true }) {
                     Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.upload))
                 }
             }
@@ -134,10 +134,8 @@ fun InvoiceListRoot(
                         onRetry = { viewModel.onAction(InvoiceListAction.OnRefresh) },
                     )
                 state.items.isEmpty() ->
-                    Text(
-                        text = stringResource(if (state.isFiltered) Res.string.list_empty_filtered else Res.string.list_empty),
-                        color = MaterialTheme.colorScheme.extended.textPlaceholder,
-                        modifier = Modifier.padding(24.dp),
+                    AppEmptyState(
+                        title = stringResource(if (state.isFiltered) Res.string.list_empty_filtered else Res.string.list_empty),
                     )
                 else -> InvoiceList(state, onOpenInvoice, onLoadMore = { viewModel.onAction(InvoiceListAction.OnLoadMore) })
             }
@@ -184,7 +182,7 @@ fun InvoiceListRoot(
                                 style = MaterialTheme.typography.bodySmall,
                                 color =
                                     if (item.outcome == UploadOutcome.ACCEPTED || item.outcome == UploadOutcome.DUPLICATE) {
-                                        MaterialTheme.colorScheme.extended.textSecondary
+                                        AppTheme.colors.textSecondary
                                     } else {
                                         MaterialTheme.colorScheme.error
                                     },
@@ -216,21 +214,14 @@ private fun Header(
     onOpenCompany: () -> Unit,
 ) {
     var menu by remember { mutableStateOf(false) }
-    Surface(color = MaterialTheme.colorScheme.surface) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth().padding(start = 24.dp, end = 12.dp, top = 12.dp, bottom = 12.dp),
-        ) {
-            Text(
-                text = stringResource(Res.string.invoicing_title),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.extended.textPrimary,
-                modifier = Modifier.weight(1f),
-            )
-            IconButton(onClick = onRefresh) { Icon(Icons.Default.Refresh, contentDescription = stringResource(Res.string.refresh)) }
+    AppTopBar(
+        title = stringResource(Res.string.invoicing_title),
+        actions = {
+            TopBarIconButton(onClick = onRefresh) {
+                Icon(Icons.Default.Refresh, contentDescription = stringResource(Res.string.refresh))
+            }
             Box {
-                IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, contentDescription = null) }
+                TopBarIconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, contentDescription = null) }
                 DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                     listOf(
                         Res.string.quarters to onOpenQuarters,
@@ -244,24 +235,18 @@ private fun Header(
                     }
                 }
             }
-            AppAccountButton()
-        }
-    }
+        },
+    )
 }
 
 @Composable
 private fun CompanyBanner(onOpenCompany: () -> Unit) {
-    Surface(color = MaterialTheme.colorScheme.extended.accentYellow, modifier = Modifier.fillMaxWidth()) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
-            Text(
-                stringResource(Res.string.company_missing),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.extended.yellowCardText,
-                modifier = Modifier.weight(1f),
-            )
-            TextButton(onClick = onOpenCompany) { Text(stringResource(Res.string.company_missing_action)) }
-        }
-    }
+    AppBanner(
+        title = stringResource(Res.string.company_missing),
+        tone = AppTone.WARNING,
+        modifier = Modifier.padding(horizontal = AppTheme.spacing.screenHorizontal, vertical = 4.dp),
+        action = { TextButton(onClick = onOpenCompany) { Text(stringResource(Res.string.company_missing_action)) } },
+    )
 }
 
 @Composable
@@ -269,9 +254,9 @@ private fun UploadingBanner(count: Int) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = AppTheme.spacing.screenHorizontal, vertical = 8.dp),
     ) {
-        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = AppTheme.colors.brand)
         Text(stringResource(Res.string.uploading, count), style = MaterialTheme.typography.bodySmall)
     }
 }
@@ -283,43 +268,39 @@ private fun Filters(
     viewModel: InvoiceListViewModel,
 ) {
     var pickingDates by remember { mutableStateOf(false) }
-    Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 24.dp)) {
-            Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.extended.textPlaceholder)
-            Spacer(Modifier.width(8.dp))
-            AppTextField(
-                state = viewModel.query,
-                placeholder = stringResource(Res.string.search_placeholder),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
+    val horizontal = AppTheme.spacing.screenHorizontal
+    Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        AppSearchField(
+            state = viewModel.query,
+            placeholder = stringResource(Res.string.search_placeholder),
+            modifier = Modifier.padding(horizontal = horizontal),
+        )
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 24.dp),
+            modifier = Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = horizontal),
         ) {
-            FilterChip(selected = state.filter.state == null, onClick = {
+            AppFilterChip(selected = state.filter.state == null, onClick = {
                 viewModel.onAction(InvoiceListAction.OnState(null))
-            }, label = { Text(stringResource(Res.string.filter_all)) })
+            }, text = stringResource(Res.string.filter_all))
             InvoiceState.entries.forEach { s ->
-                FilterChip(selected = state.filter.state == s, onClick = {
+                AppFilterChip(selected = state.filter.state == s, onClick = {
                     viewModel.onAction(InvoiceListAction.OnState(s))
-                }, label = { Text(stringResource(s.label())) })
+                }, text = stringResource(s.label()))
             }
         }
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 24.dp),
+            modifier = Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = horizontal),
         ) {
-            FilterChip(selected = state.filter.type == InvoiceType.ISSUED, onClick = {
+            AppFilterChip(selected = state.filter.type == InvoiceType.ISSUED, onClick = {
                 viewModel.onAction(InvoiceListAction.OnType(if (state.filter.type == InvoiceType.ISSUED) null else InvoiceType.ISSUED))
-            }, label = { Text(stringResource(Res.string.filter_issued)) })
-            FilterChip(selected = state.filter.type == InvoiceType.RECEIVED, onClick = {
+            }, text = stringResource(Res.string.filter_issued))
+            AppFilterChip(selected = state.filter.type == InvoiceType.RECEIVED, onClick = {
                 viewModel.onAction(InvoiceListAction.OnType(if (state.filter.type == InvoiceType.RECEIVED) null else InvoiceType.RECEIVED))
-            }, label = { Text(stringResource(Res.string.filter_received)) })
+            }, text = stringResource(Res.string.filter_received))
             val from = state.filter.from
             val to = state.filter.to
-            FilterChip(
+            AppFilterChip(
                 selected = from != null || to != null,
                 onClick = {
                     if (from != null ||
@@ -331,15 +312,12 @@ private fun Filters(
                     }
                 },
                 leadingIcon = { Icon(Icons.Default.DateRange, contentDescription = null, modifier = Modifier.size(16.dp)) },
-                label = {
-                    Text(
-                        if (from != null || to != null) {
-                            stringResource(Res.string.filter_dates_range, from?.label() ?: "…", to?.label() ?: "…")
-                        } else {
-                            stringResource(Res.string.filter_dates)
-                        },
-                    )
-                },
+                text =
+                    if (from != null || to != null) {
+                        stringResource(Res.string.filter_dates_range, from?.label() ?: "…", to?.label() ?: "…")
+                    } else {
+                        stringResource(Res.string.filter_dates)
+                    },
             )
         }
     }
@@ -388,10 +366,18 @@ private fun InvoiceList(
 
     LazyColumn(
         state = listState,
-        contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 96.dp),
+        contentPadding =
+            PaddingValues(
+                start = AppTheme.spacing.screenHorizontal,
+                end = AppTheme.spacing.screenHorizontal,
+                top = 12.dp,
+                bottom = 96.dp,
+            ),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        items(state.items, key = { it.id }) { invoice -> InvoiceRow(invoice, onClick = { onOpenInvoice(invoice.id) }) }
+        itemsIndexed(state.items, key = { _, invoice -> invoice.id }) { index, invoice ->
+            InvoiceRow(invoice, onClick = { onOpenInvoice(invoice.id) }, modifier = Modifier.appEntrance(index))
+        }
         if (state.isLoadingMore) {
             item {
                 Box(
@@ -419,56 +405,49 @@ private fun InvoiceList(
 private fun InvoiceRow(
     invoice: InvoiceSummary,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    Surface(
-        shape = RoundedCornerShape(14.dp),
-        color = MaterialTheme.colorScheme.extended.surfaceHigher,
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-    ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+    AppAccentCard(tone = invoice.state.tone(), onClick = onClick, modifier = modifier) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            AppIconBadge(icon = AppTabIcons.Invoice, tone = invoice.state.tone())
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = invoice.counterparty?.name ?: invoice.counterparty?.taxId ?: stringResource(Res.string.no_counterparty),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = AppTheme.colors.textPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                    invoice.total?.let {
+                        Text(
+                            stringResource(Res.string.amount_eur, it.format()),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = AppTheme.colors.textPrimary,
+                        )
+                    }
+                }
                 Text(
-                    text = invoice.counterparty?.name ?: invoice.counterparty?.taxId ?: stringResource(Res.string.no_counterparty),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.extended.textPrimary,
+                    text =
+                        listOf(
+                            stringResource(invoice.type.label()),
+                            invoice.number ?: stringResource(Res.string.no_number),
+                            invoice.issueDate?.label() ?: stringResource(Res.string.no_date),
+                        ).joinToString(" · "),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppTheme.colors.textTertiary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
                 )
-                invoice.total?.let {
-                    Text(
-                        stringResource(Res.string.amount_eur, it.format()),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                }
-            }
-            Text(
-                text =
-                    listOf(
-                        stringResource(invoice.type.label()),
-                        invoice.number ?: stringResource(Res.string.no_number),
-                        invoice.issueDate?.label() ?: stringResource(Res.string.no_date),
-                    ).joinToString(" · "),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.extended.textSecondary,
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                StateBadge(invoice.state)
-                if (invoice.warningCount > 0 && invoice.state != InvoiceState.CONFIRMED && invoice.state != InvoiceState.DISCARDED) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            Icons.Default.Warning,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(14.dp),
-                        )
-                        Spacer(Modifier.width(4.dp))
-                        Pill(
-                            stringResource(Res.string.warnings_count, invoice.warningCount),
-                            MaterialTheme.colorScheme.extended.redCardBackground,
-                            MaterialTheme.colorScheme.extended.redCardText,
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    StateBadge(invoice.state)
+                    if (invoice.warningCount > 0 && invoice.state != InvoiceState.CONFIRMED && invoice.state != InvoiceState.DISCARDED) {
+                        AppStatusChip(
+                            text = stringResource(Res.string.warnings_count, invoice.warningCount),
+                            tone = AppTone.DANGER,
                         )
                     }
                 }
@@ -476,3 +455,11 @@ private fun InvoiceRow(
         }
     }
 }
+
+private fun InvoiceState.tone(): AppTone =
+    when (this) {
+        InvoiceState.PENDING_RECOGNITION -> AppTone.WARNING
+        InvoiceState.DRAFT -> AppTone.INFO
+        InvoiceState.CONFIRMED -> AppTone.SUCCESS
+        InvoiceState.DISCARDED -> AppTone.NEUTRAL
+    }

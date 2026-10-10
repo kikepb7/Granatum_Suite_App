@@ -10,7 +10,7 @@ import org.gradle.kotlin.dsl.configure
  * Injects per-environment backend configuration into the binary at build time, so no URL ever
  * lives as a literal in the source tree.
  *
- * Pick the environment with `-Pbuildkonfig.flavor=<local|staging|prod>`; it defaults to [LOCAL],
+ * Pick the environment with `-Pbuildkonfig.flavor=<local|staging|prod|demo>`; it defaults to [LOCAL],
  * the only one that cannot do damage if you forget. Each value resolves in this order: a Gradle
  * property (handy for injecting from CI without touching files), then `local.properties`, then
  * the built-in default.
@@ -31,7 +31,10 @@ private const val LOCAL = "local"
 private const val STAGING = "staging"
 private const val PROD = "prod"
 
-private val FLAVORS = listOf(LOCAL, STAGING, PROD)
+/** No server at all: the app talks to an in-memory imitation of the API (core/data DemoMode). */
+private const val DEMO = "demo"
+
+private val FLAVORS = listOf(LOCAL, STAGING, PROD, DEMO)
 
 class BuildKonfigConventionPlugin: Plugin<Project> {
 
@@ -58,7 +61,9 @@ class BuildKonfigConventionPlugin: Plugin<Project> {
                     "The '$flavor' flavor must use an encrypted connection, but got: $url"
                 )
 
-            val requestedFlavor = providers.gradleProperty("buildkonfig.flavor").orNull
+            // Also from local.properties, so an Xcode build (whose Gradle call takes no -P) can
+            // be switched too, e.g. to the demo: `buildkonfig.flavor=demo`.
+            val requestedFlavor = resolve("buildkonfig.flavor")
             if (requestedFlavor != null && requestedFlavor !in FLAVORS) {
                 throw IllegalStateException(
                     "Unknown buildkonfig.flavor '$requestedFlavor'. Valid flavors: ${FLAVORS.joinToString()}"

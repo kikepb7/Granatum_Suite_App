@@ -22,7 +22,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.dp
+import com.granatum.core.designsystem.theme.AppTheme
 import com.granatum.core.designsystem.theme.extended
 
 @Composable
@@ -51,16 +53,16 @@ fun AppTextFieldLayout(
                 enabled -> MaterialTheme.colorScheme.surface
                 else -> MaterialTheme.colorScheme.extended.secondaryFill
             },
-            shape = RoundedCornerShape(8.dp)
+            shape = RoundedCornerShape(14.dp)
         )
         .border(
-            width = 1.dp,
-            color = when {
-                isError -> MaterialTheme.colorScheme.error
-                isFocused -> MaterialTheme.colorScheme.primary
-                else -> MaterialTheme.colorScheme.outline
+            width = if (isFocused) 2.dp else 1.dp,
+            brush = when {
+                isError -> SolidColor(MaterialTheme.colorScheme.error)
+                isFocused -> AppTheme.colors.brandGradient
+                else -> SolidColor(MaterialTheme.colorScheme.outline)
             },
-            shape = RoundedCornerShape(8.dp)
+            shape = RoundedCornerShape(14.dp)
         )
         .padding(12.dp)
 
