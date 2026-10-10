@@ -1,25 +1,21 @@
 package com.granatum.feature.invoicing.presentation.common
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.granatum.core.designsystem.components.buttons.AppButton
-import com.granatum.core.designsystem.components.buttons.AppButtonStyle
-import com.granatum.core.designsystem.theme.extended
+import com.granatum.core.designsystem.components.chips.AppStatusChip
+import com.granatum.core.designsystem.components.chips.AppTone
+import com.granatum.core.designsystem.components.feedback.AppErrorState
+import com.granatum.core.designsystem.components.feedback.AppLoadingState
+import com.granatum.core.designsystem.components.lists.AppSectionHeader
+import com.granatum.core.designsystem.theme.AppTheme
+import com.granatum.core.designsystem.theme.caption
 import com.granatum.core.presentation.util.UiText
 import com.granatum.feature.invoicing.domain.model.InvoiceState
 import granatumsuite.feature.invoicing.presentation.generated.resources.Res
@@ -31,15 +27,14 @@ fun StateBadge(
     state: InvoiceState,
     modifier: Modifier = Modifier,
 ) {
-    val colors = MaterialTheme.colorScheme
-    val (background, content) =
+    val tone =
         when (state) {
-            InvoiceState.PENDING_RECOGNITION -> colors.extended.accentYellow to colors.extended.yellowCardText
-            InvoiceState.DRAFT -> colors.primaryContainer to colors.onPrimaryContainer
-            InvoiceState.CONFIRMED -> colors.extended.successOutline to colors.extended.success
-            InvoiceState.DISCARDED -> colors.extended.secondaryFill to colors.extended.textPlaceholder
+            InvoiceState.PENDING_RECOGNITION -> AppTone.WARNING
+            InvoiceState.DRAFT -> AppTone.INFO
+            InvoiceState.CONFIRMED -> AppTone.SUCCESS
+            InvoiceState.DISCARDED -> AppTone.NEUTRAL
         }
-    Pill(stringResource(state.label()), background, content, modifier)
+    AppStatusChip(text = stringResource(state.label()), tone = tone, showDot = true, modifier = modifier)
 }
 
 @Composable
@@ -49,10 +44,10 @@ fun Pill(
     content: Color,
     modifier: Modifier = Modifier,
 ) {
-    Surface(shape = RoundedCornerShape(50), color = background, modifier = modifier) {
+    Surface(shape = AppTheme.shapes.pill, color = background, modifier = modifier) {
         Text(
             text = text,
-            style = MaterialTheme.typography.labelSmall,
+            style = MaterialTheme.typography.caption,
             fontWeight = FontWeight.SemiBold,
             color = content,
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
@@ -62,7 +57,7 @@ fun Pill(
 
 @Composable
 fun LoadingState(modifier: Modifier = Modifier) {
-    Box(contentAlignment = Alignment.Center, modifier = modifier.fillMaxSize()) { CircularProgressIndicator() }
+    AppLoadingState(modifier = modifier)
 }
 
 /** What a screen shows when its data could not be loaded: the reason and a way to try again. */
@@ -72,19 +67,12 @@ fun ErrorState(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
-        modifier = modifier.fillMaxSize().padding(32.dp),
-    ) {
-        Text(
-            text = error.asString(),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.extended.textSecondary,
-            textAlign = TextAlign.Center,
-        )
-        AppButton(text = stringResource(Res.string.retry), onClick = onRetry, style = AppButtonStyle.SECONDARY)
-    }
+    AppErrorState(
+        message = error.asString(),
+        retryLabel = stringResource(Res.string.retry),
+        onRetry = onRetry,
+        modifier = modifier,
+    )
 }
 
 @Composable
@@ -92,11 +80,5 @@ fun SectionTitle(
     text: String,
     modifier: Modifier = Modifier,
 ) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.titleSmall,
-        fontWeight = FontWeight.SemiBold,
-        color = MaterialTheme.colorScheme.extended.textPrimary,
-        modifier = modifier,
-    )
+    AppSectionHeader(title = text, modifier = modifier)
 }

@@ -1,5 +1,6 @@
 package com.granatum.core.designsystem.components.topbar
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -15,6 +16,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.granatum.core.designsystem.theme.AppTheme
 import granatumsuite.core.designsystem.generated.resources.Res
 import granatumsuite.core.designsystem.generated.resources.app_topbar_account
 import org.jetbrains.compose.resources.stringResource
@@ -37,9 +39,10 @@ fun AppAccountButton(modifier: Modifier = Modifier) {
     Surface(
         onClick = action.onClick,
         shape = CircleShape,
-        color = MaterialTheme.colorScheme.primaryContainer,
-        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-        modifier = modifier.size(38.dp).semantics { contentDescription = description }
+        color = AppTheme.colors.brandSoft,
+        contentColor = AppTheme.colors.brand,
+        border = BorderStroke(2.dp, AppTheme.colors.brandGradient),
+        modifier = modifier.size(42.dp).semantics { contentDescription = description }
     ) {
         Box(contentAlignment = Alignment.Center) {
             Text(text = action.initial, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)

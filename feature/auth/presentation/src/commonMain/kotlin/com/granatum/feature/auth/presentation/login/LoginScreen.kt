@@ -2,10 +2,8 @@ package com.granatum.feature.auth.presentation.login
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Surface
 import com.granatum.core.designsystem.components.buttons.AppButtonStyle
+import com.granatum.core.designsystem.components.cards.AppCard
 import com.granatum.core.domain.auth.model.UserRole
 import granatumsuite.feature.auth.presentation.generated.resources.demo_title
 import granatumsuite.feature.auth.presentation.generated.resources.demo_description
@@ -152,12 +150,8 @@ private fun passwordErrorText(error: PasswordFieldError): String = when (error) 
 /** Demo build only: one tap per role, no typing. The whole app runs on in-memory sample data. */
 @Composable
 private fun DemoAccounts(viewModel: LoginViewModel, enabled: Boolean) {
-    Surface(
-        shape = RoundedCornerShape(14.dp),
-        color = MaterialTheme.colorScheme.primaryContainer,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    AppCard(containerColor = MaterialTheme.colorScheme.primaryContainer) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(
                 text = stringResource(Res.string.demo_title),
                 style = MaterialTheme.typography.titleSmall,

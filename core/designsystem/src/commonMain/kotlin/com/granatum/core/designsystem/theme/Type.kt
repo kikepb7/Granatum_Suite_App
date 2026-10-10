@@ -53,6 +53,40 @@ val Typography.titleXSmall: TextStyle
         lineHeight = 18.sp
     )
 
+val Typography.largeTitle: TextStyle
+    @Composable get() = TextStyle(
+        fontFamily = PlusJakartaSans,
+        fontWeight = FontWeight.Bold,
+        fontSize = 28.sp,
+        lineHeight = 34.sp,
+        letterSpacing = (-0.5).sp
+    )
+
+val Typography.caption: TextStyle
+    @Composable get() = TextStyle(
+        fontFamily = PlusJakartaSans,
+        fontWeight = FontWeight.Medium,
+        fontSize = 12.sp,
+        lineHeight = 16.sp
+    )
+
+val Typography.chipLabel: TextStyle
+    @Composable get() = TextStyle(
+        fontFamily = PlusJakartaSans,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 13.sp,
+        lineHeight = 18.sp
+    )
+
+val Typography.statValue: TextStyle
+    @Composable get() = TextStyle(
+        fontFamily = PlusJakartaSans,
+        fontWeight = FontWeight.Bold,
+        fontSize = 24.sp,
+        lineHeight = 30.sp,
+        letterSpacing = (-0.3).sp
+    )
+
 val Typography @Composable get() = Typography(
     titleLarge = TextStyle(
         fontFamily = PlusJakartaSans,

@@ -11,14 +11,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -29,6 +26,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.granatum.core.designsystem.components.buttons.AppButton
 import com.granatum.core.designsystem.components.buttons.AppButtonStyle
+import com.granatum.core.designsystem.components.buttons.AppFloatingActionButton
+import com.granatum.core.designsystem.components.cards.AppCard
 import com.granatum.core.designsystem.components.dialogs.AppBottomSheet
 import com.granatum.core.designsystem.components.dialogs.AppDestructiveConfirmationDialog
 import com.granatum.core.designsystem.components.textfields.AppTextField
@@ -48,7 +47,7 @@ fun CategoryListRoot(onNavigateBack: () -> Unit, viewModel: CategoryListViewMode
         contentWindowInsets = WindowInsets.safeDrawing,
         topBar = { AppTopBar(title = stringResource(Res.string.categories_title), onBackClick = onNavigateBack) },
         floatingActionButton = {
-            FloatingActionButton(onClick = { viewModel.onAction(CategoryAction.OnNew) }) { Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.category_new)) }
+            AppFloatingActionButton(onClick = { viewModel.onAction(CategoryAction.OnNew) }) { Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.category_new)) }
         }
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
@@ -58,8 +57,8 @@ fun CategoryListRoot(onNavigateBack: () -> Unit, viewModel: CategoryListViewMode
             }
             LazyColumn(contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 96.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 items(state.rows, key = { it.category.id }) { row ->
-                    Surface(shape = RoundedCornerShape(14.dp), color = MaterialTheme.colorScheme.extended.surfaceHigher, modifier = Modifier.fillMaxWidth()) {
-                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    AppCard {
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text(row.category.name, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.extended.textPrimary)
                             row.category.description?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.extended.textSecondary) }
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {

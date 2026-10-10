@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -72,20 +73,20 @@ fun AppButton(
         onClick = onClick,
         modifier = modifier,
         enabled = enabled,
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(14.dp),
         colors = appButtonColors(style = style),
         border = border
     ) {
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier.padding(6.dp)
+            modifier = Modifier.padding(vertical = 8.dp, horizontal = 4.dp)
         ) {
             CircularProgressIndicator(
                 modifier = Modifier
                     .size(15.dp)
                     .alpha(if (isLoading) 1f else 0f),
                 strokeWidth = 1.5.dp,
-                color = Color.Black
+                color = LocalContentColor.current
             )
             Row(
                 horizontalArrangement = Arrangement.spacedBy(
@@ -111,8 +112,8 @@ fun AppButton(
 private fun appButtonColors(style: AppButtonStyle) =
     when (style) {
         PRIMARY -> ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary,
+            containerColor = AppTheme.colors.coral,
+            contentColor = AppTheme.colors.onBrand,
             disabledContainerColor = MaterialTheme.colorScheme.extended.disabledFill,
             disabledContentColor = MaterialTheme.colorScheme.extended.textDisabled
         )
@@ -136,7 +137,7 @@ private fun appButtonColors(style: AppButtonStyle) =
         )
         TEXT -> ButtonDefaults.buttonColors(
             containerColor = Color.Transparent,
-            contentColor = MaterialTheme.colorScheme.tertiary,
+            contentColor = AppTheme.colors.brand,
             disabledContainerColor = Color.Transparent,
             disabledContentColor = MaterialTheme.colorScheme.extended.textDisabled
         )

@@ -17,7 +17,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -34,6 +33,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.granatum.core.designsystem.components.buttons.AppButton
 import com.granatum.core.designsystem.components.buttons.AppButtonStyle
+import com.granatum.core.designsystem.components.cards.AppCard
+import com.granatum.core.designsystem.components.cards.AppInsetCard
 import com.granatum.core.designsystem.components.dialogs.AppDestructiveConfirmationDialog
 import com.granatum.core.designsystem.components.topbar.AppTopBar
 import com.granatum.core.designsystem.theme.extended
@@ -132,7 +133,7 @@ private fun Photos(photos: List<String>) {
                 model = url,
                 contentDescription = stringResource(Res.string.detail_photo, i + 1, photos.size.toString()),
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.size(120.dp).clip(RoundedCornerShape(12.dp))
+                modifier = Modifier.size(120.dp).clip(RoundedCornerShape(20.dp))
             )
         }
     }
@@ -145,8 +146,8 @@ private fun Facts(m: MaterialModel) {
     } else {
         stringResource(Res.string.detail_size_value, m.size.height.measureLabel(), m.size.width.measureLabel(), m.size.unit.name.lowercase())
     }
-    Surface(shape = RoundedCornerShape(14.dp), color = MaterialTheme.colorScheme.extended.surfaceHigher, modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    AppCard {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Fact(Res.string.detail_category, m.category.name)
             Fact(Res.string.detail_condition, stringResource(m.condition.label()))
             Fact(Res.string.detail_location, m.location)
@@ -182,8 +183,8 @@ private fun History(entries: List<MaterialHistoryEntry>) {
         return
     }
     entries.forEach { e ->
-        Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.extended.surfaceHigher, modifier = Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        AppInsetCard {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Row {
                     Text(stringResource(e.type.label()), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.extended.textPrimary, modifier = Modifier.weight(1f))
                     Text(e.at.dateLabel(), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.extended.textSecondary)

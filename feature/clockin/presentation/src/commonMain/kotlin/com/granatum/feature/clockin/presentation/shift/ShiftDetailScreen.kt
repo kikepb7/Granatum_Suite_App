@@ -8,11 +8,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -24,6 +22,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.granatum.core.designsystem.components.buttons.AppButton
+import com.granatum.core.designsystem.components.cards.AppAccentCard
+import com.granatum.core.designsystem.components.chips.AppTone
 import com.granatum.core.designsystem.components.topbar.AppTopBar
 import com.granatum.core.designsystem.theme.extended
 import com.granatum.feature.clockin.domain.model.CorrectionModel
@@ -106,8 +106,13 @@ fun ShiftDetailScreen(state: ShiftDetailUiState, onBack: () -> Unit, onRequestCo
 
 @Composable
 private fun CorrectionCard(correction: CorrectionModel) {
-    Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.extended.surfaceHigher, modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    val tone = when (correction.state) {
+        CorrectionState.PENDIENTE -> AppTone.WARNING
+        CorrectionState.APROBADA -> AppTone.SUCCESS
+        CorrectionState.RECHAZADA -> AppTone.DANGER
+    }
+    AppAccentCard(tone = tone, contentPadding = 14.dp) {
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             val color = when (correction.state) {
                 CorrectionState.PENDIENTE -> MaterialTheme.colorScheme.extended.yellowCardText
                 CorrectionState.APROBADA -> MaterialTheme.colorScheme.extended.success

@@ -112,7 +112,7 @@ expect class DatabaseFactory {
 
 ## Design system (`core/designsystem`)
 
-A small, renameable component library: `theme/` (colors, typography, the `AppTheme` composable), and `components/` grouped by kind — `buttons`, `textfields`, `dialogs`, `dropdown`, `layouts` (including `AppSurface`, an adaptive result/success layout, a snackbar scaffold), `navigation` (`AppBottomBar`), `topbar`, `avatar`, `brand`, `divider`, `icons`. Everything is prefixed `App*` — rename the prefix to match your brand if you like, it's a plain find-and-replace.
+A small, renameable component library: `theme/` (colors, typography, the `AppTheme` composable and the `AppTheme.colors/spacing/shapes/elevation` tokens in `AppTokens.kt`, with light and dark variants; dark mode follows the system through `isSystemInDarkTheme()` in `AppTheme`), and `components/` grouped by kind — `buttons` (`AppButton`, gradient `AppPrimaryButton`), `cards` (`AppCard`, `AppStatCard`), `chips` (`AppStatusChip`, `AppBadge`, `AppFilterChip`, `AppTone`), `lists` (`AppListItem`, `AppSectionHeader`), `feedback` (`AppEmptyState`, `AppErrorState`, `AppLoadingState`, `AppBanner`), `inputs` (`AppSearchField`, `AppSegmentedControl`), `textfields`, `dialogs`, `dropdown`, `layouts` (including `AppSurface`, an adaptive result/success layout, a snackbar scaffold), `navigation` (`AppBottomBar`, the floating pill), `topbar` (large-title `AppTopBar`), `avatar`, `brand`, `divider`, `icons` (`AppTabIcons`). Screens use `AppTheme.colors` (semantic tokens) and never hardcode a colour. Everything is prefixed `App*` — rename the prefix to match your brand if you like, it's a plain find-and-replace.
 
 ## `core/presentation`
 

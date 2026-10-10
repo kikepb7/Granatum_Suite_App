@@ -10,7 +10,7 @@
         android:scaleY="0.12903"
         android:translateX="-34.0645"
         android:translateY="-0.7742">
-        <path android:fillColor="#FF6470" android:fillType="evenOdd"
+        <path android:fillColor="#FF636C" android:fillType="evenOdd"
             android:pathData="M429.60 375.01C367.11 367.14 314.27 330.29 286.12 274.96C240.31 184.91 275.96 74.97 366.00 28.62C480.83 -30.51 618.87 44.27 632.94 173.21C643.21 267.37 576.99 355.59 482.93 373.03C470.07 375.41 441.31 376.48 429.60 375.01Z" />
     </group>
 </vector>
