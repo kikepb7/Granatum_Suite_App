@@ -1,5 +1,17 @@
 package com.granatum.feature.auth.presentation.login
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Surface
+import com.granatum.core.designsystem.components.buttons.AppButtonStyle
+import com.granatum.core.domain.auth.model.DemoAccount
+import com.granatum.core.domain.auth.model.UserRole
+import com.granatum.core.presentation.environment.EnvironmentPicker
+import granatumsuite.feature.auth.presentation.generated.resources.demo_title
+import granatumsuite.feature.auth.presentation.generated.resources.demo_enter_admin
+import granatumsuite.feature.auth.presentation.generated.resources.demo_enter_employee
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -68,6 +80,21 @@ private fun LoginScreen(
         errorText = bannerText,
         logo = { AppBrandLogo() }
     ) {
+        if (state.environments.isNotEmpty()) {
+            EnvironmentPicker(
+                current = state.environment,
+                available = state.environments,
+                enabled = !state.isLoading && !state.isSwitchingEnvironment,
+                error = state.environmentError,
+                onPick = { viewModel.onAction(LoginAction.OnEnvironment(it)) },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+        if (state.demoAccounts.isNotEmpty()) {
+            DemoAccounts(state.demoAccounts, enabled = !state.isLoading) { viewModel.onAction(LoginAction.OnDemoAccount(it)) }
+            Spacer(modifier = Modifier.height(24.dp))
+        }
         AppTextField(
             state = viewModel.emailState,
             title = stringResource(Res.string.login_email),
@@ -132,4 +159,26 @@ private fun emailErrorText(error: EmailFieldError): String = when (error) {
 private fun passwordErrorText(error: PasswordFieldError): String = when (error) {
     PasswordFieldError.REQUIRED -> stringResource(Res.string.login_password_required)
     PasswordFieldError.TOO_LONG -> stringResource(Res.string.login_password_too_long, LoginViewModel.PASSWORD_MAX_LENGTH)
+}
+
+/** Demo environment only (PRE build): one tap per role, no typing. */
+@Composable
+private fun DemoAccounts(accounts: List<DemoAccount>, enabled: Boolean, onPick: (DemoAccount) -> Unit) {
+    Surface(shape = RoundedCornerShape(14.dp), color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(text = stringResource(Res.string.demo_title), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
+            accounts.forEach { account ->
+                AppButton(
+                    text = stringResource(
+                        if (account.role == UserRole.ADMIN) Res.string.demo_enter_admin else Res.string.demo_enter_employee,
+                        account.displayName
+                    ),
+                    onClick = { onPick(account) },
+                    enabled = enabled,
+                    style = if (account.role == UserRole.ADMIN) AppButtonStyle.PRIMARY else AppButtonStyle.SECONDARY,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+    }
 }

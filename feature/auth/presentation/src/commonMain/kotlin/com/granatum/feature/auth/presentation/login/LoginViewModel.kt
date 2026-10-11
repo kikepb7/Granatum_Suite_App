@@ -4,7 +4,10 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.runtime.snapshotFlow
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import com.granatum.core.domain.auth.repository.AuthRepository
+import com.granatum.core.domain.environment.AppEnvironment
+import com.granatum.core.domain.environment.EnvironmentRepository
 import com.granatum.core.domain.util.Result
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,13 +24,20 @@ import kotlinx.coroutines.launch
  * navigation gate reacts to that. This screen only has to get the credentials to the server.
  */
 class LoginViewModel(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val environments: EnvironmentRepository
 ) : ViewModel() {
 
     val emailState = TextFieldState()
     val passwordState = TextFieldState()
 
-    private val _state = MutableStateFlow(LoginState())
+    private val _state = MutableStateFlow(
+        LoginState(
+            environment = environments.current.value,
+            environments = if (environments.canSwitch) environments.available else emptyList(),
+            demoAccounts = environments.demoAccounts()
+        )
+    )
     val state: StateFlow<LoginState> = _state.asStateFlow()
 
     init {
@@ -44,6 +54,12 @@ class LoginViewModel(
         when (action) {
             LoginAction.OnSubmit -> submit()
             LoginAction.OnTogglePasswordVisibility -> _state.update { it.copy(isPasswordVisible = !it.isPasswordVisible) }
+            is LoginAction.OnEnvironment -> switchEnvironment(action.environment)
+            is LoginAction.OnDemoAccount -> {
+                emailState.setTextAndPlaceCursorAtEnd(action.account.email)
+                passwordState.setTextAndPlaceCursorAtEnd(action.account.password)
+                submit()
+            }
         }
     }
 
@@ -65,6 +81,22 @@ class LoginViewModel(
             val result = authRepository.login(email = email, password = password)
             _state.update {
                 it.copy(isLoading = false, error = (result as? Result.Failure)?.error)
+            }
+        }
+    }
+
+    private fun switchEnvironment(environment: AppEnvironment) {
+        if (_state.value.isSwitchingEnvironment) return
+        _state.update { it.copy(isSwitchingEnvironment = true, environmentError = null, error = null) }
+        viewModelScope.launch {
+            val result = environments.switchTo(environment)
+            _state.update {
+                it.copy(
+                    isSwitchingEnvironment = false,
+                    environment = environments.current.value,
+                    environmentError = (result as? Result.Failure)?.error,
+                    demoAccounts = environments.demoAccounts()
+                )
             }
         }
     }

@@ -5,6 +5,7 @@ import androidx.room.ConstructedBy
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import com.granatum.feature.clockin.database.dao.ClockEventDao
+import com.granatum.feature.clockin.database.dao.ClockInMaintenanceDao
 import com.granatum.feature.clockin.database.dao.ServerShiftDao
 import com.granatum.feature.clockin.database.dao.ShiftDao
 import com.granatum.feature.clockin.database.entity.ClockEventEntity
@@ -30,6 +31,7 @@ abstract class AppClockInDatabase : RoomDatabase() {
     abstract val clockEventDao: ClockEventDao
     abstract val shiftDao: ShiftDao
     abstract val serverShiftDao: ServerShiftDao
+    abstract val maintenanceDao: ClockInMaintenanceDao
 
     companion object {
         const val DB_NAME = "app_clockin.db"

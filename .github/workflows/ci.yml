@@ -155,6 +155,18 @@ jobs:
           path: composeApp/build/outputs/apk/debug/composeApp-debug.apk
           retention-days: 7
 
+      # specs/010-entornos: the store build must compile with only the production URL and must not
+      # contain the demo module or the PRE environment. The URL is a placeholder: nothing runs.
+      - name: Assemble PRO (store build) and check it is locked down
+        run: |
+          ./gradlew :composeApp:assembleDebug -Pgranatum.build=pro -PBASE_URL_HTTP_PRO=https://pro.ci.invalid/api
+          apk=composeApp/build/outputs/apk/debug/composeApp-debug.apk
+          if unzip -p "$apk" 'classes*.dex' | LC_ALL=C grep -aq 'com/granatum/core/demo/'; then
+            echo "::error::The PRO build contains the demo module"
+            exit 1
+          fi
+          echo "PRO build: no demo module" >> "$GITHUB_STEP_SUMMARY"
+
   build-ios:
     name: Build + test iOS
     runs-on: macos-latest

@@ -15,4 +15,20 @@
     <string name="error_service_unavailable">Service unavailable, please try again later</string>
     <string name="error_serialization">Serialization error</string>
     <string name="error_unable_to_send_message">An error happened while sending the message</string>
+
+    <!-- Entornos (specs/010-entornos), solo en la app PRE -->
+    <string name="environment_label">Entorno: %1$s</string>
+    <string name="environment_title">Entorno de pruebas</string>
+    <string name="environment_description">Al cambiar se cierra la sesión y se borran los datos guardados del entorno actual.</string>
+    <string name="environment_local">Local</string>
+    <string name="environment_local_description">El servidor de tu ordenador</string>
+    <string name="environment_pre">PRE</string>
+    <string name="environment_pre_description">Preproducción: servidor de pruebas compartido</string>
+    <string name="environment_pro">PRO</string>
+    <string name="environment_pro_description">Producción: datos reales, cuidado con lo que cambias</string>
+    <string name="environment_demo">Demo</string>
+    <string name="environment_demo_description">Sin servidor: datos de ejemplo que se borran al cerrar la app</string>
+    <string name="environment_current">Actual</string>
+    <string name="environment_unsynced">Hay %1$d fichajes sin enviar a este entorno. Espera a que se envíen antes de cambiar.</string>
+    <string name="environment_ribbon">PRE · entorno %1$s</string>
 </resources>

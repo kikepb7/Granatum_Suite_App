@@ -1,127 +1,87 @@
-import com.android.build.gradle.internal.cxx.configure.gradleLocalProperties
 import com.codingfeline.buildkonfig.compiler.FieldSpec
 import com.codingfeline.buildkonfig.gradle.BuildKonfigExtension
+import com.granatum.buildlogic.convention.GranatumBuild
 import com.granatum.buildlogic.convention.pathToPackageName
+import com.granatum.buildlogic.convention.resolveConfig
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
 
 /**
- * Injects per-environment backend configuration into the binary at build time, so no URL ever
- * lives as a literal in the source tree.
+ * Injects the backend URLs into the binary at build time, so no URL ever lives as a literal in the
+ * source tree (specs/010-entornos).
  *
- * Pick the environment with `-Pbuildkonfig.flavor=<local|staging|prod>`; it defaults to [LOCAL],
- * the only one that cannot do damage if you forget. Each value resolves in this order: a Gradle
- * property (handy for injecting from CI without touching files), then `local.properties`, then
- * the built-in default.
+ * - **PRE** (`granatum.build=pre`, the default): the internal app. It carries every environment it
+ *   can switch to at run time: LOCAL (the developer's machine, defaulting to the emulator/simulator
+ *   host alias), PRE and PRO when their URLs are configured. A fresh clone needs no configuration.
+ * - **PRO** (`granatum.build=pro`): the store app. Only the production URL is compiled in, it must
+ *   be HTTPS, and the build fails without it: a binary pointing at the wrong server is worse than
+ *   no binary. The other fields are empty, so nothing else can be reached.
  *
- * `local` needs no configuration at all — that is what lets a fresh clone run against a local
- * backend. `staging` and `prod` have no defaults on purpose and fail the build when unset: a
- * binary pointing at the wrong server is worse than no binary.
+ * Each value resolves from a Gradle property (CI), then `local.properties`. `BASE_URL_HTTP_STAGING`
+ * and `BASE_URL_HTTP_PROD`, the keys of the previous local/staging/prod flavors, still work.
  *
- * The Android emulator reaches the host machine through the 10.0.2.2 alias, which the iOS
- * simulator does not understand — it shares the Mac's network and wants plain localhost. A single
- * shared value therefore breaks one of the two platforms, so the iOS target gets its own default
- * via [BuildKonfigExtension.targetConfigs].
+ * The Android emulator reaches the host through 10.0.2.2, which the iOS simulator does not
+ * understand (it wants localhost): the local URL gets an iOS value via [BuildKonfigExtension.targetConfigs].
  */
-private const val DEFAULT_BASE_URL_HTTP_ANDROID = "http://10.0.2.2:8080/api"
-private const val DEFAULT_BASE_URL_HTTP_IOS = "http://localhost:8080/api"
+private const val DEFAULT_LOCAL_URL_ANDROID = "http://10.0.2.2:8080/api"
+private const val DEFAULT_LOCAL_URL_IOS = "http://localhost:8080/api"
 
-private const val LOCAL = "local"
-private const val STAGING = "staging"
-private const val PROD = "prod"
-
-private val FLAVORS = listOf(LOCAL, STAGING, PROD)
-
-class BuildKonfigConventionPlugin: Plugin<Project> {
+class BuildKonfigConventionPlugin : Plugin<Project> {
 
     override fun apply(target: Project) {
         with(target) {
-            with(pluginManager) {
-                apply("com.codingfeline.buildkonfig")
-            }
+            pluginManager.apply("com.codingfeline.buildkonfig")
 
-            val localProperties = gradleLocalProperties(rootDir, rootProject.providers)
+            val build = GranatumBuild.of(this)
 
-            fun resolve(key: String): String? =
-                providers.gradleProperty(key).orNull ?: localProperties.getProperty(key)
+            fun requireHttps(url: String, key: String): String =
+                url.takeIf { it.startsWith("https://") }
+                    ?: throw IllegalStateException("$key must use an encrypted connection (https://), but got: $url")
 
-            // Fails the build rather than falling back to a default, so `staging` and `prod` can
-            // never silently inherit the emulator URL.
-            fun require(key: String, flavor: String): String =
-                resolve(key) ?: throw IllegalStateException(
-                    "Missing $key property in local.properties (required by the '$flavor' flavor)"
-                )
-
-            fun requireHttps(url: String, flavor: String): String =
-                url.takeIf { it.startsWith("https://") } ?: throw IllegalStateException(
-                    "The '$flavor' flavor must use an encrypted connection, but got: $url"
-                )
-
-            val requestedFlavor = providers.gradleProperty("buildkonfig.flavor").orNull
-            if (requestedFlavor != null && requestedFlavor !in FLAVORS) {
-                throw IllegalStateException(
-                    "Unknown buildkonfig.flavor '$requestedFlavor'. Valid flavors: ${FLAVORS.joinToString()}"
-                )
-            }
-            val selectedFlavor = requestedFlavor ?: LOCAL
+            val preUrl = (resolveConfig("BASE_URL_HTTP_PRE") ?: resolveConfig("BASE_URL_HTTP_STAGING"))
+                ?.let { requireHttps(it, "BASE_URL_HTTP_PRE") }
+            val proUrl = (resolveConfig("BASE_URL_HTTP_PRO") ?: resolveConfig("BASE_URL_HTTP_PROD"))
+                ?.let { requireHttps(it, "BASE_URL_HTTP_PRO") }
+                ?: if (build == GranatumBuild.PRO) {
+                    throw IllegalStateException("Missing BASE_URL_HTTP_PRO (required by granatum.build=pro)")
+                } else {
+                    null
+                }
 
             extensions.configure<BuildKonfigExtension> {
                 packageName = target.pathToPackageName()
 
                 defaultConfigs {
-                    // Through resolve() like every other key, so CI can pass -PAPI_KEY=… without
-                    // a local.properties, which is gitignored and never exists on a runner.
-                    val apiKey = resolve("API_KEY")
-                        ?: throw IllegalStateException(
-                            "Missing API_KEY: set it in local.properties or pass -PAPI_KEY=…"
-                        )
+                    // Through resolveConfig() like every other key, so CI can pass -PAPI_KEY=…
+                    // without a local.properties, which is gitignored and never exists on a runner.
+                    val apiKey = resolveConfig("API_KEY")
+                        ?: throw IllegalStateException("Missing API_KEY: set it in local.properties or pass -PAPI_KEY=…")
                     buildConfigField(FieldSpec.Type.STRING, "API_KEY", apiKey)
-                    buildConfigField(FieldSpec.Type.STRING, "ENVIRONMENT", selectedFlavor)
+                    buildConfigField(FieldSpec.Type.STRING, "BUILD", build.id)
+                    buildConfigField(FieldSpec.Type.STRING, "BASE_URL_PRO", proUrl.orEmpty())
+                    // The store app knows no other server.
+                    val internal = build == GranatumBuild.PRE
+                    buildConfigField(FieldSpec.Type.STRING, "BASE_URL_PRE", if (internal) preUrl.orEmpty() else "")
                     buildConfigField(
                         FieldSpec.Type.STRING,
-                        "BASE_URL_HTTP",
-                        resolve("BASE_URL_HTTP") ?: DEFAULT_BASE_URL_HTTP_ANDROID
+                        "BASE_URL_LOCAL",
+                        if (internal) resolveConfig("BASE_URL_HTTP") ?: DEFAULT_LOCAL_URL_ANDROID else ""
                     )
                 }
 
-                // iOS cannot reach 10.0.2.2. Without this the simulator silently fails to find a
-                // backend that Android reaches just fine.
-                //
                 // These names must be the Kotlin *target* names, not a source-set group: a
-                // `create("ios")` here matches no target and is dropped without any warning, which
-                // looks like success until you read the generated BuildKonfig.
-                val iosBaseUrl = resolve("BASE_URL_HTTP_IOS")
-                    ?: resolve("BASE_URL_HTTP")
-                    ?: DEFAULT_BASE_URL_HTTP_IOS
-
+                // `create("ios")` here matches no target and is dropped without any warning.
+                val iosLocalUrl = resolveConfig("BASE_URL_HTTP_IOS") ?: resolveConfig("BASE_URL_HTTP") ?: DEFAULT_LOCAL_URL_IOS
                 targetConfigs {
                     listOf("iosArm64", "iosX64", "iosSimulatorArm64").forEach { iosTarget ->
                         create(iosTarget) {
-                            buildConfigField(FieldSpec.Type.STRING, "BASE_URL_HTTP", iosBaseUrl)
+                            buildConfigField(
+                                FieldSpec.Type.STRING,
+                                "BASE_URL_LOCAL",
+                                if (build == GranatumBuild.PRE) iosLocalUrl else ""
+                            )
                         }
-                    }
-                }
-
-                // Only the selected flavor is declared. A `defaultConfigs(name) { }` block runs at
-                // configuration time whatever flavor you asked for, so declaring staging and prod
-                // unconditionally would demand their keys on every local build — exactly the
-                // friction this plugin is meant to remove.
-                when (selectedFlavor) {
-                    STAGING -> defaultConfigs(STAGING) {
-                        buildConfigField(
-                            FieldSpec.Type.STRING,
-                            "BASE_URL_HTTP",
-                            requireHttps(require("BASE_URL_HTTP_STAGING", STAGING), STAGING)
-                        )
-                    }
-
-                    PROD -> defaultConfigs(PROD) {
-                        buildConfigField(
-                            FieldSpec.Type.STRING,
-                            "BASE_URL_HTTP",
-                            requireHttps(require("BASE_URL_HTTP_PROD", PROD), PROD)
-                        )
                     }
                 }
             }

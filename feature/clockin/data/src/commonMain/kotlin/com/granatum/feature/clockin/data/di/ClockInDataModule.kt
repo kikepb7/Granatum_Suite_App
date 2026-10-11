@@ -1,5 +1,7 @@
 package com.granatum.feature.clockin.data.di
 
+import com.granatum.core.domain.environment.EnvironmentScopedData
+import com.granatum.feature.clockin.data.environment.ClockInEnvironmentData
 import com.granatum.feature.clockin.data.sync.ConnectivityObserver
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import com.granatum.feature.clockin.data.datasource.local.OfflineFirstClockInRepositoryImpl
@@ -34,6 +36,7 @@ val clockInDataModule = module {
     single<ClockEventDao> { get<AppClockInDatabase>().clockEventDao }
     single<ShiftDao> { get<AppClockInDatabase>().shiftDao }
     single<ServerShiftDao> { get<AppClockInDatabase>().serverShiftDao }
+    single { ClockInEnvironmentData(get<AppClockInDatabase>().maintenanceDao) } bind EnvironmentScopedData::class
     single { FichajeRemoteDataSource(httpClient = get()) }
 
     single {

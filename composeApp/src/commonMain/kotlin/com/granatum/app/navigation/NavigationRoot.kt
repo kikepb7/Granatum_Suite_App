@@ -2,6 +2,9 @@ package com.granatum.app.navigation
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
@@ -28,6 +31,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.granatum.app.account.AccountScreenRoot
 import com.granatum.core.data.auth.SessionStateHolder
+import com.granatum.core.data.environment.EnvironmentRepositoryImpl
 import com.granatum.core.designsystem.components.brand.AppBrandSplash
 import com.granatum.core.designsystem.components.navigation.AppBottomBar
 import com.granatum.core.designsystem.components.topbar.AccountAction
@@ -35,6 +39,8 @@ import com.granatum.core.designsystem.components.topbar.LocalAccountAction
 import com.granatum.core.domain.auth.repository.SessionStorage
 import com.granatum.core.designsystem.components.navigation.AppBottomBarItemModel
 import com.granatum.core.domain.auth.model.SessionState
+import com.granatum.core.domain.environment.EnvironmentRepository
+import com.granatum.core.presentation.environment.EnvironmentRibbon
 import com.granatum.core.domain.auth.model.SignOutReason
 import com.granatum.core.domain.auth.model.UserRole
 import com.granatum.core.domain.auth.repository.AuthRepository
@@ -79,8 +85,10 @@ fun NavigationRoot() {
     val authRepository = koinInject<AuthRepository>()
     val scope = rememberCoroutineScope()
     val sessionState by sessionStateHolder.state.collectAsStateWithLifecycle()
+    // Starting in Demo signs in by itself: no login screen flashes in between.
+    val startingDemo by koinInject<EnvironmentRepositoryImpl>().startingDemo.collectAsStateWithLifecycle()
 
-    Crossfade(targetState = sessionState is SessionState.Loading, label = "splash") { loading ->
+    Crossfade(targetState = sessionState is SessionState.Loading || startingDemo, label = "splash") { loading ->
         if (loading) Splash() else Gate(sessionState, authRepository, scope)
     }
 }
@@ -146,10 +154,18 @@ private fun SignedInRoot(role: UserRole) {
 
     CompositionLocalProvider(LocalAccountAction provides accountAction) {
     Column(modifier = Modifier.fillMaxSize()) {
+        // PRE build only: which backend this session is using (specs/010-entornos, FR-006).
+        val environments = koinInject<EnvironmentRepository>()
+        val showRibbon = environments.canSwitch
+        if (showRibbon) {
+            val environment by environments.current.collectAsStateWithLifecycle()
+            EnvironmentRibbon(environment)
+        }
         NavHost(
             navController = navController,
             startDestination = tabs.first().route,
-            modifier = Modifier.weight(1f)
+            // The ribbon already covers the status bar: screens must not add it again.
+            modifier = Modifier.weight(1f).then(if (showRibbon) Modifier.consumeWindowInsets(WindowInsets.statusBars) else Modifier)
         ) {
             clockInGraph(navController = navController, canClockIn = role.canClockIn, canSeeTeam = role.canSeeTeam)
             if (role.canManageInventory) {

@@ -1,6 +1,7 @@
 package com.granatum.core.data.networking
 
-import com.granatum.core.data.BuildKonfig
+import com.granatum.core.data.environment.ActiveEnvironment
+import com.granatum.core.domain.environment.AppEnvironment
 import com.granatum.core.domain.logger.AppLogger
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
@@ -20,8 +21,6 @@ import io.ktor.client.statement.HttpResponse
  * Result goes to the log and nowhere else — this must never change what the user sees, and a dead
  * backend must not stop the app from starting.
  */
-private const val LOCAL_ENVIRONMENT = "local"
-
 class BackendHealthProbe(
     private val httpClient: HttpClient,
     private val logger: AppLogger
@@ -30,7 +29,7 @@ class BackendHealthProbe(
     suspend fun check() {
         // Development aid only. Guarding here rather than at the call site means no staging or
         // production build can ever be made to emit this, however it gets wired up later.
-        if (BuildKonfig.ENVIRONMENT != LOCAL_ENVIRONMENT) return
+        if (ActiveEnvironment.current != AppEnvironment.LOCAL) return
 
         val url = healthUrl(UrlConstants.BASE_URL_HTTP)
         runCatching { httpClient.get(url) }

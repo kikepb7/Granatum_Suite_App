@@ -1,10 +1,24 @@
+import com.granatum.buildlogic.convention.GranatumBuild
+
 plugins {
     alias(libs.plugins.convention.cmp.application)
     alias(libs.plugins.compose.hot.reload)
 }
 
+// PRE (internal, with the environment selector and the demo) or PRO (store) — specs/010-entornos.
+val granatumBuild = GranatumBuild.of(project)
+
 kotlin {
     sourceSets {
+        // One Koin module per build: PRE's registers the demo module, PRO's is empty, so the store
+        // app neither links nor references `:core:demo`.
+        commonMain {
+            kotlin.srcDir("src/environment/${granatumBuild.id}/kotlin")
+        }
+        if (granatumBuild == GranatumBuild.PRE) {
+            commonMain.dependencies { implementation(projects.core.demo) }
+        }
+
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)

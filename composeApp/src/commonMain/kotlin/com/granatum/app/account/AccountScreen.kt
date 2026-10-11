@@ -1,5 +1,6 @@
 package com.granatum.app.account
 
+import com.granatum.core.presentation.environment.EnvironmentPicker
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.safeDrawing
@@ -89,6 +90,16 @@ fun AccountScreenRoot(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.extended.textSecondary
             )
+            if (state.environments.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(16.dp))
+                EnvironmentPicker(
+                    current = state.environment,
+                    available = state.environments,
+                    enabled = !state.isSigningOut,
+                    error = state.environmentError,
+                    onPick = { viewModel.onAction(AccountAction.OnEnvironment(it)) }
+                )
+            }
             Spacer(modifier = Modifier.height(24.dp))
             AppButton(
                 text = stringResource(Res.string.account_change_password),

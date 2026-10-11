@@ -127,27 +127,47 @@ Solo para la administración: registra las facturas emitidas y recibidas del neg
 - La cuenta se abre ahora desde el botón con la inicial de la barra superior, para que la barra
   inferior no pase de cinco pestañas.
 
-## Entornos
+## Entornos: app PRE y app PRO
 
-El entorno se elige **al compilar** y queda fijado en el binario. No se puede cambiar en ejecución, a propósito: así ningún binario de producción puede repuntarse a otro servidor.
+Hay **dos apps**, elegidas al compilar ([spec 010](specs/010-entornos/spec.md)):
+
+| | **PRE** (por defecto) | **PRO** (la de las tiendas) |
+|---|---|---|
+| Compilar | `-Pgranatum.build=pre` | `-Pgranatum.build=pro` |
+| Android | `com.granatum.app.pre` · «Granatum PRE» | `com.granatum.app` · «Granatum Suite» |
+| iOS | `GRANATUM_BUILD = pre` en `Config.xcconfig` | `xcodebuild … GRANATUM_BUILD=pro` |
+| Entornos | Local, PRE, PRO y **Demo**, con selector | Solo producción |
+| Selector | En el login y en la cuenta, con franja de entorno durante la sesión | No existe |
+| Usuarios demo | Módulo `:core:demo` (entorno Demo) | No se enlaza |
+| Log de red | Completo (salvo rutas sensibles) | Ninguno |
+| Tráfico sin cifrar | Solo hacia el emulador (entorno Local) | Prohibido |
+
+Las dos se instalan a la vez en el mismo móvil.
 
 ```bash
-./gradlew :composeApp:assembleDebug                                # local (por defecto)
-./gradlew :composeApp:assembleDebug   -Pbuildkonfig.flavor=staging
-./gradlew :composeApp:assembleRelease -Pbuildkonfig.flavor=prod
+./gradlew :composeApp:installDebug                                  # PRE
+./gradlew :composeApp:assembleRelease -Pgranatum.build=pro          # PRO (exige BASE_URL_HTTP_PRO)
 ```
 
-| Entorno | Dirección | Cifrado |
-|---|---|---|
-| `local` | Android `http://10.0.2.2:8080/api` · iOS `http://localhost:8080/api` | no exigido |
-| `staging` | de `BASE_URL_HTTP_STAGING` | **obligatorio** |
-| `prod` | de `BASE_URL_HTTP_PROD` | **obligatorio** |
+Para que el botón Run de Android Studio compile otra cosa, pon `granatum.build=pro` en
+`local.properties`. En iOS, Xcode pasa `GRANATUM_BUILD` a Gradle.
 
-Android e iOS resuelven direcciones distintas en `local` porque `10.0.2.2` es un alias que solo entiende el emulador de Android; el simulador de iOS comparte la red del Mac y usa `localhost`. El convention plugin lo resuelve por target, así que no hay que hacer nada.
+**Direcciones** (propiedad de Gradle `-PCLAVE=valor`, luego `local.properties`):
 
-`staging` y `prod` **no tienen valor por defecto** y el build falla si falta su clave o si la URL no es `https://`. Un binario apuntando al servidor equivocado es peor que un build fallido.
+| Entorno | Clave | Por defecto | Cifrado |
+|---|---|---|---|
+| Local | `BASE_URL_HTTP` (`BASE_URL_HTTP_IOS` para iOS) | Android `http://10.0.2.2:8080/api` · iOS `http://localhost:8080/api` | no exigido |
+| PRE | `BASE_URL_HTTP_PRE` (antes `_STAGING`) | sin valor: la opción no aparece | **obligatorio** |
+| PRO | `BASE_URL_HTTP_PRO` (antes `_PROD`) | sin valor: la app PRO no compila | **obligatorio** |
 
-Cada clave se resuelve en este orden: propiedad de Gradle (`-PCLAVE=valor`, cómodo desde CI), luego `local.properties`, luego el valor por defecto. Todas están documentadas en [`local.properties.example`](./local.properties.example).
+**Cambiar de entorno en PRE** cierra la sesión (revocándola en el entorno anterior), borra los
+datos guardados de fichaje e inventario y recuerda la elección. Si hay fichajes sin enviar, no deja
+cambiar hasta que se envíen: nunca acaban en el servidor equivocado.
+
+**Demo**: sin servidor, con datos de ejemplo de una floristería que se borran al cerrar la app.
+Al elegirlo entra como administración (Lucía Ferrer); al cerrar sesión, el login ofrece entrar como
+empleado (Marcos Vidal) o volver como administración con un toque. La CI comprueba que la app PRO
+no contiene el módulo demo.
 
 ## Contrato de API
 

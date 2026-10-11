@@ -1,5 +1,6 @@
 package com.granatum.core.data.networking
 
+import com.granatum.core.data.environment.ActiveEnvironment
 import com.granatum.core.data.BuildKonfig
 import com.granatum.core.data.auth.SessionEvents
 import com.granatum.core.data.auth.dto.ParTokensResponseDto
@@ -76,7 +77,9 @@ class HttpClientFactory(
                 logger = object : Logger {
                     override fun log(message: String) = appLogger.debug(message = message)
                 }
-                level = LogLevel.ALL
+                // The store build logs no traffic at all; the internal one logs everything not
+                // filtered below (specs/010-entornos, research D6).
+                level = if (ActiveEnvironment.isProBuild) LogLevel.NONE else LogLevel.ALL
                 // Passwords and tokens travel in the bodies of the auth routes, so those calls
                 // are not logged at all, request or response (FR-030). Neither are invoicing
                 // calls: third parties' tax data and whole documents (specs/008-facturacion).

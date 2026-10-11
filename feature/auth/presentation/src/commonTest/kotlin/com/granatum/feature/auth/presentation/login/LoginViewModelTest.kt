@@ -5,6 +5,11 @@ import androidx.compose.runtime.snapshots.Snapshot
 import com.granatum.core.domain.auth.AuthError
 import com.granatum.core.domain.util.Result
 import com.granatum.feature.auth.presentation.testing.FakeAuthRepository
+import com.granatum.feature.auth.presentation.testing.FakeEnvironmentRepository
+import com.granatum.core.domain.auth.model.DemoAccount
+import com.granatum.core.domain.auth.model.UserRole
+import com.granatum.core.domain.environment.AppEnvironment
+import com.granatum.core.domain.environment.EnvironmentError
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -31,7 +36,7 @@ class LoginViewModelTest {
     fun tearDown() = Dispatchers.resetMain()
 
     private fun viewModel(email: String = "ana@granatum.es", password: String = "secreta") =
-        LoginViewModel(repository).apply {
+        LoginViewModel(repository, FakeEnvironmentRepository()).apply {
             emailState.setTextAndPlaceCursorAtEnd(email)
             passwordState.setTextAndPlaceCursorAtEnd(password)
             Snapshot.sendApplyNotifications()
@@ -91,5 +96,42 @@ class LoginViewModelTest {
         vm.passwordState.setTextAndPlaceCursorAtEnd("otra")
         Snapshot.sendApplyNotifications()
         assertNull(vm.state.value.error)
+    }
+
+    @Test
+    fun the_store_app_shows_no_environment_selector() = runTest {
+        val sut = LoginViewModel(repository, FakeEnvironmentRepository(available = listOf(AppEnvironment.PRO)))
+        assertTrue(sut.state.value.environments.isEmpty())
+        assertTrue(sut.state.value.demoAccounts.isEmpty())
+    }
+
+    @Test
+    fun when_demo_is_picked_then_its_accounts_sign_in_in_one_tap() = runTest {
+        val admin = DemoAccount(UserRole.ADMIN, "Lucía", "admin@demo.granatum.es", "Demo-Admin-2026!")
+        val environments = FakeEnvironmentRepository(
+            available = listOf(AppEnvironment.PRE, AppEnvironment.PRO, AppEnvironment.DEMO),
+            demo = listOf(admin)
+        )
+        val sut = LoginViewModel(repository, environments)
+        assertEquals(listOf(AppEnvironment.PRE, AppEnvironment.PRO, AppEnvironment.DEMO), sut.state.value.environments)
+
+        sut.onAction(LoginAction.OnEnvironment(AppEnvironment.DEMO))
+        assertEquals(AppEnvironment.DEMO, sut.state.value.environment)
+        assertEquals(listOf(admin), sut.state.value.demoAccounts)
+
+        sut.onAction(LoginAction.OnDemoAccount(admin))
+        assertEquals(listOf("admin@demo.granatum.es" to "Demo-Admin-2026!"), repository.loginCalls)
+    }
+
+    @Test
+    fun when_punches_are_pending_then_the_switch_is_refused_and_explained() = runTest {
+        val environments = FakeEnvironmentRepository(available = listOf(AppEnvironment.PRE, AppEnvironment.PRO))
+        environments.refuseWith = EnvironmentError.UnsyncedWork(2)
+        val sut = LoginViewModel(repository, environments)
+
+        sut.onAction(LoginAction.OnEnvironment(AppEnvironment.PRO))
+
+        assertEquals(AppEnvironment.PRE, sut.state.value.environment)
+        assertEquals(EnvironmentError.UnsyncedWork(2), sut.state.value.environmentError)
     }
 }

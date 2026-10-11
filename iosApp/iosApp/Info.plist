@@ -9,7 +9,7 @@
 	     better off without a space. If iOS truncates this on the springboard,
 	     add a shorter CFBundleName here rather than changing Android. -->
 	<key>CFBundleDisplayName</key>
-	<string>Granatum Suite</string>
+	<string>$(GRANATUM_DISPLAY_NAME)</string>
 	<!-- Invoicing photographs paper invoices to upload them (specs/008-facturacion). The
 	     gallery uses PHPicker, which needs no permission. -->
 	<key>NSCameraUsageDescription</key>

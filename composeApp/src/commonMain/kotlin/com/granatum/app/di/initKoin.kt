@@ -26,6 +26,8 @@ fun initKoin(config: KoinAppDeclaration? = null) {
     startKoin {
         config?.invoke(this)
         modules(
+            // Before the data module, which looks the demo gateway up when it creates the engine.
+            environmentModule,
             coreDataModule,
             corePresentationModule,
             appModule,

@@ -1,5 +1,9 @@
 package com.granatum.core.data.di
 
+import com.granatum.core.data.environment.EnvironmentRepositoryImpl
+import com.granatum.core.domain.environment.EnvironmentRepository
+import kotlinx.coroutines.runBlocking
+import org.koin.dsl.binds
 import com.granatum.core.data.auth.KtorAuthRepositoryImpl
 import com.granatum.core.data.auth.SessionEvents
 import com.granatum.core.data.auth.SessionStateHolder
@@ -32,5 +36,16 @@ val coreDataModule = module {
     singleOf(::LegacySessionCleaner)
     single { SecureSessionStorage(get(), get()) } bind SessionStorage::class
     singleOf(::SessionEvents)
+    // Loaded before anything else: every route, including the background sync that may start
+    // without UI, is built from the active environment (specs/010-entornos, research D3).
+    single(createdAtStart = true) {
+        EnvironmentRepositoryImpl(
+            dataStore = get(),
+            authRepository = { get() },
+            scopedData = { getAll() },
+            demo = getOrNull(),
+            logger = get()
+        ).also { repository -> runBlocking { repository.load() } }
+    } binds arrayOf(EnvironmentRepository::class)
     single { SessionStateHolder(get(), get(), CoroutineScope(SupervisorJob() + Dispatchers.Default)) }
 }

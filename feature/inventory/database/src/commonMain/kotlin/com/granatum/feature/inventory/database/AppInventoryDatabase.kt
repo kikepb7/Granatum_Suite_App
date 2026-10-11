@@ -4,6 +4,7 @@ import androidx.room.ConstructedBy
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import com.granatum.feature.inventory.database.dao.InventoryDao
+import com.granatum.feature.inventory.database.dao.InventoryMaintenanceDao
 import com.granatum.feature.inventory.database.entity.CategoryEntity
 import com.granatum.feature.inventory.database.entity.MaterialEntity
 import com.granatum.feature.inventory.database.entity.MaterialHistoryEntity
@@ -23,6 +24,7 @@ import com.granatum.feature.inventory.database.entity.MaterialHistoryEntity
 @ConstructedBy(AppInventoryDatabaseConstructor::class)
 abstract class AppInventoryDatabase : RoomDatabase() {
     abstract val inventoryDao: InventoryDao
+    abstract val maintenanceDao: InventoryMaintenanceDao
 
     companion object {
         const val DB_NAME = "app_inventory.db"

@@ -1,7 +1,21 @@
 TEAM_ID=
 
 PRODUCT_NAME=GranatumSuite
-PRODUCT_BUNDLE_IDENTIFIER=com.granatum.app
+
+// Which app is built (specs/010-entornos): `pre` (internal, with the environment selector and the
+// demo) or `pro` (App Store). The Xcode build phase passes it to Gradle as -Pgranatum.build.
+// For a store archive: xcodebuild … GRANATUM_BUILD=pro (or change this line).
+GRANATUM_BUILD = pre
+
+// PRE and PRO install side by side.
+GRANATUM_BUNDLE_SUFFIX_pre = .pre
+GRANATUM_BUNDLE_SUFFIX_pro =
+GRANATUM_BUNDLE_IDENTIFIER = com.granatum.app$(GRANATUM_BUNDLE_SUFFIX_$(GRANATUM_BUILD))
+PRODUCT_BUNDLE_IDENTIFIER = $(GRANATUM_BUNDLE_IDENTIFIER)
+
+GRANATUM_DISPLAY_NAME_pre = Granatum PRE
+GRANATUM_DISPLAY_NAME_pro = Granatum Suite
+GRANATUM_DISPLAY_NAME = $(GRANATUM_DISPLAY_NAME_$(GRANATUM_BUILD))
 
 CURRENT_PROJECT_VERSION=1
 MARKETING_VERSION=1.0

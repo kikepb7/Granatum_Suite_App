@@ -73,4 +73,9 @@
     <string name="auth_error_email_taken">Este correo ya tiene cuenta.</string>
     <string name="auth_error_account_exists">Ya hay una cuenta para este DNI o NIE.</string>
     <string name="auth_error_invalid_document">El DNI o NIE no es válido.</string>
+
+    <!-- Entorno Demo (solo app PRE) -->
+    <string name="demo_title">Cuentas de demostración</string>
+    <string name="demo_enter_admin">Entrar como administración (%1$s)</string>
+    <string name="demo_enter_employee">Entrar como empleado (%1$s)</string>
 </resources>

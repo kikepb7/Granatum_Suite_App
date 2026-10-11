@@ -1,5 +1,7 @@
 package com.granatum.feature.inventory.data.di
 
+import com.granatum.core.domain.environment.EnvironmentScopedData
+import com.granatum.feature.inventory.data.environment.InventoryEnvironmentData
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import com.granatum.feature.inventory.data.remote.InventoryRemoteDataSource
 import com.granatum.feature.inventory.data.repository.OfflineFirstInventoryRepository
@@ -24,6 +26,7 @@ val inventoryDataModule = module {
             .build()
     }
     single { get<AppInventoryDatabase>().inventoryDao }
+    single { InventoryEnvironmentData(get<AppInventoryDatabase>().maintenanceDao) } bind EnvironmentScopedData::class
     single { InventoryRemoteDataSource(get()) }
     single { OfflineFirstInventoryRepository(get(), get()) } bind InventoryRepository::class
 }
