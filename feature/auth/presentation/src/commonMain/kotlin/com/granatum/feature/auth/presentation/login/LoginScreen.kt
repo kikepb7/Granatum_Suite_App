@@ -77,10 +77,7 @@ private fun LoginScreen(
         errorText = bannerText,
         logo = { AppBrandLogo() }
     ) {
-        if (viewModel.demoAccounts.isNotEmpty()) {
-            DemoAccounts(viewModel, enabled = !state.isLoading)
-            Spacer(modifier = Modifier.height(24.dp))
-        }
+
         AppTextField(
             state = viewModel.emailState,
             title = stringResource(Res.string.login_email),
@@ -162,18 +159,7 @@ private fun DemoAccounts(viewModel: LoginViewModel, enabled: Boolean) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
             )
-            viewModel.demoAccounts.forEach { account ->
-                AppButton(
-                    text = stringResource(
-                        if (account.role == UserRole.ADMIN) Res.string.demo_enter_admin else Res.string.demo_enter_employee,
-                        account.displayName
-                    ),
-                    onClick = { viewModel.onAction(LoginAction.OnDemoAccount(account)) },
-                    enabled = enabled,
-                    style = if (account.role == UserRole.ADMIN) AppButtonStyle.PRIMARY else AppButtonStyle.SECONDARY,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
+
         }
     }
 }

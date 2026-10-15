@@ -5,12 +5,9 @@ import com.granatum.core.data.auth.SessionEvents
 import com.granatum.core.data.auth.SessionStateHolder
 import com.granatum.core.data.auth.storage.LegacySessionCleaner
 import com.granatum.core.data.auth.storage.SecureSessionStorage
-import com.granatum.core.data.demo.DemoAutoLogin
-import com.granatum.core.data.demo.DemoMode
 import com.granatum.core.data.logger.KermitLogger
 import com.granatum.core.data.networking.BackendHealthProbe
 import com.granatum.core.data.networking.HttpClientFactory
-import com.granatum.core.domain.auth.model.DemoAccounts
 import com.granatum.core.domain.auth.repository.AuthRepository
 import com.granatum.core.domain.auth.repository.SessionStorage
 import com.granatum.core.domain.logger.AppLogger
@@ -36,8 +33,5 @@ val coreDataModule =
         singleOf(::LegacySessionCleaner)
         single { SecureSessionStorage(get(), get()) } bind SessionStorage::class
         singleOf(::SessionEvents)
-        // Empty outside the demo build: the login screen then shows no shortcut.
-        single<DemoAccounts> { DemoMode.accounts }
-    singleOf(::DemoAutoLogin)
         single { SessionStateHolder(get(), get(), CoroutineScope(SupervisorJob() + Dispatchers.Default)) }
     }

@@ -9,7 +9,7 @@ import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 
 val authPresentationModule = module {
-    viewModel { LoginViewModel(get(), get()) }
+    viewModel { LoginViewModel(get()) }
     viewModelOf(::OwnerSignUpViewModel)
     viewModel { (mode: ChangePasswordMode) -> ChangePasswordViewModel(get(), mode) }
 }

@@ -5,14 +5,13 @@ import androidx.datastore.preferences.core.Preferences
 import com.granatum.core.data.auth.createDataStore
 import com.granatum.core.data.auth.storage.KeychainSecureStore
 import com.granatum.core.data.auth.storage.SecureStore
-import com.granatum.core.data.demo.DemoMode
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.darwin.Darwin
 import org.koin.dsl.module
 
 actual val platformCoreDataModule =
     module {
-        single<HttpClientEngine> { DemoMode.engineOr { Darwin.create() } }
+        single<HttpClientEngine> { Darwin.create() }
         single<DataStore<Preferences>> {
             createDataStore(get())
         }
