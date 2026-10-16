@@ -22,7 +22,7 @@ fun AppDialogContent(
         Surface(
             modifier = modifier
                 .fillMaxWidth()
-                .clip(shape = RoundedCornerShape(size = 16.dp)),
+                .clip(shape = RoundedCornerShape(size = 28.dp)),
             color = MaterialTheme.colorScheme.surface
         ){
             content()

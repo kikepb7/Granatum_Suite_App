@@ -11,11 +11,12 @@ import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.darwin.Darwin
 import org.koin.dsl.module
 
-actual val platformCoreDataModule = module {
-    // Demo requests go to the demo module when it is linked (PRE build only).
-    single<HttpClientEngine> { SwitchingEngine(real = Darwin.create(), demo = getOrNull<DemoGateway>()?.engine()) }
-    single<DataStore<Preferences>> {
-        createDataStore(get())
+actual val platformCoreDataModule =
+    module {
+        // Demo requests go to the demo module when it is linked (PRE build only).
+        single<HttpClientEngine> { SwitchingEngine(real = Darwin.create(), demo = getOrNull<DemoGateway>()?.engine()) }
+        single<DataStore<Preferences>> {
+            createDataStore(get())
+        }
+        single<SecureStore> { KeychainSecureStore(get()) }
     }
-    single<SecureStore> { KeychainSecureStore(get()) }
-}

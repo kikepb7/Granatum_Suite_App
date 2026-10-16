@@ -41,6 +41,11 @@ Las reglas técnicas no negociables están en la **[constitución del proyecto](
 
 No hace falta configurar ninguna URL: el entorno `local` ya apunta a la máquina anfitriona en ambas plataformas.
 
+## Versión de demostración (sin servidor)
+
+La demo vive ahora en la **app PRE**: elige «Demo» en el selector de entorno. Ver
+[Entornos: app PRE y app PRO](#entornos-app-pre-y-app-pro).
+
 ## Iniciar sesión en local
 
 La app ya no entra sin credenciales: necesita una cuenta real del backend. Solo el propietario se

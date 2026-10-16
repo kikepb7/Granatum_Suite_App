@@ -2,10 +2,8 @@ package com.granatum.feature.auth.presentation.login
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Surface
 import com.granatum.core.designsystem.components.buttons.AppButtonStyle
+import com.granatum.core.designsystem.components.cards.AppCard
 import com.granatum.core.domain.auth.model.DemoAccount
 import com.granatum.core.domain.auth.model.UserRole
 import com.granatum.core.presentation.environment.EnvironmentPicker
@@ -164,9 +162,13 @@ private fun passwordErrorText(error: PasswordFieldError): String = when (error) 
 /** Demo environment only (PRE build): one tap per role, no typing. */
 @Composable
 private fun DemoAccounts(accounts: List<DemoAccount>, enabled: Boolean, onPick: (DemoAccount) -> Unit) {
-    Surface(shape = RoundedCornerShape(14.dp), color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(text = stringResource(Res.string.demo_title), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
+    AppCard(containerColor = MaterialTheme.colorScheme.primaryContainer) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(
+                text = stringResource(Res.string.demo_title),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
             accounts.forEach { account ->
                 AppButton(
                     text = stringResource(

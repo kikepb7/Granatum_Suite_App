@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Estado del día -->
-    <string name="clockin_title">Fichaje</string>
+    <string name="clockin_title">Fichajes</string>
+    <string name="today_title">Hoy</string>
     <string name="status_clocked_out">Sin fichar</string>
     <string name="status_clocked_in">Trabajando</string>
     <string name="status_on_break">En pausa</string>
@@ -63,12 +64,17 @@
     <string name="error_no_session">Inicia sesión para fichar</string>
 
     <!-- Historial -->
-    <string name="history_title">Mi historial</string>
+    <string name="history_title">Histórico</string>
+    <string name="history_month_total">Horas del mes</string>
+    <plurals name="history_shift_count">
+        <item quantity="one">%1$d jornada</item>
+        <item quantity="other">%1$d jornadas</item>
+    </plurals>
     <string name="history_empty">No hay jornadas en este mes</string>
     <string name="history_previous_month">Mes anterior</string>
     <string name="history_next_month">Mes siguiente</string>
-    <string name="worked_time">%1$dh %2$02dmin</string>
-    <string name="worked_time_provisional">%1$dh %2$02dmin (provisional)</string>
+    <string name="worked_time">%1$dh %2$dmin</string>
+    <string name="worked_time_provisional">%1$dh %2$dmin (provisional)</string>
     <string name="shift_in_progress">En curso</string>
     <string name="flag_incomplete">Incompleta</string>
     <string name="flag_corrected">Corregida</string>

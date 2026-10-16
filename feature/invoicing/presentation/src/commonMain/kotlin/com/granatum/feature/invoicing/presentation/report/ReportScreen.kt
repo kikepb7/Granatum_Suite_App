@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
@@ -22,7 +21,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -35,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.granatum.core.designsystem.components.buttons.AppButton
 import com.granatum.core.designsystem.components.buttons.AppButtonStyle
+import com.granatum.core.designsystem.components.cards.AppCard
 import com.granatum.core.designsystem.components.topbar.AppTopBar
 import com.granatum.core.designsystem.theme.extended
 import com.granatum.core.presentation.documents.SharedFile
@@ -172,12 +171,8 @@ private fun Group(
     title: String,
     group: ReportGroup,
 ) {
-    Surface(
-        shape = RoundedCornerShape(14.dp),
-        color = MaterialTheme.colorScheme.extended.surfaceHigher,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    AppCard {
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             SectionTitle(title)
             Line(stringResource(Res.string.report_count), group.count.toString())
             Line(stringResource(Res.string.report_base), stringResource(Res.string.amount_eur, group.base.format()))

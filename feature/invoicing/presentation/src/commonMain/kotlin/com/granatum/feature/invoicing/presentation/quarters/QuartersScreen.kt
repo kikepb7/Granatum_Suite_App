@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
@@ -20,7 +19,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -33,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.granatum.core.designsystem.components.buttons.AppButton
 import com.granatum.core.designsystem.components.buttons.AppButtonStyle
+import com.granatum.core.designsystem.components.cards.AppCard
 import com.granatum.core.designsystem.components.dialogs.AppBottomSheet
 import com.granatum.core.designsystem.components.dialogs.AppDestructiveConfirmationDialog
 import com.granatum.core.designsystem.components.textfields.AppTextField
@@ -91,12 +90,8 @@ fun QuartersRoot(
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
                         state.quarters.forEach { quarter ->
-                            Surface(
-                                shape = RoundedCornerShape(14.dp),
-                                color = MaterialTheme.colorScheme.extended.surfaceHigher,
-                                modifier = Modifier.fillMaxWidth(),
-                            ) {
-                                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            AppCard {
+                                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(
                                             stringResource(Res.string.quarter_label, quarter.quarter, quarter.year),

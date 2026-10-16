@@ -1,17 +1,12 @@
 package com.granatum.app.navigation
 
 import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Groups
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Inventory
-import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -24,7 +19,6 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -33,9 +27,11 @@ import com.granatum.app.account.AccountScreenRoot
 import com.granatum.core.data.auth.SessionStateHolder
 import com.granatum.core.data.environment.EnvironmentRepositoryImpl
 import com.granatum.core.designsystem.components.brand.AppBrandSplash
+import com.granatum.core.designsystem.components.icons.AppTabIcons
 import com.granatum.core.designsystem.components.navigation.AppBottomBar
 import com.granatum.core.designsystem.components.topbar.AccountAction
 import com.granatum.core.designsystem.components.topbar.LocalAccountAction
+import com.granatum.core.designsystem.theme.AppTheme
 import com.granatum.core.domain.auth.repository.SessionStorage
 import com.granatum.core.designsystem.components.navigation.AppBottomBarItemModel
 import com.granatum.core.domain.auth.model.SessionState
@@ -140,6 +136,8 @@ private data object VoluntaryPasswordChangeRoute
 private fun SignedInRoot(role: UserRole) {
     val navController = rememberNavController()
     val tabs = RootTab.forRole(role)
+    // The start screen is the clock when the role may punch in, otherwise the history.
+    val startTab = if (RootTab.ClockIn in tabs) RootTab.ClockIn else RootTab.History
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
     val selectedIndex = tabs.indexOfFirst { it.matches(currentRoute) }.coerceAtLeast(0)
@@ -153,7 +151,7 @@ private fun SignedInRoot(role: UserRole) {
     }
 
     CompositionLocalProvider(LocalAccountAction provides accountAction) {
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = Modifier.fillMaxSize().background(AppTheme.colors.background)) {
         // PRE build only: which backend this session is using (specs/010-entornos, FR-006).
         val environments = koinInject<EnvironmentRepository>()
         val showRibbon = environments.canSwitch
@@ -163,7 +161,7 @@ private fun SignedInRoot(role: UserRole) {
         }
         NavHost(
             navController = navController,
-            startDestination = tabs.first().route,
+            startDestination = startTab.route,
             // The ribbon already covers the status bar: screens must not add it again.
             modifier = Modifier.weight(1f).then(if (showRibbon) Modifier.consumeWindowInsets(WindowInsets.statusBars) else Modifier)
         ) {
@@ -214,13 +212,13 @@ private fun SignedInRoot(role: UserRole) {
 
 private enum class RootTab(val label: StringResource, val route: Any, val qualifiedName: String?) {
     ClockIn(Res.string.tab_clock_in, ClockInRoute, ClockInRoute::class.qualifiedName),
-    History(Res.string.tab_history, HistoryRoute, HistoryRoute::class.qualifiedName),
     Inventory(Res.string.tab_inventory, MaterialListRoute, MaterialListRoute::class.qualifiedName),
+    History(Res.string.tab_history, HistoryRoute, HistoryRoute::class.qualifiedName),
+    Invoicing(Res.string.tab_invoicing, InvoiceListRoute, InvoicingGraphRoutes::class.qualifiedName),
     Team(Res.string.tab_team, TeamAttendanceRoute, TeamAttendanceRoute::class.qualifiedName),
 
     /** ADMIN's Team tab: the staff, with the team's working time one tap away (specs/009-personal). */
-    Staff(Res.string.tab_team, StaffListRoute, StaffGraphRoutes::class.qualifiedName),
-    Invoicing(Res.string.tab_invoicing, InvoiceListRoute, InvoicingGraphRoutes::class.qualifiedName);
+    Staff(Res.string.tab_team, StaffListRoute, StaffGraphRoutes::class.qualifiedName);
 
     // Every invoicing screen keeps its tab selected: their routes share the graph's prefix.
 
@@ -241,22 +239,26 @@ private enum class RootTab(val label: StringResource, val route: Any, val qualif
         )
     }
 
+    @Composable
     private fun icon() = when (this) {
-        ClockIn -> Icons.Default.Home
-        History -> Icons.Default.DateRange
-        Inventory -> Icons.Default.Inventory
-        Team, Staff -> Icons.Default.Groups
-        Invoicing -> Icons.Default.Receipt
+        ClockIn -> AppTabIcons.Clock
+        Inventory -> AppTabIcons.Inventory
+        History -> AppTabIcons.History
+        Invoicing -> AppTabIcons.Invoice
+        Team, Staff -> AppTabIcons.Team
     }
 
     companion object {
-        /** The tabs a role may use, in bar order (FR-009). The first one is the start screen. */
+        /**
+         * The tabs a role may use, in bar order (FR-009): Fichajes, Inventario, Histórico,
+         * Facturación, then the team for the roles that see it.
+         */
         fun forRole(role: UserRole): List<RootTab> = buildList {
             if (role.canClockIn) add(ClockIn)
-            add(History)
             if (role.canManageInventory) add(Inventory)
-            if (role.canManageStaff) add(Staff) else if (role.canSeeTeam) add(Team)
+            add(History)
             if (role.canManageInvoicing) add(Invoicing)
+            if (role.canManageStaff) add(Staff) else if (role.canSeeTeam) add(Team)
         }
     }
 }

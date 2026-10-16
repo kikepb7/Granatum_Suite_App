@@ -12,11 +12,12 @@ import io.ktor.client.engine.okhttp.OkHttp
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 
-actual val platformCoreDataModule = module {
-    // Demo requests go to the demo module when it is linked (PRE build only).
-    single<HttpClientEngine> { SwitchingEngine(real = OkHttp.create(), demo = getOrNull<DemoGateway>()?.engine()) }
-    single<DataStore<Preferences>> {
-        createDataStore(androidContext(), get())
+actual val platformCoreDataModule =
+    module {
+        // Demo requests go to the demo module when it is linked (PRE build only).
+        single<HttpClientEngine> { SwitchingEngine(real = OkHttp.create(), demo = getOrNull<DemoGateway>()?.engine()) }
+        single<DataStore<Preferences>> {
+            createDataStore(androidContext(), get())
+        }
+        single<SecureStore> { KeystoreSecureStore(get(), get()) }
     }
-    single<SecureStore> { KeystoreSecureStore(get(), get()) }
-}
