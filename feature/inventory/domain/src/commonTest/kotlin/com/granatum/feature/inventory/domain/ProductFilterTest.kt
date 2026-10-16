@@ -17,7 +17,7 @@ class ProductFilterTest {
     private val vases = CategoryModel("c1", "Jarrones", null)
     private val ribbons = CategoryModel("c2", "Árboles de cinta", null)
 
-    private fun product(id: String, category: CategoryModel, description: String, quantity: Int, location: StorageLocation?, updated: Long) = ProductModel(
+    private fun product(id: String, category: CategoryModel, description: String, quantity: Int, location: StorageLocation, updated: Long) = ProductModel(
         id = id, category = category, description = description, dimensions = Dimensions(10.0, 10.0), quantity = quantity,
         imageUrl = null, location = location, createdAt = Instant.fromEpochSeconds(0), updatedAt = Instant.fromEpochSeconds(updated)
     )
@@ -26,7 +26,7 @@ class ProductFilterTest {
         product("1", vases, "Cilindro de cristal", 8, StorageLocation(Warehouse.A, 2), updated = 30),
         product("2", vases, "Cerámica blanca", 0, StorageLocation(Warehouse.B, 2), updated = 10),
         product("3", ribbons, "Raso rojo", 30, StorageLocation(Warehouse.B, 4), updated = 20),
-        product("4", ribbons, "Arpillera", 12, null, updated = 40)
+        product("4", ribbons, "Arpillera", 12, StorageLocation(Warehouse.C, 1), updated = 40)
     )
 
     private fun ids(filter: ProductFilter) = all.filterBy(filter).map { it.id }

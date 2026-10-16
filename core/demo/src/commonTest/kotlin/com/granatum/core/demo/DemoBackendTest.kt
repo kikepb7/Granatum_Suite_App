@@ -3,11 +3,15 @@ package com.granatum.core.demo
 import com.granatum.core.data.auth.token.AccessTokenClaims
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.request.delete
+import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.forms.formData
 import io.ktor.client.request.forms.submitFormWithBinaryData
 import io.ktor.client.request.get
 import io.ktor.client.request.header
+import io.ktor.client.request.patch
 import io.ktor.client.request.post
+import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
@@ -20,6 +24,7 @@ import io.ktor.http.contentType
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -219,27 +224,53 @@ class DemoBackendTest {
     }
 
     @Test
-    fun the_demo_storage_keeps_uploaded_images_and_serves_them_publicly() =
+    fun a_material_image_is_uploaded_to_the_server_and_read_from_its_signed_url() =
         runTest {
-            val storage = "https://demo.granatum.invalid/storage/v1/object"
-            val upload =
-                http.post("$storage/inventario/productos/a.png") {
-                    header(HttpHeaders.Authorization, "Bearer demo")
-                    contentType(ContentType.Image.PNG)
-                    setBody(byteArrayOf(1, 2, 3))
+            val admin = token(DemoAccountsCatalog.ADMIN)
+            val id = get("/materiales", admin).json().jsonArray.first().jsonObject["id"]!!.jsonPrimitive.content
+            val png = byteArrayOf(0x89.toByte(), 'P'.code.toByte(), 'N'.code.toByte(), 'G'.code.toByte(), 1, 2)
+            fun part(bytes: ByteArray) =
+                formData {
+                    append("imagen", bytes, Headers.build { append(HttpHeaders.ContentDisposition, "filename=\"a.png\"") })
                 }
-            assertEquals(HttpStatusCode.OK, upload.status)
-            val read = http.get("$storage/public/inventario/productos/a.png")
-            assertEquals(HttpStatusCode.OK, read.status)
-            assertEquals(listOf<Byte>(1, 2, 3), read.readRawBytes().toList())
-            assertEquals(HttpStatusCode.NotFound, http.get("$storage/public/inventario/productos/missing.png").status)
+            val uploaded =
+                http.put("$base/materiales/$id/imagen") {
+                    header(HttpHeaders.Authorization, "Bearer $admin")
+                    setBody(MultiPartFormDataContent(part(png)))
+                }
+            assertEquals(HttpStatusCode.OK, uploaded.status)
+            val url = uploaded.json().jsonObject["imagenUrl"]!!.jsonPrimitive.content
+            assertTrue("/storage/v1/object/sign/" in url, url)
+            assertEquals(png.toList(), http.get(url).readRawBytes().toList())
+
+            val notAnImage =
+                http.put("$base/materiales/$id/imagen") {
+                    header(HttpHeaders.Authorization, "Bearer $admin")
+                    setBody(MultiPartFormDataContent(part("hola".encodeToByteArray())))
+                }
+            assertEquals(HttpStatusCode.UnsupportedMediaType, notAnImage.status)
+
+            val removed = http.delete("$base/materiales/$id/imagen") { header(HttpHeaders.Authorization, "Bearer $admin") }
+            assertEquals(JsonNull, removed.json().jsonObject["imagenUrl"])
+            assertEquals(HttpStatusCode.NotFound, http.get(url).status)
         }
 
     @Test
-    fun seeded_products_use_the_warehouse_section_locations() =
+    fun materials_follow_the_010_contract() =
         runTest {
             val admin = token(DemoAccountsCatalog.ADMIN)
-            val locations = get("/materiales", admin).json().jsonArray.map { it.jsonObject["ubicacion"]!!.jsonPrimitive.content }
-            assertTrue(locations.all { Regex("^[ABC]-[1-5]$").matches(it) }, locations.toString())
+            val first = get("/materiales", admin).json().jsonArray.first().jsonObject
+            listOf("descripcion", "dimensiones", "cantidad", "localizacion", "fechaAlta").forEach { assertTrue(it in first, it) }
+            assertEquals(2, get("/materiales?almacen=B", admin).json().jsonArray.size)
+            assertEquals(HttpStatusCode.BadRequest, get("/materiales?seccion=2", admin).status)
+            val category = first["categoria"]!!.jsonObject["id"]!!.jsonPrimitive.content
+            val zeroWidth = """{"categoriaId":"$category","descripcion":"x","dimensiones":{"alto":1,"ancho":0},"cantidad":1,"localizacion":{"almacen":"A","seccion":1}}"""
+            assertEquals(HttpStatusCode.BadRequest, post("/materiales", admin, zeroWidth).status)
+            val noReason = http.patch("$base/materiales/${first["id"]!!.jsonPrimitive.content}/cantidad") {
+                header(HttpHeaders.Authorization, "Bearer $admin")
+                contentType(ContentType.Application.Json)
+                setBody("""{"cantidad":3,"motivo":" "}""")
+            }
+            assertEquals(HttpStatusCode.BadRequest, noReason.status)
         }
 }

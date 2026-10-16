@@ -48,7 +48,6 @@ class DemoBackend(
     private val time = DemoTimeTrackingRoutes(state)
     private val inventory = DemoInventoryRoutes(state)
     private val invoicing = DemoInvoicingRoutes(state)
-    private val storage = DemoStorageRoutes()
 
     suspend fun handle(
         scope: MockRequestHandleScope,
@@ -74,8 +73,8 @@ class DemoBackend(
     }
 
     private fun route(request: DemoRequest): DemoReply {
-        // The storage is a third party: it authenticates with its own key, not the session.
-        if (storage.handles(request.path)) return storage.route(request)
+        // Signed image URLs carry their own token, not the session (backend 010).
+        if (inventory.handlesStorage(request.path)) return inventory.routeStorage(request)
         val first = request.segments.firstOrNull()
         if (first == "auth") {
             return auth.route(request) ?: staff.routeAccounts(request) ?: notFound("RECURSO_NO_ENCONTRADO")

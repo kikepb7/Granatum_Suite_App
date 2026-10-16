@@ -9,7 +9,7 @@ import com.granatum.core.data.environment.EnvironmentRepositoryImpl
 import com.granatum.core.data.logger.KermitLogger
 import com.granatum.core.data.networking.BackendHealthProbe
 import com.granatum.core.data.networking.HttpClientFactory
-import com.granatum.core.data.networking.StorageHttpClient
+import com.granatum.core.data.networking.ImageHttpClient
 import com.granatum.core.domain.auth.repository.AuthRepository
 import com.granatum.core.domain.auth.repository.SessionStorage
 import com.granatum.core.domain.environment.EnvironmentRepository
@@ -33,8 +33,8 @@ val coreDataModule =
         single {
             HttpClientFactory(get(), get(), get()).create(get())
         }
-        // Images go to an external storage without the backend's token (specs/011, FR-006).
-        single { StorageHttpClient(get()) }
+        // Signed image URLs load without the backend's token or API key (specs/011).
+        single { ImageHttpClient(get()) }
         singleOf(::BackendHealthProbe)
         singleOf(::KtorAuthRepositoryImpl) bind AuthRepository::class
         singleOf(::LegacySessionCleaner)

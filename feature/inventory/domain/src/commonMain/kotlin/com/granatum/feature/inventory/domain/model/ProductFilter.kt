@@ -25,9 +25,9 @@ data class ProductFilter(
 fun List<ProductModel>.filterBy(filter: ProductFilter): List<ProductModel> {
     val q = filter.query.trim().fold()
     val matching = filter { p ->
-        (q.isEmpty() || listOfNotNull(p.category.name, p.description, p.location?.toApi()).any { q in it.fold() }) &&
-            (filter.warehouse == null || p.location?.warehouse == filter.warehouse) &&
-            (filter.section == null || p.location?.section == filter.section) &&
+        (q.isEmpty() || listOf(p.category.name, p.description, p.location.code).any { q in it.fold() }) &&
+            (filter.warehouse == null || p.location.warehouse == filter.warehouse) &&
+            (filter.section == null || p.location.section == filter.section) &&
             (filter.categoryId == null || p.category.id == filter.categoryId) &&
             when (filter.stock) {
                 StockFilter.ALL -> true

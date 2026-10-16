@@ -8,7 +8,8 @@ divide en 3 almacenes (A, B y C) con secciones 1 a 5. La imagen debe poder subir
 storage. Rediseña los filtros, más intuitivos y de mejor calidad, con componentes propios, siguiendo
 la estética de la app.»
 
-Decisiones del responsable (2026-10-17): solo cambia la app, el backend no; **la categoría es el
+Decisiones del responsable (2026-10-17): al principio solo cambiaba la app; después el backend
+implementó el mismo modelo (su feature 010) y la app se alineó con él; **la categoría es el
 nombre** del producto; la imagen va a un **storage externo**; **una sola cantidad, con historial**.
 
 ## User Scenarios & Testing *(mandatory)*
@@ -41,8 +42,8 @@ La imagen se hace con la cámara o se elige de la galería y se sube al storage.
    imagen subida y su localización.
 2. **Given** un dato obligatorio vacío o fuera de rango, **When** se guarda, **Then** se señala en el
    campo y no se envía.
-3. **Given** que la imagen no se puede subir (sin conexión o storage sin configurar), **When** se
-   guarda, **Then** la app lo explica y no pierde lo escrito.
+3. **Given** que la imagen no se puede subir, **When** se guarda, **Then** el producto queda guardado,
+   la app explica por qué falló la imagen y volver a guardar la reintenta sin duplicar el producto.
 
 ### User Story 3 - Ajustar la cantidad con historial (Priority: P2)
 
@@ -52,26 +53,23 @@ Cada cambio queda en el historial del producto.
 
 ### Edge Cases
 
-- Productos guardados antes con una ubicación libre que no es un almacén/sección: aparecen «Sin
-  ubicar» y se pueden ubicar editándolos.
-- Medidas guardadas en otra unidad: se muestran convertidas a centímetros.
-- Sin storage configurado para el entorno: se puede guardar el producto sin imagen.
+- Sin storage en el servidor (503): el producto se guarda y la app explica que la imagen no.
+- Las URL de imagen caducan: se renuevan al refrescar el producto.
 
 ## Requirements *(mandatory)*
 
-- **FR-001**: Un producto MUST tener categoría (que hace de nombre), descripción (1–140), alto y ancho
-  en cm (≥ 0), cantidad (≥ 0), imagen opcional, localización (almacén A/B/C y sección 1–5) y fechas
+- **FR-001**: Un producto MUST tener categoría (que hace de nombre), descripción (1–500), alto y ancho
+  en cm (> 0), cantidad (≥ 0), imagen opcional, localización (almacén A/B/C y sección 1–5) y fechas
   de alta y modificación.
-- **FR-002**: La imagen MUST subirse desde la app directamente a un storage externo (cámara o
-  galería, JPEG/PNG/WebP, máx. 10 MB) y el producto MUST guardar su dirección.
-- **FR-003**: La cantidad MUST ajustarse con contador o escribiéndola, con motivo opcional, y cada
-  ajuste MUST quedar en el historial.
+- **FR-002**: La imagen MUST hacerse con la cámara o elegirse de la galería y enviarse al servidor
+  (JPEG/PNG/WebP, máx. 10 MB), que la guarda en su storage.
+- **FR-003**: La cantidad MUST ajustarse con contador y atajos, con motivo opcional, y cada ajuste
+  MUST quedar en el historial.
 - **FR-004**: La lista MUST filtrarse por texto, almacén, sección, categoría y stock, y ordenarse
   (recientes, categoría A–Z, cantidad); los filtros activos MUST verse y quitarse con un toque.
-- **FR-005**: El backend no cambia: la app MUST traducir el modelo nuevo al API actual sin perder los
-  datos que ya no muestra.
-- **FR-006**: El token de sesión del backend MUST NOT enviarse al storage.
+- **FR-005**: La app MUST seguir el contrato de materiales del backend 010.
+- **FR-006**: El token de sesión del backend MUST NOT enviarse al cargar las imágenes.
 
 ## Out of Scope
 
-- Cambios en el backend; varias imágenes por producto.
+- Varias imágenes por producto.

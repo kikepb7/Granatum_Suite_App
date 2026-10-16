@@ -111,17 +111,14 @@ y se elige tocando un plano de los tres almacenes.
   pastillas que se quitan con un toque.
 - **Cantidad con historial**: en el detalle, con − / + y atajos ±5 / ±10; nada se envía hasta
   guardar, con un motivo opcional que queda en el historial.
-- **Imágenes**: se hacen con la cámara o se eligen de la galería y se suben directamente a un storage
-  externo compatible con Supabase Storage (`STORAGE_URL_*`, `STORAGE_KEY_*` y `STORAGE_BUCKET` en
-  `local.properties`, ver `local.properties.example`). Las sube un cliente HTTP aparte, que nunca
-  lleva el token de sesión del backend. Sin storage configurado, el producto se guarda sin imagen.
+- **Imágenes**: se hacen con la cámara o se eligen de la galería y se envían al servidor al guardar
+  el producto (`PUT /api/materiales/{id}/imagen`). Las guarda él en su storage y devuelve una URL
+  firmada temporal, que la app descarga sin enviar el token de sesión. Si la imagen falla, el
+  producto ya queda guardado y volver a guardar solo reintenta la imagen.
 - **Consultar funciona sin cobertura**; **modificar exige conexión** (el servidor no ofrece
   idempotencia y reintentar podría duplicar un alta).
-- El backend no cambia: el producto se guarda como «material» (la descripción es su `nombre`, la
-  localización su `ubicacion` con la forma `A-3`, la imagen su primera foto, y la cantidad su
-  disponible y su total a la vez). Lo que el servidor sigue exigiendo y el producto ya no tiene
-  (color, material, estado, precio, proveedor) se conserva al editar y recibe valores neutros al crear
-  ([research D1](specs/011-inventario-productos/research.md)).
+- Sigue el contrato de materiales de la feature 010 del backend
+  ([research](specs/011-inventario-productos/research.md)).
 - Una categoría con productos no se puede borrar (el servidor respondería con un error 500).
 
 ## Facturación

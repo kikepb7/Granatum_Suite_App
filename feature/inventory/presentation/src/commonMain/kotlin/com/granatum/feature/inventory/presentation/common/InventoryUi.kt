@@ -49,15 +49,14 @@ fun InventoryError.toUiText(): UiText = UiText.Resource(
         InventoryError.Forbidden -> Res.string.error_forbidden
         InventoryError.StorageUnavailable -> Res.string.error_storage_unavailable
         InventoryError.ImageTooLarge -> Res.string.error_image_too_large
-        InventoryError.ImageUploadFailed -> Res.string.error_image_upload
+        InventoryError.ImageInvalid -> Res.string.error_image_invalid
         InventoryError.Unknown -> Res.string.error_unknown
     }
 )
 
-/** «A · 3», or «Sin ubicar» for products saved before with a free-text location. */
+/** «A · 3». */
 @Composable
-fun StorageLocation?.label(): String =
-    this?.let { stringResource(Res.string.location_short, it.warehouse.name, it.section) } ?: stringResource(Res.string.unlocated)
+fun StorageLocation.label(): String = stringResource(Res.string.location_short, warehouse.name, section)
 
 /** «40» or «12,5»: a measure without a pointless «,0». No String.format in common code. */
 fun Double.measureLabel(): String {
@@ -66,7 +65,7 @@ fun Double.measureLabel(): String {
     return if (tenths % 10 == 0L) "$sign${tenths / 10}" else "$sign${tenths / 10},${tenths % 10}"
 }
 
-/** Accepts «12,5» and «12.5»; null when it is not a non-negative number. */
+/** Accepts «12,5» and «12.5»; null when it is not a non-negative number (zero is left to validation). */
 fun String.toMeasureOrNull(): Double? = trim().replace(',', '.').toDoubleOrNull()?.takeIf { it >= 0 && it.isFinite() }
 
 /** `01/10/2026`, as dates are written in Spain, in the device's zone. */

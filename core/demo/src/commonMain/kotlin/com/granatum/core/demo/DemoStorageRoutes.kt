@@ -2,42 +2,48 @@ package com.granatum.core.demo
 
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 
 /**
- * The object storage of the Demo environment, imitating Supabase Storage's REST API: uploads to
- * `/storage/v1/object/{bucket}/{path}` and public reads from `/storage/v1/object/public/{bucket}/{path}`.
- * Images live in memory, like everything else in the demo.
+ * The private image bucket of the Demo environment. The demo backend stores what is uploaded to
+ * `PUT /materiales/{id}/imagen` here and hands out addresses in the shape of Supabase Storage's
+ * signed URLs, which the app loads like any other (backend 010, research D-005).
  */
-internal class DemoStorageRoutes {
-    private class StoredObject(val bytes: ByteArray, val contentType: String)
+class DemoStorageRoutes {
+    private class StoredObject(
+        val bytes: ByteArray,
+        val contentType: String,
+    )
 
     private val objects = mutableMapOf<String, StoredObject>()
+
+    fun store(
+        path: String,
+        bytes: ByteArray,
+        contentType: String,
+    ): String {
+        objects[path] = StoredObject(bytes, contentType)
+        return path
+    }
+
+    fun remove(path: String) {
+        objects -= path
+    }
+
+    fun signedUrl(path: String) = "$BASE_URL$PREFIX$SIGN$path?token=demo"
 
     fun handles(path: String): Boolean = path.startsWith(PREFIX)
 
     fun route(request: DemoRequest): DemoReply {
         val rest = request.path.removePrefix(PREFIX)
-        return when {
-            request.method == HttpMethod.Get && rest.startsWith(PUBLIC) -> {
-                val key = rest.removePrefix(PUBLIC)
-                val stored = objects[key] ?: return error(HttpStatusCode.NotFound, "not_found", "Object not found")
-                DemoReply.Bytes(stored.bytes, stored.contentType, key.substringAfterLast('/'))
-            }
-            request.method == HttpMethod.Post && rest.isNotEmpty() -> {
-                if (objects.containsKey(rest)) return error(HttpStatusCode.Conflict, "Duplicate", "The resource already exists")
-                if (request.bytes.size > MAX_BYTES) return error(HttpStatusCode.PayloadTooLarge, "Payload too large", "The object exceeded the maximum allowed size")
-                objects[rest] = StoredObject(request.bytes, request.contentType ?: "application/octet-stream")
-                json(buildJsonObject { put("Key", rest) })
-            }
-            else -> notFound("not_found")
-        }
+        if (request.method != HttpMethod.Get || !rest.startsWith(SIGN)) return notFound("not_found")
+        val stored = objects[rest.removePrefix(SIGN)] ?: return error(HttpStatusCode.NotFound, "not_found", "Object not found")
+        return DemoReply.Bytes(stored.bytes, stored.contentType, rest.substringAfterLast('/'))
     }
 
-    private companion object {
-        const val PREFIX = "/storage/v1/object/"
-        const val PUBLIC = "public/"
-        const val MAX_BYTES = 10 * 1024 * 1024
+    companion object {
+        /** Never resolved: in the Demo environment every request goes to the demo engine. */
+        const val BASE_URL = "https://demo.granatum.invalid"
+        private const val PREFIX = "/storage/v1/object/"
+        private const val SIGN = "sign/"
     }
 }

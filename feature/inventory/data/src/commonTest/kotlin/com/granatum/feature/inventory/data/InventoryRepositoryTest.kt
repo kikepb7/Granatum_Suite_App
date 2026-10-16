@@ -17,6 +17,7 @@ import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandleScope
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.engine.mock.toByteArray
+import io.ktor.http.HttpMethod
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.HttpRequestData
@@ -36,7 +37,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-/** specs/011-inventario-productos, research D1 (mapping) and D2 (quantity with history). */
+/** specs/011-inventario-productos against backend 010 (contracts/README.md). */
 class InventoryRepositoryTest {
 
     private class MemoryDao : InventoryDao {
@@ -79,85 +80,103 @@ class InventoryRepositoryTest {
     private val category = """{"id":"c1","nombre":"Jarrones","descripcion":null,"createdAt":"2026-10-01T00:00:00Z","updatedAt":"2026-10-01T00:00:00Z"}"""
     private fun material(
         id: String = "m1",
-        available: Int = 5,
-        total: Int = 5,
-        location: String = "B-3",
-        size: String = "\"alto\":40,\"ancho\":15,\"diametro\":null,\"unidadMedida\":\"CM\"",
-        fotos: String = "[\"https://x/1.jpg\",\"https://x/2.jpg\"]"
-    ) = """{"id":"$id","nombre":"Cilindro alto","categoria":$category,"cantidadDisponible":$available,"cantidadTotal":$total,"tamano":{$size},"color":"Transparente","materialFisico":"Cristal","estado":"USADO","ubicacion":"$location","precioUnitario":12.5,"proveedor":"Cristalería Sur","fotos":$fotos,"fechaAlta":"2026-10-01T00:00:00Z","fechaUltimaModificacion":"2026-10-02T00:00:00Z"}"""
+        quantity: Int = 5,
+        almacen: String = "B",
+        seccion: Int = 3,
+        imagen: String? = "https://s.test/storage/v1/object/sign/materiales/m1/a.jpg?token=t"
+    ) = """{"id":"$id","categoria":$category,"descripcion":"Cilindro alto","dimensiones":{"alto":40.0,"ancho":15.5},"cantidad":$quantity,""" +
+        """"localizacion":{"almacen":"$almacen","seccion":$seccion},"imagenUrl":${imagen?.let { "\"$it\"" } ?: "null"},""" +
+        """"fechaAlta":"2026-10-01T00:00:00Z","fechaUltimaModificacion":"2026-10-02T00:00:00Z"}"""
 
-    private val draft = ProductDraft("c1", "  Cilindro alto  ", Dimensions(40.0, 15.0), 7, "https://x/new.jpg", StorageLocation(Warehouse.A, 3))
+    private val draft = ProductDraft("c1", "  Cilindro alto  ", Dimensions(40.0, 15.555), 7, StorageLocation(Warehouse.A, 3))
 
     @Test
     fun a_refresh_maps_materials_onto_products() = runTest {
-        dao.upsertMaterial(MaterialEntity("gone", "Viejo", "c1", 0, 0, 0.0, 0.0, null, "CM", "", "", "NUEVO", "", 0.0, "", "[]", 0, 0))
+        dao.upsertMaterial(MaterialEntity("gone", "c1", "Viejo", 1.0, 1.0, 0, "A", 1, null, 0, 0))
         val repo = repo { request -> if (request.url.encodedPath.endsWith("/categorias")) ok("[$category]") else ok("[${material()}]") }
         assertEquals(Result.Success(Unit), repo.refresh())
         val p = repo.observeProducts().first().single()
         assertEquals("Jarrones" to "Cilindro alto", p.category.name to p.description)
         assertEquals(StorageLocation(Warehouse.B, 3), p.location)
-        assertEquals("https://x/1.jpg", p.imageUrl)
+        assertEquals(Dimensions(40.0, 15.5), p.dimensions)
+        assertEquals("https://s.test/storage/v1/object/sign/materiales/m1/a.jpg?token=t", p.imageUrl)
         assertEquals(5, p.quantity)
     }
 
     @Test
-    fun older_units_become_centimetres_and_free_text_locations_stay_unlocated() = runTest {
-        repo { ok(material(location = "Almacén A · estante 2", size = "\"alto\":0.4,\"ancho\":0.15,\"diametro\":null,\"unidadMedida\":\"M\"")) }.refreshProduct("m1")
-        val p = repo { ok("[]") }.observeProduct("m1").first()!!
-        assertEquals(Dimensions(40.0, 15.0), p.dimensions)
-        assertEquals(null, p.location)
+    fun a_row_with_an_unknown_location_does_not_hide_the_rest() = runTest {
+        val repo = repo { request ->
+            if (request.url.encodedPath.endsWith("/categorias")) ok("[$category]") else ok("[${material()},${material(id = "m2", almacen = "D")}]")
+        }
+        repo.refresh()
+        assertEquals(listOf("m1"), repo.observeProducts().first().map { it.id })
     }
 
     @Test
-    fun creating_fills_what_the_server_still_requires_with_neutral_values() = runTest {
+    fun creating_sends_the_contract_body() = runTest {
         val repo = repo { ok(material(), HttpStatusCode.Created) }
         repo.create(draft)
         val (call, body) = requests.single()
         assertEquals("POST /materiales", call)
-        listOf(
-            """"nombre":"Cilindro alto"""", """"categoriaId":"c1"""", """"cantidadDisponible":7""", """"cantidadTotal":7""",
-            """"ubicacion":"A-3"""", """"unidadMedida":"CM"""", """"fotos":["https://x/new.jpg"]""", """"estado":"NUEVO"""",
-            """"color":"—"""", """"precioUnitario":0.0"""
-        ).forEach { assertTrue(it in body, "$it in $body") }
+        assertEquals(
+            """{"categoriaId":"c1","descripcion":"Cilindro alto","dimensiones":{"alto":40.0,"ancho":15.56},"cantidad":7,"localizacion":{"almacen":"A","seccion":3}}""",
+            body
+        )
         assertEquals(1, dao.materials.value.size)
     }
 
     @Test
-    fun editing_keeps_the_legacy_fields_and_the_other_photos_and_never_the_quantity() = runTest {
-        repo { ok(material()) }.refreshProduct("m1")
-        requests.clear()
+    fun editing_never_sends_the_quantity() = runTest {
         val repo = repo { ok(material()) }
         repo.update("m1", draft)
         val (call, body) = requests.single()
         assertEquals("PUT /materiales/m1", call)
-        listOf(
-            """"color":"Transparente"""", """"estado":"USADO"""", """"proveedor":"Cristalería Sur"""", """"precioUnitario":12.5""",
-            """"fotos":["https://x/new.jpg","https://x/2.jpg"]""", """"cantidadTotal":5""", """"ubicacion":"A-3""""
-        ).forEach { assertTrue(it in body, "$it in $body") }
-        assertTrue("cantidadDisponible" !in body, body)
+        assertEquals("""{"categoriaId":"c1","descripcion":"Cilindro alto","dimensiones":{"alto":40.0,"ancho":15.56},"localizacion":{"almacen":"A","seccion":3}}""", body)
     }
 
     @Test
-    fun raising_the_quantity_sets_the_total_first_then_records_the_change() = runTest {
-        repo { ok(material()) }.refreshProduct("m1")
-        requests.clear()
-        val repo = repo { request -> if (request.url.encodedPath.endsWith("cantidad")) ok(material(available = 9, total = 9)) else ok(material(available = 5, total = 9)) }
-        assertTrue(repo.setQuantity("m1", 9, "  Pedido recibido ") is Result.Success)
-        assertEquals(listOf("PUT /materiales/m1", "PATCH /materiales/m1/cantidad"), requests.map { it.first })
-        assertTrue(""""cantidadTotal":9""" in requests[0].second)
-        assertEquals("""{"cantidadDisponible":9,"motivo":"Pedido recibido"}""", requests[1].second)
-        assertEquals(9, dao.materials.value.single().available)
+    fun a_quantity_change_always_carries_a_reason() = runTest {
+        val repo = repo { ok(material(quantity = 9)) }
+        repo.setQuantity("m1", 9, "  Pedido recibido ")
+        repo.setQuantity("m1", 2, "  ")
+        assertEquals(
+            listOf(
+                "PATCH /materiales/m1/cantidad" to """{"cantidad":9,"motivo":"Pedido recibido"}""",
+                "PATCH /materiales/m1/cantidad" to """{"cantidad":2,"motivo":"Ajuste de cantidad"}"""
+            ),
+            requests
+        )
+        assertEquals(9, dao.materials.value.single().quantity)
     }
 
     @Test
-    fun lowering_the_quantity_records_the_change_first_then_shrinks_the_total() = runTest {
+    fun the_image_goes_as_one_multipart_part_named_imagen() = runTest {
+        var method: HttpMethod? = null
+        val repo = repo { request -> method = request.method; ok(material()) }
+        val result = repo.setImage("m1", byteArrayOf(1, 2, 3), "foto.jpg", "image/jpeg")
+        val (call, body) = requests.single()
+        assertEquals(HttpMethod.Put, method)
+        assertEquals("PUT /materiales/m1/imagen", call)
+        assertTrue("name=imagen" in body && "filename=\"foto.jpg\"" in body && "Content-Type: image/jpeg" in body, body)
+        assertTrue(result is Result.Success)
+    }
+
+    @Test
+    fun removing_the_image_updates_the_cache() = runTest {
         repo { ok(material()) }.refreshProduct("m1")
-        requests.clear()
-        val repo = repo { request -> if (request.url.encodedPath.endsWith("cantidad")) ok(material(available = 2, total = 5)) else ok(material(available = 2, total = 2)) }
-        assertTrue(repo.setQuantity("m1", 2, null) is Result.Success)
-        assertEquals(listOf("PATCH /materiales/m1/cantidad", "PUT /materiales/m1"), requests.map { it.first })
-        assertEquals("""{"cantidadDisponible":2,"motivo":"Ajuste de cantidad"}""", requests[0].second)
-        assertTrue(""""cantidadTotal":2""" in requests[1].second)
+        val repo = repo { ok(material(imagen = null)) }
+        assertTrue(repo.removeImage("m1") is Result.Success)
+        assertEquals("DELETE /materiales/m1/imagen", requests.last().first)
+        assertEquals(null, dao.materials.value.single().imageUrl)
+    }
+
+    @Test
+    fun image_errors_are_told_apart() = runTest {
+        suspend fun upload(status: HttpStatusCode, code: String) =
+            repo { ok("""{"code":"$code","message":"m"}""", status) }.setImage("m1", byteArrayOf(1), "a.jpg", "image/jpeg")
+        assertEquals(Result.Failure(InventoryError.ImageInvalid), upload(HttpStatusCode.UnsupportedMediaType, "IMAGEN_NO_VALIDA"))
+        assertEquals(Result.Failure(InventoryError.ImageTooLarge), upload(HttpStatusCode.PayloadTooLarge, "IMAGEN_DEMASIADO_GRANDE"))
+        assertEquals(Result.Failure(InventoryError.StorageUnavailable), upload(HttpStatusCode.ServiceUnavailable, "ALMACEN_IMAGENES_NO_DISPONIBLE"))
     }
 
     @Test
@@ -182,7 +201,7 @@ class InventoryRepositoryTest {
     fun deleting_succeeds_on_204_and_history_comes_newest_first() = runTest {
         repo { ok(material()) }.refreshProduct("m1")
         val history = """[{"id":"h1","materialId":"m1","tipoCambio":"CANTIDAD","motivo":"Rotura","fecha":"2026-10-03T00:00:00Z","usuarioId":"u","valorAnterior":"5","valorNuevo":"4"},""" +
-            """{"id":"h2","materialId":"m1","tipoCambio":"UBICACION","motivo":"Orden","fecha":"2026-10-05T00:00:00Z","usuarioId":"u","valorAnterior":"A-1","valorNuevo":"B-3"}]"""
+            """{"id":"h2","materialId":"m1","tipoCambio":"CANTIDAD","motivo":"Pedido","fecha":"2026-10-05T00:00:00Z","usuarioId":"u","valorAnterior":"4","valorNuevo":"9"}]"""
         val repo = repo { request -> if (request.url.encodedPath.endsWith("historial")) ok(history) else respond("", HttpStatusCode.NoContent) }
         repo.refreshHistory("m1")
         assertEquals(listOf("h2", "h1"), repo.observeHistory("m1").first().map { it.id })

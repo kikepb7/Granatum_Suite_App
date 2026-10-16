@@ -10,28 +10,21 @@ data class CategoryModel(val id: String, val name: String, val description: Stri
 /** The three warehouses. Named A, B and C for now; each has sections 1 to 5. */
 enum class Warehouse { A, B, C }
 
-/** Where a product is: a warehouse and one of its sections. */
+/** Where a product is: a warehouse and one of its sections (the server's `localizacion`). */
 data class StorageLocation(val warehouse: Warehouse, val section: Int) {
     init {
         require(section in SECTIONS) { "Section $section out of $SECTIONS" }
     }
 
-    /** How the server keeps it in `ubicacion` (research D1): `A-3`. */
-    fun toApi(): String = "${warehouse.name}-$section"
+    /** `A-3`: short, and what people type when they search by location. */
+    val code: String get() = "${warehouse.name}-$section"
 
     companion object {
         val SECTIONS = 1..5
-
-        /** Null for anything that is not `A-3` and the like, e.g. free text saved before. */
-        fun parse(text: String?): StorageLocation? {
-            val match = Regex("""^\s*([ABCabc])\s*[-·/ ]?\s*([1-5])\s*$""").matchEntire(text.orEmpty()) ?: return null
-            val (warehouse, section) = match.destructured
-            return StorageLocation(Warehouse.valueOf(warehouse.uppercase()), section.toInt())
-        }
     }
 }
 
-/** Height and width, in centimetres. */
+/** Height and width, in centimetres; the server wants both above zero, with up to two decimals. */
 data class Dimensions(val height: Double, val width: Double)
 
 data class ProductModel(
@@ -41,23 +34,27 @@ data class ProductModel(
     val description: String,
     val dimensions: Dimensions,
     val quantity: Int,
-    /** Public address in the image storage; null without image. */
+    /**
+     * A temporary signed address the server hands out (backend 010, D-005): it expires, so it is
+     * refreshed with the product. Null without image, or when the server could not sign it.
+     */
     val imageUrl: String?,
-    /** Null for products saved before with a location that is not a warehouse and section. */
-    val location: StorageLocation?,
+    val location: StorageLocation,
     val createdAt: Instant,
     val updatedAt: Instant
 ) {
     val isOutOfStock: Boolean get() = quantity == 0
 }
 
-/** What the form edits. [quantity] is only used when creating: afterwards it changes with history. */
+/**
+ * What the form edits. [quantity] is only used when creating: afterwards it changes with history.
+ * The image is not part of it: the server takes it apart, once the product exists.
+ */
 data class ProductDraft(
     val categoryId: String?,
     val description: String,
     val dimensions: Dimensions,
     val quantity: Int,
-    val imageUrl: String?,
     val location: StorageLocation?
 )
 
@@ -81,9 +78,13 @@ sealed interface InventoryError : Error {
     data object Invalid : InventoryError
     data object Forbidden : InventoryError
 
-    /** This environment has no image storage configured. */
+    /** The server's image storage is not configured or is down (`503 ALMACEN_IMAGENES_NO_DISPONIBLE`). */
     data object StorageUnavailable : InventoryError
+
+    /** Over 10 MB (`413 IMAGEN_DEMASIADO_GRANDE`). */
     data object ImageTooLarge : InventoryError
-    data object ImageUploadFailed : InventoryError
+
+    /** Not a JPEG, PNG or WebP by its bytes, or empty (`415 IMAGEN_NO_VALIDA`). */
+    data object ImageInvalid : InventoryError
     data object Unknown : InventoryError
 }

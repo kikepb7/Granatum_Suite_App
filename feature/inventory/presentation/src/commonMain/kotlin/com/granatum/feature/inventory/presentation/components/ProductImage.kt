@@ -15,7 +15,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import coil3.compose.LocalPlatformContext
 import coil3.compose.SubcomposeAsyncImage
+import coil3.request.ImageRequest
 import com.granatum.core.designsystem.theme.AppTheme
 
 /**
@@ -31,7 +33,7 @@ fun ProductImage(image: Any?, categoryName: String, modifier: Modifier = Modifie
             placeholder()
         } else {
             SubcomposeAsyncImage(
-                model = image,
+                model = image.toRequest(),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 loading = { placeholder() },
@@ -40,6 +42,21 @@ fun ProductImage(image: Any?, categoryName: String, modifier: Modifier = Modifie
             )
         }
     }
+}
+
+/**
+ * The server's image addresses are signed and change on every download (backend 010, D-005): the
+ * cache is keyed by the address without its token, so the same image is not fetched again.
+ */
+@Composable
+private fun Any.toRequest(): Any {
+    val url = this as? String ?: return this
+    val key = url.substringBefore('?')
+    return ImageRequest.Builder(LocalPlatformContext.current)
+        .data(url)
+        .memoryCacheKey(key)
+        .diskCacheKey(key)
+        .build()
 }
 
 @Composable

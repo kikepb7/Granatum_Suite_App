@@ -2,16 +2,15 @@ package com.granatum.feature.inventory.domain.validation
 
 import com.granatum.feature.inventory.domain.model.ProductDraft
 
-enum class DraftIssue { CATEGORY_REQUIRED, DESCRIPTION_REQUIRED, DESCRIPTION_TOO_LONG, NEGATIVE_SIZE, NEGATIVE_QUANTITY, LOCATION_REQUIRED }
+enum class DraftIssue { CATEGORY_REQUIRED, DESCRIPTION_REQUIRED, DESCRIPTION_TOO_LONG, INVALID_SIZE, NEGATIVE_QUANTITY, LOCATION_REQUIRED }
 
 enum class QuantityIssue { NEGATIVE, UNCHANGED, REASON_TOO_LONG }
 
 enum class CategoryIssue { NAME_REQUIRED, NAME_TOO_LONG, DESCRIPTION_TOO_LONG }
 
-/** The server's limits (docs/openapi.json), checked before sending (specs/011, FR-001). */
+/** The server's limits (docs/openapi.json, backend 010), checked before sending (specs/011, FR-001). */
 object InventoryValidation {
-    /** The description travels as the server's `nombre` (research D1). */
-    const val DESCRIPTION_MAX = 140
+    const val DESCRIPTION_MAX = 500
     const val REASON_MAX = 500
     const val CATEGORY_NAME_MAX = 100
     const val CATEGORY_DESCRIPTION_MAX = 500
@@ -21,7 +20,7 @@ object InventoryValidation {
         if (d.categoryId == null) add(DraftIssue.CATEGORY_REQUIRED)
         if (d.description.isBlank()) add(DraftIssue.DESCRIPTION_REQUIRED)
         if (d.description.trim().length > DESCRIPTION_MAX) add(DraftIssue.DESCRIPTION_TOO_LONG)
-        if (d.dimensions.height < 0 || d.dimensions.width < 0) add(DraftIssue.NEGATIVE_SIZE)
+        if (d.dimensions.height <= 0 || d.dimensions.width <= 0) add(DraftIssue.INVALID_SIZE)
         if (d.quantity < 0) add(DraftIssue.NEGATIVE_QUANTITY)
         if (d.location == null) add(DraftIssue.LOCATION_REQUIRED)
     }

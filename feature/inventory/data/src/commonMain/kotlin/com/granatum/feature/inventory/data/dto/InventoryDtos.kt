@@ -16,62 +16,49 @@ data class CategoriaDto(
 @Serializable
 data class CategoriaRequestDto(val nombre: String, val descripcion: String? = null)
 
+/** Centimetres. */
 @Serializable
-data class TamanoDto(val alto: Double, val ancho: Double, val unidadMedida: String, val diametro: Double? = null)
+data class DimensionesDto(val alto: Double, val ancho: Double)
+
+/** `almacen` is `A`, `B` or `C`; `seccion` 1 to 5. */
+@Serializable
+data class LocalizacionDto(val almacen: String, val seccion: Int)
 
 @Serializable
 data class MaterialDto(
     val id: String,
-    val nombre: String,
     val categoria: CategoriaDto,
-    val cantidadDisponible: Int,
-    val cantidadTotal: Int,
-    val tamano: TamanoDto,
-    val color: String,
-    val materialFisico: String,
-    val estado: String,
-    val ubicacion: String,
-    val precioUnitario: Double,
-    val proveedor: String,
-    val fotos: List<String> = emptyList(),
+    val descripcion: String,
+    val dimensiones: DimensionesDto,
+    val cantidad: Int,
+    val localizacion: LocalizacionDto,
+    /** Temporary signed URL; null without image or when the server could not sign it. */
+    val imagenUrl: String? = null,
     val fechaAlta: String,
     val fechaUltimaModificacion: String
 )
 
 @Serializable
 data class CreateMaterialRequestDto(
-    val nombre: String,
     val categoriaId: String,
-    val cantidadDisponible: Int,
-    val cantidadTotal: Int,
-    val tamano: TamanoDto,
-    val color: String,
-    val materialFisico: String,
-    val estado: String,
-    val ubicacion: String,
-    val precioUnitario: Double,
-    val proveedor: String,
-    val fotos: List<String>
+    val descripcion: String,
+    val dimensiones: DimensionesDto,
+    val cantidad: Int,
+    val localizacion: LocalizacionDto
 )
 
-/** No `cantidadDisponible`: after creation it only changes through an adjustment with a reason. */
+/** No `cantidad`: after creation it only changes through `PATCH …/cantidad`, with a reason. */
 @Serializable
 data class UpdateMaterialRequestDto(
-    val nombre: String,
     val categoriaId: String,
-    val cantidadTotal: Int,
-    val tamano: TamanoDto,
-    val color: String,
-    val materialFisico: String,
-    val estado: String,
-    val ubicacion: String,
-    val precioUnitario: Double,
-    val proveedor: String,
-    val fotos: List<String>
+    val descripcion: String,
+    val dimensiones: DimensionesDto,
+    val localizacion: LocalizacionDto
 )
 
+/** `motivo` is required (not blank). */
 @Serializable
-data class UpdateCantidadRequestDto(val cantidadDisponible: Int, val motivo: String)
+data class UpdateCantidadRequestDto(val cantidad: Int, val motivo: String)
 
 @Serializable
 data class HistorialMaterialDto(

@@ -5,9 +5,10 @@ import com.granatum.core.domain.util.Result
 import com.granatum.feature.inventory.data.dto.CategoriaDto
 import com.granatum.feature.inventory.data.dto.CategoriaRequestDto
 import com.granatum.feature.inventory.data.dto.CreateMaterialRequestDto
+import com.granatum.feature.inventory.data.dto.DimensionesDto
 import com.granatum.feature.inventory.data.dto.HistorialMaterialDto
+import com.granatum.feature.inventory.data.dto.LocalizacionDto
 import com.granatum.feature.inventory.data.dto.MaterialDto
-import com.granatum.feature.inventory.data.dto.TamanoDto
 import com.granatum.feature.inventory.data.dto.UpdateCantidadRequestDto
 import com.granatum.feature.inventory.data.dto.UpdateMaterialRequestDto
 import com.granatum.feature.inventory.data.remote.InventoryRemoteDataSource
@@ -23,12 +24,13 @@ import com.granatum.feature.inventory.domain.model.ProductDraft
 import com.granatum.feature.inventory.domain.model.ProductHistoryEntry
 import com.granatum.feature.inventory.domain.model.ProductModel
 import com.granatum.feature.inventory.domain.model.StorageLocation
+import com.granatum.feature.inventory.domain.model.Warehouse
 import com.granatum.feature.inventory.domain.repository.InventoryRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.serialization.json.Json
+import kotlin.math.roundToLong
 import kotlin.time.Instant
 
 /**
@@ -36,18 +38,13 @@ import kotlin.time.Instant
  * server first and touch the copy only with the server's answer. Without coverage nothing is
  * written anywhere.
  *
- * The product (specs/011-inventario-productos) is mapped onto the server's material, which does not
- * change (research D1): the description is its `nombre`, the location its `ubicacion` (`A-3`), the
- * image its first photo and the quantity both its available and total amounts. What the server
- * still requires and the product no longer has is kept as it was when editing (it is in the local
- * copy) and gets neutral values when creating.
+ * The product (specs/011-inventario-productos) is the server's material of backend feature 010
+ * field for field; the image travels apart, as a multipart upload the server stores itself.
  */
 class OfflineFirstInventoryRepository(
     private val remote: InventoryRemoteDataSource,
     private val dao: InventoryDao
 ) : InventoryRepository {
-
-    private val json = Json { ignoreUnknownKeys = true }
 
     override fun observeCategories(): Flow<List<CategoryModel>> =
         dao.observeCategories().map { list -> list.map { it.toDomain() } }
@@ -85,49 +82,44 @@ class OfflineFirstInventoryRepository(
         }
 
     override suspend fun create(draft: ProductDraft): Result<ProductModel, InventoryError> {
+        val location = draft.location ?: return Result.Failure(InventoryError.Invalid)
         val body = CreateMaterialRequestDto(
-            nombre = draft.description.trim(),
-            categoriaId = requireNotNull(draft.categoryId),
-            cantidadDisponible = draft.quantity,
-            cantidadTotal = draft.quantity,
-            tamano = draft.dimensions.toDto(diameter = null),
-            color = NEUTRAL_TEXT,
-            materialFisico = NEUTRAL_TEXT,
-            estado = NEUTRAL_CONDITION,
-            ubicacion = draft.location?.toApi().orEmpty(),
-            precioUnitario = 0.0,
-            proveedor = NEUTRAL_TEXT,
-            fotos = listOfNotNull(draft.imageUrl)
+            categoriaId = draft.categoryId ?: return Result.Failure(InventoryError.Invalid),
+            descripcion = draft.description.trim(),
+            dimensiones = draft.dimensions.toDto(),
+            cantidad = draft.quantity,
+            localizacion = location.toDto()
         )
         return saved(remote.create(body))
     }
 
+    /** Everything but the quantity, which only changes with a reason ([setQuantity]). */
     override suspend fun update(id: String, draft: ProductDraft): Result<ProductModel, InventoryError> {
-        val current = dao.observeMaterial(id).first() ?: return Result.Failure(InventoryError.ProductNotFound)
-        return saved(remote.update(id, current.updateBody(draft, total = current.total)), id)
+        val location = draft.location ?: return Result.Failure(InventoryError.Invalid)
+        val body = UpdateMaterialRequestDto(
+            categoriaId = draft.categoryId ?: return Result.Failure(InventoryError.Invalid),
+            descripcion = draft.description.trim(),
+            dimensiones = draft.dimensions.toDto(),
+            localizacion = location.toDto()
+        )
+        return saved(remote.update(id, body), id)
     }
 
-    /**
-     * The server records history only for the available amount, which may not exceed the total
-     * (research D2): raising sets the total first, lowering the available first, so both end equal.
-     */
+    /** The server records the change in the history; it requires a reason, so one is always sent. */
     override suspend fun setQuantity(id: String, quantity: Int, reason: String?): Result<ProductModel, InventoryError> {
-        val current = dao.observeMaterial(id).first() ?: return Result.Failure(InventoryError.ProductNotFound)
         val motive = reason?.trim()?.ifEmpty { null } ?: DEFAULT_REASON
-        val keep = current.toDraft()
-        if (quantity > current.total) {
-            when (val r = saved(remote.update(id, current.updateBody(keep, total = quantity)), id)) { is Result.Failure -> return r; else -> Unit }
-        }
-        val adjusted = saved(remote.adjust(id, UpdateCantidadRequestDto(quantity, motive)), id)
-        if (adjusted is Result.Failure || quantity >= current.total) return adjusted
-        val now = dao.observeMaterial(id).first() ?: return adjusted
-        return saved(remote.update(id, now.updateBody(keep, total = quantity)), id)
+        return saved(remote.adjust(id, UpdateCantidadRequestDto(quantity, motive)), id)
     }
 
     override suspend fun delete(id: String): EmptyResult<InventoryError> = when (val r = remote.delete(id)) {
         is Result.Success -> { dao.deleteMaterial(id); r }
         is Result.Failure -> { forgetIfGone(id, r.error); r }
     }
+
+    override suspend fun setImage(id: String, bytes: ByteArray, fileName: String, mimeType: String): Result<ProductModel, InventoryError> =
+        saved(remote.uploadImage(id, bytes, fileName, mimeType), id)
+
+    override suspend fun removeImage(id: String): Result<ProductModel, InventoryError> = saved(remote.removeImage(id), id)
 
     override suspend fun createCategory(name: String, description: String?): Result<CategoryModel, InventoryError> =
         savedCategory(remote.createCategory(CategoriaRequestDto(name.trim(), description?.trim()?.ifBlank { null })))
@@ -146,7 +138,7 @@ class OfflineFirstInventoryRepository(
                 val dto = result.data
                 dao.upsertCategory(dto.categoria.toEntity())
                 dao.upsertMaterial(dto.toEntity())
-                Result.Success(dto.toEntity().toDomain(dto.categoria.toEntity().toDomain()))
+                dto.toEntity().toDomain(dto.categoria.toEntity().toDomain())?.let { Result.Success(it) } ?: Result.Failure(InventoryError.Unknown)
             }
             is Result.Failure -> { id?.let { forgetIfGone(it, result.error) }; result }
         }
@@ -162,59 +154,36 @@ class OfflineFirstInventoryRepository(
         if (error == InventoryError.ProductNotFound) dao.deleteMaterial(id)
     }
 
-    // Mapping (research D1)
-
-    /** The full body the server wants: the product's fields, the rest kept as they were. */
-    private fun MaterialEntity.updateBody(draft: ProductDraft, total: Int) = UpdateMaterialRequestDto(
-        nombre = draft.description.trim(),
-        categoriaId = draft.categoryId ?: categoryId,
-        cantidadTotal = total,
-        tamano = draft.dimensions.toDto(diameter = diameter?.let { it * centimetresPer(unit) }),
-        color = color,
-        materialFisico = physicalMaterial,
-        estado = condition,
-        ubicacion = draft.location?.toApi() ?: location,
-        precioUnitario = unitPrice,
-        proveedor = supplier,
-        // The image replaces the first photo; any others the server kept stay behind it.
-        fotos = listOfNotNull(draft.imageUrl) + photos().drop(1)
-    )
-
-    private fun MaterialEntity.toDraft() = ProductDraft(
-        categoryId = categoryId,
-        description = name,
-        dimensions = Dimensions(height * centimetresPer(unit), width * centimetresPer(unit)),
-        quantity = available,
-        imageUrl = photos().firstOrNull(),
-        location = StorageLocation.parse(location)
-    )
-
-    private fun MaterialEntity.photos(): List<String> =
-        runCatching { json.decodeFromString<List<String>>(photosJson) }.getOrDefault(emptyList())
+    // Mapping
 
     private fun CategoriaDto.toEntity() = CategoryEntity(id, nombre, descripcion)
     private fun CategoryEntity.toDomain() = CategoryModel(id, name, description)
 
     private fun MaterialDto.toEntity() = MaterialEntity(
-        id = id, name = nombre, categoryId = categoria.id, available = cantidadDisponible, total = cantidadTotal,
-        height = tamano.alto, width = tamano.ancho, diameter = tamano.diametro, unit = tamano.unidadMedida,
-        color = color, physicalMaterial = materialFisico, condition = estado, location = ubicacion,
-        unitPrice = precioUnitario, supplier = proveedor, photosJson = json.encodeToString(fotos),
+        id = id, categoryId = categoria.id, description = descripcion,
+        height = dimensiones.alto, width = dimensiones.ancho, quantity = cantidad,
+        warehouse = localizacion.almacen, section = localizacion.seccion, imageUrl = imagenUrl,
         createdAtEpochMillis = Instant.parse(fechaAlta).toEpochMilliseconds(),
         updatedAtEpochMillis = Instant.parse(fechaUltimaModificacion).toEpochMilliseconds()
     )
 
-    private fun MaterialEntity.toDomain(category: CategoryModel) = ProductModel(
-        id = id,
-        category = category,
-        description = name,
-        dimensions = Dimensions(height * centimetresPer(unit), width * centimetresPer(unit)),
-        quantity = available,
-        imageUrl = photos().firstOrNull(),
-        location = StorageLocation.parse(location),
-        createdAt = Instant.fromEpochMilliseconds(createdAtEpochMillis),
-        updatedAt = Instant.fromEpochMilliseconds(updatedAtEpochMillis)
-    )
+    /** Null for a location the app does not know, so one odd row does not hide the whole list. */
+    private fun MaterialEntity.toDomain(category: CategoryModel): ProductModel? {
+        val location = Warehouse.entries.firstOrNull { it.name == warehouse }
+            ?.takeIf { section in StorageLocation.SECTIONS }
+            ?.let { StorageLocation(it, section) } ?: return null
+        return ProductModel(
+            id = id,
+            category = category,
+            description = description,
+            dimensions = Dimensions(height, width),
+            quantity = quantity,
+            imageUrl = imageUrl,
+            location = location,
+            createdAt = Instant.fromEpochMilliseconds(createdAtEpochMillis),
+            updatedAt = Instant.fromEpochMilliseconds(updatedAtEpochMillis)
+        )
+    }
 
     private fun HistorialMaterialDto.toEntity() = MaterialHistoryEntity(
         id, materialId, tipoCambio, valorAnterior, valorNuevo, motivo, Instant.parse(fecha).toEpochMilliseconds()
@@ -225,20 +194,15 @@ class OfflineFirstInventoryRepository(
         previousValue, newValue, reason, Instant.fromEpochMilliseconds(atEpochMillis)
     )
 
-    private fun Dimensions.toDto(diameter: Double?) = TamanoDto(alto = height, ancho = width, unidadMedida = CENTIMETRES, diametro = diameter)
+    /** The server takes up to two decimals. */
+    private fun Dimensions.toDto() = DimensionesDto(alto = height.twoDecimals(), ancho = width.twoDecimals())
+
+    private fun Double.twoDecimals() = (this * 100).roundToLong() / 100.0
+
+    private fun StorageLocation.toDto() = LocalizacionDto(almacen = warehouse.name, seccion = section)
 
     private companion object {
-        const val CENTIMETRES = "CM"
-        const val NEUTRAL_TEXT = "—"
-        const val NEUTRAL_CONDITION = "NUEVO"
+        /** The server requires a reason; the person may leave it empty. */
         const val DEFAULT_REASON = "Ajuste de cantidad"
-
-        /** Products are measured in centimetres; older ones may be in another unit. */
-        fun centimetresPer(unit: String): Double = when (unit) {
-            "MM" -> 0.1
-            "M" -> 100.0
-            "IN" -> 2.54
-            else -> 1.0
-        }
     }
 }

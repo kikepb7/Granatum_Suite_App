@@ -11,7 +11,6 @@ import com.granatum.feature.inventory.domain.model.ProductModel
 import com.granatum.feature.inventory.domain.model.StorageLocation
 import com.granatum.feature.inventory.domain.model.Warehouse
 import com.granatum.feature.inventory.domain.repository.InventoryRepository
-import com.granatum.feature.inventory.domain.repository.ProductImageStorage
 import com.granatum.feature.inventory.domain.usecase.InventoryUseCases
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
@@ -28,7 +27,7 @@ fun product(
     description: String = "Producto $id",
     category: CategoryModel = VASES,
     quantity: Int = 5,
-    location: StorageLocation? = StorageLocation(Warehouse.A, 1),
+    location: StorageLocation = StorageLocation(Warehouse.A, 1),
     updated: Long = 0
 ) = ProductModel(
     id = id, category = category, description = description, dimensions = Dimensions(20.0, 10.0), quantity = quantity,
@@ -36,21 +35,7 @@ fun product(
     createdAt = Instant.fromEpochSeconds(0), updatedAt = Instant.fromEpochSeconds(updated)
 )
 
-fun useCases(repo: InventoryRepository, images: ProductImageStorage = FakeImageStorage()) = InventoryUseCases(repo, images)
-
-/** Answers uploads with [url], or [failure]; [gate], when set, holds the answer until completed. */
-class FakeImageStorage(override val isAvailable: Boolean = true) : ProductImageStorage {
-    var failure: InventoryError? = null
-    var url = "https://storage.test/productos/1.jpg"
-    var gate: CompletableDeferred<Unit>? = null
-    val uploads = mutableListOf<Pair<Int, String>>()
-
-    override suspend fun upload(bytes: ByteArray, contentType: String): Result<String, InventoryError> {
-        uploads += bytes.size to contentType
-        gate?.await()
-        return failure?.let { Result.Failure(it) } ?: Result.Success(url)
-    }
-}
+fun useCases(repo: InventoryRepository) = InventoryUseCases(repo)
 
 /** In-memory repository: records what the screens ask for and answers with [failure] when set. */
 class FakeInventoryRepository(
@@ -65,6 +50,12 @@ class FakeInventoryRepository(
     val updated = mutableListOf<Pair<String, ProductDraft>>()
     val quantities = mutableListOf<Triple<String, Int, String?>>()
     val deletedCategories = mutableListOf<String>()
+    val images = mutableListOf<Pair<String, String>>()
+    val removedImages = mutableListOf<String>()
+
+    /** Answers image uploads with this instead of [failure]; [imageGate], when set, holds the answer. */
+    var imageFailure: InventoryError? = null
+    var imageGate: CompletableDeferred<Unit>? = null
 
     override fun observeProducts(): Flow<List<ProductModel>> = products
     override fun observeProduct(id: String): Flow<ProductModel?> = products.map { list -> list.firstOrNull { it.id == id } }
@@ -85,6 +76,17 @@ class FakeInventoryRepository(
         products.value.first { it.id == id }
     }
     override suspend fun delete(id: String): EmptyResult<InventoryError> = answer { products.update { list -> list.filterNot { it.id == id } } }
+
+    override suspend fun setImage(id: String, bytes: ByteArray, fileName: String, mimeType: String): Result<ProductModel, InventoryError> {
+        images += id to fileName
+        imageGate?.await()
+        return imageFailure?.let { Result.Failure(it) } ?: Result.Success(product(id).copy(imageUrl = "https://s.test/$id/$fileName?token=t"))
+    }
+
+    override suspend fun removeImage(id: String): Result<ProductModel, InventoryError> {
+        removedImages += id
+        return imageFailure?.let { Result.Failure(it) } ?: Result.Success(product(id).copy(imageUrl = null))
+    }
 
     override suspend fun createCategory(name: String, description: String?) = answer {
         CategoryModel("c${categories.value.size + 1}", name, description).also { c -> categories.update { it + c } }

@@ -16,7 +16,6 @@
     <string name="units_count">%1$d uds.</string>
     <string name="units_short">uds.</string>
     <string name="product_image">Imagen de %1$s</string>
-    <string name="unlocated">Sin ubicar</string>
 
     <!-- Filtros -->
     <string name="filters">Filtros</string>
@@ -92,11 +91,13 @@
     <string name="form_image_camera">Hacer una foto</string>
     <string name="form_image_gallery">Elegir de la galería</string>
     <string name="form_image_uploading">Subiendo imagen…</string>
-    <string name="form_image_unavailable">Este entorno no tiene storage de imágenes: el producto se guardará sin imagen.</string>
+    <string name="form_image_hint">JPEG, PNG o WebP de hasta 10 MB. Se sube al guardar.</string>
+    <string name="form_saved_without_image">El producto se ha guardado, pero la imagen no. Pulsa «Guardar producto» para reintentarlo.</string>
     <string name="form_no_categories">Crea antes una categoría</string>
     <string name="required">Obligatorio</string>
     <string name="too_long">Máximo %1$d caracteres</string>
-    <string name="invalid_number">Escribe un número válido (0 o más)</string>
+    <string name="invalid_number">Escribe un número válido</string>
+    <string name="invalid_size">Alto y ancho deben ser mayores que 0</string>
     <string name="location_required">Elige almacén y sección</string>
 
     <!-- Errores -->
@@ -106,9 +107,9 @@
     <string name="error_quantity_out_of_range">La cantidad no es válida</string>
     <string name="error_invalid">Revisa los datos e inténtalo de nuevo</string>
     <string name="error_forbidden">Tu rol no permite hacer este cambio</string>
-    <string name="error_storage_unavailable">Este entorno no tiene storage de imágenes configurado</string>
+    <string name="error_storage_unavailable">El servidor no puede guardar imágenes ahora mismo. Inténtalo más tarde.</string>
     <string name="error_image_too_large">La imagen pesa demasiado (máximo 10 MB)</string>
-    <string name="error_image_upload">No se pudo subir la imagen. Inténtalo de nuevo.</string>
+    <string name="error_image_invalid">La imagen debe ser JPEG, PNG o WebP</string>
     <string name="error_unknown">No se ha podido completar la operación</string>
 
     <!-- Categorías -->

@@ -74,7 +74,7 @@ fun ProductFormRoot(
     val state by viewModel.state.collectAsStateWithLifecycle()
     ObserveAsEvents(viewModel.eventFlow) { if (it is ProductFormEvent.Saved) onSaved() }
     val picker = rememberDocumentPicker { documents ->
-        documents.firstOrNull { it.mimeType.startsWith("image/") }?.let { viewModel.onAction(ProductFormAction.OnImagePicked(it.bytes, it.mimeType)) }
+        documents.firstOrNull { it.mimeType.startsWith("image/") }?.let { viewModel.onAction(ProductFormAction.OnImagePicked(it.bytes, it.fileName, it.mimeType)) }
     }
     ProductFormScreen(
         state = state,
@@ -133,7 +133,7 @@ private fun ProductFormScreen(
                     NumberInput(fields.height, Res.string.field_height, NumberField.HEIGHT in state.badNumbers, KeyboardType.Decimal, Modifier.weight(1f))
                     NumberInput(fields.width, Res.string.field_width, NumberField.WIDTH in state.badNumbers, KeyboardType.Decimal, Modifier.weight(1f))
                 }
-                if (DraftIssue.NEGATIVE_SIZE in state.issues) ErrorText(stringResource(Res.string.invalid_number))
+                if (DraftIssue.INVALID_SIZE in state.issues) ErrorText(stringResource(Res.string.invalid_size))
             }
             Section(AppIcons.Plus, Res.string.field_quantity) {
                 if (state.isEdit) {
@@ -150,8 +150,8 @@ private fun ProductFormScreen(
             }
             Section(AppIcons.Location, Res.string.field_location, hint = Res.string.form_location_hint) {
                 LocationPicker(selected = state.location, onSelect = { onAction(ProductFormAction.OnLocation(it)) })
-                if (state.location != null) {
-                    Text(state.location.label(), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = AppTheme.colors.brand)
+                state.location?.let { location ->
+                    Text(location.label(), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = AppTheme.colors.brand)
                 }
                 if (DraftIssue.LOCATION_REQUIRED in state.issues) ErrorText(stringResource(Res.string.location_required))
             }
@@ -160,7 +160,7 @@ private fun ProductFormScreen(
                 text = stringResource(Res.string.form_save),
                 onClick = { onAction(ProductFormAction.OnSave) },
                 isLoading = state.isSaving,
-                enabled = !state.isSaving && !state.isUploadingImage,
+                enabled = !state.isSaving,
                 modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 24.dp)
             )
         }
@@ -169,11 +169,7 @@ private fun ProductFormScreen(
 
 @Composable
 private fun ImageSection(state: ProductFormState, picker: DocumentPicker, onAction: (ProductFormAction) -> Unit) {
-    Section(AppIcons.Image, Res.string.field_image) {
-        if (!state.canUploadImages) {
-            Text(stringResource(Res.string.form_image_unavailable), style = MaterialTheme.typography.bodyMedium, color = AppTheme.colors.textSecondary)
-            return@Section
-        }
+    Section(AppIcons.Image, Res.string.field_image, hint = Res.string.form_image_hint) {
         if (state.hasImage) {
             Box(Modifier.fillMaxWidth().aspectRatio(16f / 10f)) {
                 ProductImage(image = state.shownImage, categoryName = "", corner = 18.dp, modifier = Modifier.matchParentSize())
@@ -189,9 +185,9 @@ private fun ImageSection(state: ProductFormState, picker: DocumentPicker, onActi
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                PickButton(AppIcons.Camera, Res.string.form_image_camera_short, enabled = !state.isUploadingImage, modifier = Modifier.weight(1f)) { picker.launch(DocumentSource.CAMERA) }
-                PickButton(AppIcons.Image, Res.string.form_image_gallery_short, enabled = !state.isUploadingImage, modifier = Modifier.weight(1f)) { picker.launch(DocumentSource.GALLERY) }
-                TextButton(onClick = { onAction(ProductFormAction.OnRemoveImage) }) {
+                PickButton(AppIcons.Camera, Res.string.form_image_camera_short, enabled = !state.isSaving, modifier = Modifier.weight(1f)) { picker.launch(DocumentSource.CAMERA) }
+                PickButton(AppIcons.Image, Res.string.form_image_gallery_short, enabled = !state.isSaving, modifier = Modifier.weight(1f)) { picker.launch(DocumentSource.GALLERY) }
+                TextButton(onClick = { onAction(ProductFormAction.OnRemoveImage) }, enabled = !state.isSaving) {
                     Text(stringResource(Res.string.form_image_remove), color = AppTheme.colors.danger)
                 }
             }

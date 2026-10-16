@@ -11,7 +11,6 @@ import com.granatum.feature.inventory.domain.validation.QuantityIssue
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class InventoryValidationTest {
@@ -21,7 +20,7 @@ class InventoryValidationTest {
         dimensions: Dimensions = Dimensions(40.0, 12.0),
         quantity: Int = 5,
         location: StorageLocation? = StorageLocation(Warehouse.A, 2)
-    ) = ProductDraft(categoryId, description, dimensions, quantity, imageUrl = null, location = location)
+    ) = ProductDraft(categoryId, description, dimensions, quantity, location = location)
 
     @Test
     fun a_complete_draft_is_valid() = assertTrue(InventoryValidation.validate(draft()).isEmpty())
@@ -33,15 +32,16 @@ class InventoryValidationTest {
     }
 
     @Test
-    fun the_description_fits_the_servers_name() {
-        assertTrue(InventoryValidation.validate(draft(description = "a".repeat(140))).isEmpty())
-        assertEquals(setOf(DraftIssue.DESCRIPTION_TOO_LONG), InventoryValidation.validate(draft(description = "a".repeat(141))))
+    fun the_description_fits_the_server_limit() {
+        assertTrue(InventoryValidation.validate(draft(description = "a".repeat(500))).isEmpty())
+        assertEquals(setOf(DraftIssue.DESCRIPTION_TOO_LONG), InventoryValidation.validate(draft(description = "a".repeat(501))))
     }
 
     @Test
-    fun sizes_and_quantity_cannot_be_negative() {
-        val issues = InventoryValidation.validate(draft(dimensions = Dimensions(-1.0, 3.0), quantity = -2))
-        assertEquals(setOf(DraftIssue.NEGATIVE_SIZE, DraftIssue.NEGATIVE_QUANTITY), issues)
+    fun sizes_must_be_above_zero_and_quantity_not_negative() {
+        assertEquals(setOf(DraftIssue.INVALID_SIZE, DraftIssue.NEGATIVE_QUANTITY), InventoryValidation.validate(draft(dimensions = Dimensions(-1.0, 3.0), quantity = -2)))
+        assertEquals(setOf(DraftIssue.INVALID_SIZE), InventoryValidation.validate(draft(dimensions = Dimensions(10.0, 0.0))))
+        assertTrue(InventoryValidation.validate(draft(quantity = 0)).isEmpty())
     }
 
     @Test
@@ -60,16 +60,7 @@ class InventoryValidationTest {
     }
 
     @Test
-    fun a_location_travels_as_warehouse_dash_section_and_is_read_back_leniently() {
-        assertEquals("C-5", StorageLocation(Warehouse.C, 5).toApi())
-        listOf("A-3", "a3", " B · 1 ", "C/4", "b 2").forEach { text -> assertTrue(StorageLocation.parse(text) != null, text) }
-        assertEquals(StorageLocation(Warehouse.B, 1), StorageLocation.parse(" B · 1 "))
-    }
-
-    @Test
-    fun free_text_locations_from_before_are_not_guessed() {
-        listOf(null, "", "Almacén A · estante 2", "D-1", "A-6", "A-0").forEach { assertNull(StorageLocation.parse(it), it) }
-    }
+    fun a_location_reads_as_its_code() = assertEquals("C-5", StorageLocation(Warehouse.C, 5).code)
 
     @Test
     fun sections_go_from_one_to_five() {

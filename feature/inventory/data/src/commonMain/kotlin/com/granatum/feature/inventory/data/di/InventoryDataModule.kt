@@ -1,7 +1,5 @@
 package com.granatum.feature.inventory.data.di
 
-import com.granatum.feature.inventory.data.storage.SupabaseProductImageStorage
-import com.granatum.feature.inventory.domain.repository.ProductImageStorage
 import com.granatum.core.domain.environment.EnvironmentScopedData
 import com.granatum.feature.inventory.data.environment.InventoryEnvironmentData
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
@@ -23,13 +21,12 @@ val inventoryDataModule = module {
         get<DatabaseFactory>()
             .create()
             .setDriver(BundledSQLiteDriver())
-            // Version 1 was a cache that never held real data: rebuilt from the server (research D2).
-            .fallbackToDestructiveMigrationFrom(true, 1)
+            // A read cache: older versions (1, and spec 006's material in 2) are rebuilt from the server.
+            .fallbackToDestructiveMigrationFrom(true, 1, 2)
             .build()
     }
     single { get<AppInventoryDatabase>().inventoryDao }
     single { InventoryEnvironmentData(get<AppInventoryDatabase>().maintenanceDao) } bind EnvironmentScopedData::class
     single { InventoryRemoteDataSource(get()) }
-    single { SupabaseProductImageStorage(get()) } bind ProductImageStorage::class
     single { OfflineFirstInventoryRepository(get(), get()) } bind InventoryRepository::class
 }

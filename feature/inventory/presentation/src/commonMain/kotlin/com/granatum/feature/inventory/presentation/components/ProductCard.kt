@@ -60,7 +60,7 @@ fun ProductCard(product: ProductModel, onClick: () -> Unit, modifier: Modifier =
                     overflow = TextOverflow.Ellipsis
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier) {
-                    Meta(AppIcons.Location, product.location.label(), if (product.location == null) AppTheme.colors.warning else AppTheme.colors.brand)
+                    Meta(AppIcons.Location, product.location.label(), AppTheme.colors.brand)
                     Meta(
                         AppIcons.Ruler,
                         stringResource(Res.string.dimensions_value, product.dimensions.height.measureLabel(), product.dimensions.width.measureLabel()),

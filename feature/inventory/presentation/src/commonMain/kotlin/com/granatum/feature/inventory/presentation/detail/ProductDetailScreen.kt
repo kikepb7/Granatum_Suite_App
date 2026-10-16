@@ -209,7 +209,7 @@ private fun Hero(product: ProductModel, modifier: Modifier = Modifier) {
 private fun Facts(product: ProductModel, modifier: Modifier = Modifier) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = modifier) {
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Fact(AppIcons.Location, stringResource(Res.string.field_location), product.location.label(), Modifier.weight(1f), if (product.location == null) AppTone.WARNING else AppTone.BRAND)
+            Fact(AppIcons.Location, stringResource(Res.string.field_location), product.location.label(), Modifier.weight(1f))
             Fact(
                 AppIcons.Ruler,
                 stringResource(Res.string.field_dimensions),

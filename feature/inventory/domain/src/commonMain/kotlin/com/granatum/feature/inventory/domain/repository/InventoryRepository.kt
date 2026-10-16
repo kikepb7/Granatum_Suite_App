@@ -26,20 +26,17 @@ interface InventoryRepository {
     suspend fun create(draft: ProductDraft): Result<ProductModel, InventoryError>
     suspend fun update(id: String, draft: ProductDraft): Result<ProductModel, InventoryError>
 
-    /** Sets the quantity, recorded in the product's history with [reason] (or a default one). */
+    /** Sets the quantity, recorded in the product's history with [reason] (or a default one: the server requires one). */
     suspend fun setQuantity(id: String, quantity: Int, reason: String?): Result<ProductModel, InventoryError>
     suspend fun delete(id: String): EmptyResult<InventoryError>
+
+    /** Uploads the product's image, replacing the previous one; the server checks type and size. */
+    suspend fun setImage(id: String, bytes: ByteArray, fileName: String, mimeType: String): Result<ProductModel, InventoryError>
+
+    /** Removes the product's image; nothing happens if it has none. */
+    suspend fun removeImage(id: String): Result<ProductModel, InventoryError>
 
     suspend fun createCategory(name: String, description: String?): Result<CategoryModel, InventoryError>
     suspend fun updateCategory(id: String, name: String, description: String?): Result<CategoryModel, InventoryError>
     suspend fun deleteCategory(id: String): EmptyResult<InventoryError>
-}
-
-/** Where product images go: an external storage the app uploads to directly (specs/011, FR-002). */
-interface ProductImageStorage {
-    /** False when the current environment has no storage configured. */
-    val isAvailable: Boolean
-
-    /** Uploads the image and returns its public address. */
-    suspend fun upload(bytes: ByteArray, contentType: String): Result<String, InventoryError>
 }

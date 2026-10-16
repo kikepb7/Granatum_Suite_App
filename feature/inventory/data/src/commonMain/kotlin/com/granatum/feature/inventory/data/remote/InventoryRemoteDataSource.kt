@@ -15,17 +15,22 @@ import com.granatum.feature.inventory.data.dto.UpdateMaterialRequestDto
 import com.granatum.feature.inventory.domain.model.InventoryError
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.plugins.timeout
 import io.ktor.client.request.delete
+import io.ktor.client.request.forms.MultiPartFormDataContent
+import io.ktor.client.request.forms.formData
 import io.ktor.client.request.get
 import io.ktor.client.request.patch
 import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
+import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.isSuccess
 
-/** The inventory routes of docs/openapi.json (backend d1857ad), errors as research D5 maps them. */
+/** The inventory routes of docs/openapi.json (backend 010), errors as its contracts/README.md lists them. */
 class InventoryRemoteDataSource(private val http: HttpClient) {
 
     suspend fun materials() = call<List<MaterialDto>> { http.get(constructRoute("/materiales")) }
@@ -35,6 +40,32 @@ class InventoryRemoteDataSource(private val http: HttpClient) {
     suspend fun update(id: String, body: UpdateMaterialRequestDto) = call<MaterialDto> { http.put(constructRoute("/materiales/$id")) { setBody(body) } }
     suspend fun adjust(id: String, body: UpdateCantidadRequestDto) = call<MaterialDto> { http.patch(constructRoute("/materiales/$id/cantidad")) { setBody(body) } }
     suspend fun delete(id: String) = call<Unit> { http.delete(constructRoute("/materiales/$id")) }
+
+    /** One `imagen` part; the server decides the type by its bytes, not by the name or header. */
+    suspend fun uploadImage(id: String, bytes: ByteArray, fileName: String, mimeType: String) = call<MaterialDto> {
+        http.put(constructRoute("/materiales/$id/imagen")) {
+            timeout {
+                requestTimeoutMillis = TRANSFER_TIMEOUT_MILLIS
+                socketTimeoutMillis = TRANSFER_TIMEOUT_MILLIS
+            }
+            setBody(
+                MultiPartFormDataContent(
+                    formData {
+                        append(
+                            "imagen",
+                            bytes,
+                            Headers.build {
+                                append(HttpHeaders.ContentType, mimeType)
+                                append(HttpHeaders.ContentDisposition, "filename=\"${fileName.replace(Regex("[\"\\\\\r\n]"), "_")}\"")
+                            }
+                        )
+                    }
+                )
+            )
+        }
+    }
+
+    suspend fun removeImage(id: String) = call<MaterialDto> { http.delete(constructRoute("/materiales/$id/imagen")) }
 
     suspend fun categories() = call<List<CategoriaDto>> { http.get(constructRoute("/categorias")) }
     suspend fun createCategory(body: CategoriaRequestDto) = call<CategoriaDto> { http.post(constructRoute("/categorias")) { setBody(body) } }
@@ -67,6 +98,19 @@ class InventoryRemoteDataSource(private val http: HttpClient) {
         "CATEGORIA_NOT_FOUND" -> InventoryError.CategoryNotFound
         "INVALID_OPERATION" -> InventoryError.QuantityOutOfRange
         "VALIDACION" -> InventoryError.Invalid
-        else -> if (status == HttpStatusCode.Forbidden) InventoryError.Forbidden else InventoryError.Unknown
+        "IMAGEN_NO_VALIDA" -> InventoryError.ImageInvalid
+        "IMAGEN_DEMASIADO_GRANDE" -> InventoryError.ImageTooLarge
+        "ALMACEN_IMAGENES_NO_DISPONIBLE" -> InventoryError.StorageUnavailable
+        else -> when (status) {
+            HttpStatusCode.Forbidden -> InventoryError.Forbidden
+            // A proxy may cut a large upload before the server sees it.
+            HttpStatusCode.PayloadTooLarge -> InventoryError.ImageTooLarge
+            else -> InventoryError.Unknown
+        }
+    }
+
+    private companion object {
+        /** An image of up to 10 MB over a weak mobile connection. */
+        const val TRANSFER_TIMEOUT_MILLIS = 120_000L
     }
 }
