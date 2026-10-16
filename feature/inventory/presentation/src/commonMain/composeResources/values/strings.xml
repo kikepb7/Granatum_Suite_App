@@ -1,59 +1,69 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Lista -->
+    <!-- Lista (specs/011-inventario-productos) -->
     <string name="inventory_title">Inventario</string>
-    <string name="stat_materials">Materiales</string>
-    <string name="stat_out_of_stock">Agotados</string>
-    <string name="stat_units">Unidades libres</string>
-    <string name="search_placeholder">Buscar material</string>
-    <string name="filter_all_categories">Todas</string>
-    <string name="filter_out_of_stock">Agotados</string>
-    <string name="filter_any_condition">Cualquier estado</string>
-    <string name="list_empty">No hay materiales</string>
-    <string name="list_empty_filtered">Ningún material coincide con la búsqueda</string>
-    <string name="list_stale">Sin conexión: mostrando lo último descargado</string>
+    <string name="search_placeholder">Buscar por categoría, descripción o ubicación</string>
     <string name="refresh">Actualizar</string>
-    <string name="add_material">Añadir material</string>
+    <string name="add_product">Añadir producto</string>
     <string name="manage_categories">Categorías</string>
-    <string name="stock_of">%1$d de %2$d disponibles</string>
+    <string name="list_empty">Aún no hay productos. Añade el primero.</string>
+    <string name="list_empty_filtered">Ningún producto coincide con los filtros</string>
+    <string name="list_stale">Sin conexión: mostrando lo último descargado</string>
+    <string name="stat_products">Productos</string>
+    <string name="stat_out_of_stock">Agotados</string>
+    <string name="stat_units">Unidades</string>
     <string name="out_of_stock">Agotado</string>
+    <string name="units_count">%1$d uds.</string>
+    <string name="units_short">uds.</string>
+    <string name="product_image">Imagen de %1$s</string>
+    <string name="unlocated">Sin ubicar</string>
 
-    <!-- Estados -->
-    <string name="condition_nuevo">Nuevo</string>
-    <string name="condition_usado">Usado</string>
-    <string name="condition_danado">Dañado</string>
-    <string name="condition_roto">Roto</string>
-    <string name="condition_en_reparacion">En reparación</string>
+    <!-- Filtros -->
+    <string name="filters">Filtros</string>
+    <string name="filters_title">Filtrar productos</string>
+    <string name="filters_clear">Limpiar</string>
+    <string name="filters_reset">Restablecer</string>
+    <string name="filters_show">Mostrar %1$d productos</string>
+    <string name="filters_remove">Quitar filtro</string>
+    <string name="filter_all">Todos</string>
+    <string name="filter_all_categories">Todas</string>
+    <string name="filter_warehouse">Almacén</string>
+    <string name="filter_section">Sección</string>
+    <string name="filter_category">Categoría</string>
+    <string name="filter_stock">Stock</string>
+    <string name="filter_sort">Ordenar por</string>
+    <string name="stock_all">Todo</string>
+    <string name="stock_in">Con stock</string>
+    <string name="stock_out">Agotados</string>
+    <string name="sort_recent">Recientes</string>
+    <string name="sort_category">Categoría A–Z</string>
+    <string name="sort_quantity_desc">Más unidades</string>
+    <string name="sort_quantity_asc">Menos unidades</string>
+    <string name="warehouse_label">Almacén %1$s</string>
+    <string name="section_label">Sección %1$d</string>
+    <string name="location_short">%1$s · %2$d</string>
 
     <!-- Detalle -->
-    <string name="detail_title">Material</string>
-    <string name="detail_category">Categoría</string>
-    <string name="detail_stock">Existencias</string>
-    <string name="detail_size">Medidas</string>
-    <string name="detail_size_value">%1$s × %2$s %3$s</string>
-    <string name="detail_size_value_diameter">%1$s × %2$s %3$s · Ø %4$s %3$s</string>
-    <string name="detail_color">Color</string>
-    <string name="detail_material">Material</string>
-    <string name="detail_condition">Estado</string>
-    <string name="detail_location">Ubicación</string>
-    <string name="detail_price">Precio unitario</string>
-    <string name="detail_price_value">%1$s €</string>
-    <string name="detail_supplier">Proveedor</string>
-    <string name="detail_photos">Fotos</string>
-    <string name="detail_photo">Foto %1$d de %2$s</string>
-    <string name="detail_created">Alta</string>
-    <string name="detail_updated">Última modificación</string>
-    <string name="detail_gone">Este material ya no existe</string>
-    <string name="adjust_quantity">Ajustar cantidad</string>
-    <string name="edit">Editar</string>
-    <string name="delete">Borrar</string>
-    <string name="delete_title">¿Borrar este material?</string>
-    <string name="delete_description">Se borrará «%1$s» del inventario. No se puede deshacer.</string>
-    <string name="delete_confirm">Borrar</string>
-    <string name="cancel">Cancelar</string>
-
-    <!-- Historial -->
-    <string name="history_title">Historial de cambios</string>
+    <string name="product_title">Producto</string>
+    <string name="field_description">Descripción</string>
+    <string name="field_dimensions">Dimensiones</string>
+    <string name="field_height">Alto (cm)</string>
+    <string name="field_width">Ancho (cm)</string>
+    <string name="field_quantity">Cantidad</string>
+    <string name="field_location">Localización</string>
+    <string name="field_category">Categoría</string>
+    <string name="field_image">Imagen</string>
+    <string name="created_at">Alta</string>
+    <string name="updated_at">Modificación</string>
+    <string name="dimensions_value">%1$s × %2$s cm</string>
+    <string name="quantity_title">Unidades en stock</string>
+    <string name="quantity_reason">Motivo (opcional)</string>
+    <string name="quantity_save">Guardar cantidad</string>
+    <string name="quantity_saved">Cantidad actualizada</string>
+    <string name="quantity_decrease">Quitar una unidad</string>
+    <string name="quantity_increase">Añadir una unidad</string>
+    <string name="quantity_pending">Antes %1$d · ahora %2$d</string>
+    <string name="history_title">Historial</string>
     <string name="history_empty">Sin cambios registrados</string>
     <string name="history_change">%1$s → %2$s</string>
     <string name="change_cantidad">Cantidad</string>
@@ -61,51 +71,51 @@
     <string name="change_ubicacion">Ubicación</string>
     <string name="change_precio">Precio</string>
     <string name="change_proveedor">Proveedor</string>
-    <string name="change_otro">Otro cambio</string>
-
-    <!-- Ajuste -->
-    <string name="adjust_title">Ajustar cantidad disponible</string>
-    <string name="adjust_current">Ahora: %1$d de %2$d</string>
-    <string name="adjust_new">Nueva cantidad disponible</string>
-    <string name="adjust_reason">Motivo</string>
-    <string name="adjust_reason_placeholder">Por ejemplo: pedido recibido, rotura…</string>
-    <string name="adjust_save">Guardar</string>
-    <string name="adjust_out_of_range">Tiene que estar entre 0 y %1$d</string>
-    <string name="adjust_unchanged">La cantidad es la misma que ahora</string>
-    <string name="adjust_reason_required">Escribe el motivo</string>
-    <string name="adjust_not_a_number">Escribe un número entero</string>
+    <string name="change_otro">Cambio</string>
+    <string name="delete_title">¿Borrar este producto?</string>
+    <string name="delete_description">Se borrará del inventario de toda la empresa. No se puede deshacer.</string>
+    <string name="deleted">Producto borrado</string>
+    <string name="product_not_found">Este producto ya no existe</string>
 
     <!-- Formulario -->
-    <string name="form_new_title">Nuevo material</string>
-    <string name="form_edit_title">Editar material</string>
-    <string name="form_name">Nombre</string>
-    <string name="form_category">Categoría</string>
-    <string name="form_no_categories">Crea primero una categoría</string>
-    <string name="form_available">Cantidad disponible</string>
-    <string name="form_total">Cantidad total</string>
-    <string name="form_height">Alto</string>
-    <string name="form_width">Ancho</string>
-    <string name="form_diameter">Diámetro (opcional)</string>
-    <string name="form_unit">Unidad</string>
-    <string name="form_color">Color</string>
-    <string name="form_material">Material</string>
-    <string name="form_condition">Estado</string>
-    <string name="form_location">Ubicación</string>
-    <string name="form_price">Precio unitario (€)</string>
-    <string name="form_supplier">Proveedor</string>
-    <string name="form_photos_kept">Las fotos actuales se conservan. Todavía no se pueden añadir fotos desde la app.</string>
-    <string name="form_save">Guardar</string>
-    <string name="form_bad_number">Escribe un número válido</string>
-    <string name="issue_name_required">Escribe el nombre</string>
-    <string name="issue_name_too_long">Como máximo 140 caracteres</string>
-    <string name="issue_category_required">Elige una categoría</string>
-    <string name="issue_required">Este campo es obligatorio</string>
-    <string name="issue_negative_quantity">Las cantidades no pueden ser negativas</string>
-    <string name="issue_available_over_total">La disponible no puede superar la total</string>
-    <string name="issue_negative_price">El precio no puede ser negativo</string>
-    <string name="issue_negative_size">Las medidas no pueden ser negativas</string>
+    <string name="form_new">Nuevo producto</string>
+    <string name="form_edit">Editar producto</string>
+    <string name="form_save">Guardar producto</string>
+    <string name="form_category_hint">La categoría es el nombre del producto</string>
+    <string name="form_description_hint">Por ejemplo: jarrón cilíndrico de cristal</string>
+    <string name="form_quantity_edit_hint">La cantidad se cambia desde el detalle, para que quede en el historial.</string>
+    <string name="form_location_hint">Toca el almacén y la sección donde está</string>
+    <string name="form_image_add">Añadir imagen</string>
+    <string name="form_image_camera_short">Cámara</string>
+    <string name="form_image_gallery_short">Galería</string>
+    <string name="form_image_remove">Quitar</string>
+    <string name="form_image_camera">Hacer una foto</string>
+    <string name="form_image_gallery">Elegir de la galería</string>
+    <string name="form_image_uploading">Subiendo imagen…</string>
+    <string name="form_image_unavailable">Este entorno no tiene storage de imágenes: el producto se guardará sin imagen.</string>
+    <string name="form_no_categories">Crea antes una categoría</string>
+    <string name="required">Obligatorio</string>
+    <string name="too_long">Máximo %1$d caracteres</string>
+    <string name="invalid_number">Escribe un número válido (0 o más)</string>
+    <string name="location_required">Elige almacén y sección</string>
+
+    <!-- Errores -->
+    <string name="error_no_internet">Necesitas conexión para hacer cambios en el inventario</string>
+    <string name="error_product_not_found">Este producto ya no existe; puede que lo haya borrado otra persona</string>
+    <string name="error_category_not_found">Esa categoría ya no existe; elige otra</string>
+    <string name="error_quantity_out_of_range">La cantidad no es válida</string>
+    <string name="error_invalid">Revisa los datos e inténtalo de nuevo</string>
+    <string name="error_forbidden">Tu rol no permite hacer este cambio</string>
+    <string name="error_storage_unavailable">Este entorno no tiene storage de imágenes configurado</string>
+    <string name="error_image_too_large">La imagen pesa demasiado (máximo 10 MB)</string>
+    <string name="error_image_upload">No se pudo subir la imagen. Inténtalo de nuevo.</string>
+    <string name="error_unknown">No se ha podido completar la operación</string>
 
     <!-- Categorías -->
+    <string name="edit">Editar</string>
+    <string name="delete">Borrar</string>
+    <string name="delete_confirm">Borrar</string>
+    <string name="cancel">Cancelar</string>
     <string name="categories_title">Categorías</string>
     <string name="categories_empty">Todavía no hay categorías</string>
     <string name="category_name">Nombre</string>
@@ -113,19 +123,10 @@
     <string name="category_new">Nueva categoría</string>
     <string name="category_edit">Editar categoría</string>
     <string name="category_save">Guardar</string>
-    <string name="category_in_use">Tiene %1$d materiales: no se puede borrar</string>
+    <string name="category_in_use">Tiene %1$d productos: no se puede borrar</string>
     <string name="category_delete_title">¿Borrar esta categoría?</string>
     <string name="category_delete_description">Se borrará «%1$s».</string>
     <string name="category_name_required">Escribe el nombre</string>
     <string name="category_name_too_long">Como máximo 100 caracteres</string>
     <string name="category_description_too_long">Como máximo 500 caracteres</string>
-
-    <!-- Errores -->
-    <string name="error_no_internet">Necesitas conexión para hacer cambios en el inventario</string>
-    <string name="error_material_not_found">Este material ya no existe; puede que lo haya borrado otra persona</string>
-    <string name="error_category_not_found">Esa categoría ya no existe; elige otra</string>
-    <string name="error_quantity_out_of_range">La cantidad no puede ser negativa ni superar la total</string>
-    <string name="error_invalid">Revisa los datos e inténtalo de nuevo</string>
-    <string name="error_forbidden">Tu rol no permite hacer este cambio</string>
-    <string name="error_unknown">No se ha podido completar la operación</string>
 </resources>

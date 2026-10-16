@@ -17,7 +17,7 @@ import kotlinx.serialization.json.jsonObject
 /** One request as the demo routes see it. */
 class DemoRequest(
     val method: HttpMethod,
-    /** Path after `/api`, e.g. `/materiales/123`. */
+    /** Path after `/api`, e.g. `/materiales/123`; the whole path for the storage, which has no `/api`. */
     val path: String,
     val query: Map<String, String>,
     val caller: DemoUser?,
@@ -48,6 +48,7 @@ class DemoBackend(
     private val time = DemoTimeTrackingRoutes(state)
     private val inventory = DemoInventoryRoutes(state)
     private val invoicing = DemoInvoicingRoutes(state)
+    private val storage = DemoStorageRoutes()
 
     suspend fun handle(
         scope: MockRequestHandleScope,
@@ -73,6 +74,8 @@ class DemoBackend(
     }
 
     private fun route(request: DemoRequest): DemoReply {
+        // The storage is a third party: it authenticates with its own key, not the session.
+        if (storage.handles(request.path)) return storage.route(request)
         val first = request.segments.firstOrNull()
         if (first == "auth") {
             return auth.route(request) ?: staff.routeAccounts(request) ?: notFound("RECURSO_NO_ENCONTRADO")

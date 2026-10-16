@@ -3,60 +3,67 @@ package com.granatum.feature.inventory.domain.model
 import com.granatum.core.domain.util.Error
 import kotlin.time.Instant
 
-// The inventory as the server stores it (specs/006-inventario-real, data-model.md).
+// The inventory products (specs/011-inventario-productos, spec.md FR-001).
 
 data class CategoryModel(val id: String, val name: String, val description: String?)
 
-/** The physical condition of a material. Stock levels are the available/total quantities. */
-enum class MaterialCondition { NUEVO, USADO, DANADO, ROTO, EN_REPARACION }
+/** The three warehouses. Named A, B and C for now; each has sections 1 to 5. */
+enum class Warehouse { A, B, C }
 
-enum class SizeUnit { MM, CM, M, IN }
+/** Where a product is: a warehouse and one of its sections. */
+data class StorageLocation(val warehouse: Warehouse, val section: Int) {
+    init {
+        require(section in SECTIONS) { "Section $section out of $SECTIONS" }
+    }
 
-data class MaterialSize(val height: Double, val width: Double, val diameter: Double?, val unit: SizeUnit)
+    /** How the server keeps it in `ubicacion` (research D1): `A-3`. */
+    fun toApi(): String = "${warehouse.name}-$section"
 
-data class MaterialModel(
+    companion object {
+        val SECTIONS = 1..5
+
+        /** Null for anything that is not `A-3` and the like, e.g. free text saved before. */
+        fun parse(text: String?): StorageLocation? {
+            val match = Regex("""^\s*([ABCabc])\s*[-·/ ]?\s*([1-5])\s*$""").matchEntire(text.orEmpty()) ?: return null
+            val (warehouse, section) = match.destructured
+            return StorageLocation(Warehouse.valueOf(warehouse.uppercase()), section.toInt())
+        }
+    }
+}
+
+/** Height and width, in centimetres. */
+data class Dimensions(val height: Double, val width: Double)
+
+data class ProductModel(
     val id: String,
-    val name: String,
+    /** The category is the product's name (decided 2026-10-17). */
     val category: CategoryModel,
-    val available: Int,
-    val total: Int,
-    val size: MaterialSize,
-    val color: String,
-    val physicalMaterial: String,
-    val condition: MaterialCondition,
-    val location: String,
-    val unitPrice: Double,
-    val supplier: String,
-    /** URLs: the server stores them but offers no upload, so they are shown and kept, not added. */
-    val photos: List<String>,
+    val description: String,
+    val dimensions: Dimensions,
+    val quantity: Int,
+    /** Public address in the image storage; null without image. */
+    val imageUrl: String?,
+    /** Null for products saved before with a location that is not a warehouse and section. */
+    val location: StorageLocation?,
     val createdAt: Instant,
     val updatedAt: Instant
 ) {
-    val isOutOfStock: Boolean get() = available == 0
+    val isOutOfStock: Boolean get() = quantity == 0
 }
 
-/**
- * What the form edits. [available] is only set when creating; afterwards it changes through an
- * adjustment with a reason, so the history records why.
- */
-data class MaterialDraft(
-    val name: String,
+/** What the form edits. [quantity] is only used when creating: afterwards it changes with history. */
+data class ProductDraft(
     val categoryId: String?,
-    val available: Int,
-    val total: Int,
-    val size: MaterialSize,
-    val color: String,
-    val physicalMaterial: String,
-    val condition: MaterialCondition,
-    val location: String,
-    val unitPrice: Double,
-    val supplier: String,
-    val photos: List<String>
+    val description: String,
+    val dimensions: Dimensions,
+    val quantity: Int,
+    val imageUrl: String?,
+    val location: StorageLocation?
 )
 
 enum class HistoryChangeType { CANTIDAD, ESTADO, UBICACION, PRECIO_UNITARIO, PROVEEDOR, OTRO }
 
-data class MaterialHistoryEntry(
+data class ProductHistoryEntry(
     val id: String,
     val type: HistoryChangeType,
     val previousValue: String?,
@@ -66,12 +73,17 @@ data class MaterialHistoryEntry(
 )
 
 sealed interface InventoryError : Error {
-    /** Every change needs a connection (FR-014): nothing is queued for later. */
+    /** Every change needs a connection: nothing is queued for later. */
     data object NoInternet : InventoryError
-    data object MaterialNotFound : InventoryError
+    data object ProductNotFound : InventoryError
     data object CategoryNotFound : InventoryError
     data object QuantityOutOfRange : InventoryError
     data object Invalid : InventoryError
     data object Forbidden : InventoryError
+
+    /** This environment has no image storage configured. */
+    data object StorageUnavailable : InventoryError
+    data object ImageTooLarge : InventoryError
+    data object ImageUploadFailed : InventoryError
     data object Unknown : InventoryError
 }

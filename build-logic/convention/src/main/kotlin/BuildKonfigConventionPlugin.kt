@@ -68,6 +68,16 @@ class BuildKonfigConventionPlugin : Plugin<Project> {
                         "BASE_URL_LOCAL",
                         if (internal) resolveConfig("BASE_URL_HTTP") ?: DEFAULT_LOCAL_URL_ANDROID else ""
                     )
+
+                    // Product image storage (specs/011-inventario-productos, research D3): optional;
+                    // without it products are saved without image. The store app only carries PRO's.
+                    fun storage(key: String, environmentInternal: Boolean) =
+                        if (environmentInternal) resolveConfig(key)?.trim().orEmpty() else ""
+                    buildConfigField(FieldSpec.Type.STRING, "STORAGE_URL_PRO", storage("STORAGE_URL_PRO", true).let { if (it.isNotEmpty()) requireHttps(it, "STORAGE_URL_PRO") else it })
+                    buildConfigField(FieldSpec.Type.STRING, "STORAGE_KEY_PRO", storage("STORAGE_KEY_PRO", true))
+                    buildConfigField(FieldSpec.Type.STRING, "STORAGE_URL_PRE", storage("STORAGE_URL_PRE", internal).let { if (it.isNotEmpty()) requireHttps(it, "STORAGE_URL_PRE") else it })
+                    buildConfigField(FieldSpec.Type.STRING, "STORAGE_KEY_PRE", storage("STORAGE_KEY_PRE", internal))
+                    buildConfigField(FieldSpec.Type.STRING, "STORAGE_BUCKET", resolveConfig("STORAGE_BUCKET") ?: "inventario")
                 }
 
                 // These names must be the Kotlin *target* names, not a source-set group: a

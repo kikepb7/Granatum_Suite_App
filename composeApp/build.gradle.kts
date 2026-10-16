@@ -38,6 +38,8 @@ kotlin {
             implementation(libs.jetbrains.compose.material.icons.core)
             implementation(libs.jetbrains.compose.material.icons.extended)
             implementation(libs.bundles.koin.common)
+            implementation(libs.coil.compose)
+            implementation(libs.coil.network.ktor)
 
             // AUTH feature
             implementation(projects.feature.auth.presentation)

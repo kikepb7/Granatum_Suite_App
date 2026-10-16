@@ -2,6 +2,10 @@ package com.granatum.app
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import coil3.ImageLoader
+import coil3.compose.setSingletonImageLoaderFactory
+import coil3.network.ktor3.KtorNetworkFetcherFactory
+import com.granatum.core.data.networking.StorageHttpClient
 import com.granatum.core.data.auth.storage.LegacySessionCleaner
 import com.granatum.core.data.auth.storage.SecureSessionStorage
 import com.granatum.core.data.environment.EnvironmentRepositoryImpl
@@ -19,6 +23,15 @@ fun App() {
     val sessionStorage: SecureSessionStorage = koinInject()
     val legacySessionCleaner: LegacySessionCleaner = koinInject()
     val environments: EnvironmentRepositoryImpl = koinInject()
+    val storageHttp: StorageHttpClient = koinInject()
+
+    // Images load through the storage client: never with the backend's token, and through the
+    // switching engine, so the Demo environment serves its own (specs/011, FR-006).
+    setSingletonImageLoaderFactory { context ->
+        ImageLoader.Builder(context)
+            .components { add(KtorNetworkFetcherFactory(httpClient = storageHttp.client)) }
+            .build()
+    }
 
     LaunchedEffect(Unit) {
         // Order matters: drop the plaintext session the previous version left behind before

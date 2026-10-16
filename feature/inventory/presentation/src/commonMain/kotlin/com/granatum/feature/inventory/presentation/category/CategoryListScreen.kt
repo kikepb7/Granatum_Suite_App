@@ -66,7 +66,7 @@ fun CategoryListRoot(onNavigateBack: () -> Unit, viewModel: CategoryListViewMode
                                 if (row.canDelete) {
                                     AppButton(stringResource(Res.string.delete), onClick = { viewModel.onAction(CategoryAction.OnDelete(row.category)) }, style = AppButtonStyle.DESTRUCTIVE_SECONDARY)
                                 } else {
-                                    Text(stringResource(Res.string.category_in_use, row.materialCount), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.extended.textSecondary)
+                                    Text(stringResource(Res.string.category_in_use, row.productCount), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.extended.textSecondary)
                                 }
                             }
                         }

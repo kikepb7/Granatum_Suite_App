@@ -18,9 +18,9 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-data class CategoryRow(val category: CategoryModel, val materialCount: Int) {
+data class CategoryRow(val category: CategoryModel, val productCount: Int) {
     /** The server cannot delete a category in use (it would answer 500): not offered (FR-013). */
-    val canDelete: Boolean get() = materialCount == 0
+    val canDelete: Boolean get() = productCount == 0
 }
 
 data class CategoryListState(
@@ -49,8 +49,8 @@ class CategoryListViewModel(private val inventory: InventoryUseCases) : ViewMode
     val description = TextFieldState()
     private val ui = MutableStateFlow(CategoryListState())
 
-    val state = combine(inventory.repository.observeCategories(), inventory.repository.observeMaterials(), ui) { categories, materials, ui ->
-        val counts = materials.groupingBy { it.category.id }.eachCount()
+    val state = combine(inventory.repository.observeCategories(), inventory.repository.observeProducts(), ui) { categories, products, ui ->
+        val counts = products.groupingBy { it.category.id }.eachCount()
         ui.copy(rows = categories.map { CategoryRow(it, counts[it.id] ?: 0) })
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), CategoryListState())
 

@@ -47,9 +47,36 @@ object ActiveEnvironment {
         else -> available.first()
     }
 
+    /** Where an environment keeps product images; null when it has none configured. */
+    fun storageOf(environment: AppEnvironment): StorageConfig? {
+        val (url, key) = when (environment) {
+            // The developer's machine uses PRE's storage: the local backend has none.
+            AppEnvironment.LOCAL, AppEnvironment.PRE -> BuildKonfig.STORAGE_URL_PRE to BuildKonfig.STORAGE_KEY_PRE
+            AppEnvironment.PRO -> BuildKonfig.STORAGE_URL_PRO to BuildKonfig.STORAGE_KEY_PRO
+            AppEnvironment.DEMO -> DEMO_STORAGE_URL to "demo"
+        }
+        return if (url.isEmpty() || key.isEmpty()) null else StorageConfig(url.trimEnd('/'), key, BuildKonfig.STORAGE_BUCKET)
+    }
+
+    /** Answered by the demo backend, like the rest of the Demo environment. */
+    const val DEMO_STORAGE_URL = "https://demo.granatum.invalid"
+
+    val storage: StorageConfig? get() = storageOf(current)
+
     @Volatile
     var current: AppEnvironment = if (isProBuild) AppEnvironment.PRO else AppEnvironment.LOCAL
         internal set
 
     val baseUrl: String get() = baseUrlOf(current)
+}
+
+/**
+ * An S3-like object storage with a public read path (Supabase Storage's REST API): the app uploads
+ * product images to it directly (specs/011-inventario-productos, research D3).
+ */
+data class StorageConfig(val baseUrl: String, val key: String, val bucket: String) {
+    fun uploadUrl(path: String) = "$baseUrl/storage/v1/object/$bucket/$path"
+    fun publicUrl(path: String) = "$baseUrl/storage/v1/object/public/$bucket/$path"
+
+    override fun toString(): String = "StorageConfig(baseUrl=$baseUrl, bucket=$bucket, key=***)"
 }

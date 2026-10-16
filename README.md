@@ -99,20 +99,30 @@ Para probar el rechazo por antigüedad sin esperar tres días, arranca el backen
 
 ## Inventario
 
-Solo para la administración y las encargadas. Materiales y categorías salen de `/api/materiales`
-y `/api/categorias`, tal como los guarda el servidor
-([spec 006](specs/006-inventario-real/spec.md)).
+Solo para la administración y las encargadas
+([spec 011](specs/011-inventario-productos/spec.md)). Cada **producto** tiene categoría (que hace
+de nombre), descripción, dimensiones en centímetros (alto × ancho), cantidad, imagen, localización y
+fechas de alta y de modificación. La **localización** es un almacén (A, B o C) y una sección (1 a 5),
+y se elige tocando un plano de los tres almacenes.
 
-- **Consultar funciona sin cobertura**: la app guarda la última lista descargada y avisa cuando
-  puede no estar al día. La búsqueda y los filtros se aplican en el móvil, porque el servidor no
-  pagina.
-- **Modificar exige conexión**: altas, ediciones, ajustes de cantidad, borrados y categorías van
-  directos al servidor. El inventario es compartido y el servidor no ofrece idempotencia, así que
-  reintentar más tarde podría duplicar un alta; sin conexión la app lo dice y no guarda nada.
-- Cada ajuste de cantidad lleva un motivo y queda en el historial del material.
-- Las fotos se muestran y se conservan al editar, pero no se pueden añadir: el servidor no tiene
-  forma de subirlas.
-- Una categoría con materiales no se puede borrar (el servidor respondería con un error 500).
+- **Buscar y filtrar**: búsqueda por categoría, descripción o ubicación (sin distinguir tildes), un
+  selector de almacén siempre visible y un panel con orden, stock, localización y categoría. El botón
+  del panel dice cuántos productos quedarán antes de aplicar, y los filtros activos se ven como
+  pastillas que se quitan con un toque.
+- **Cantidad con historial**: en el detalle, con − / + y atajos ±5 / ±10; nada se envía hasta
+  guardar, con un motivo opcional que queda en el historial.
+- **Imágenes**: se hacen con la cámara o se eligen de la galería y se suben directamente a un storage
+  externo compatible con Supabase Storage (`STORAGE_URL_*`, `STORAGE_KEY_*` y `STORAGE_BUCKET` en
+  `local.properties`, ver `local.properties.example`). Las sube un cliente HTTP aparte, que nunca
+  lleva el token de sesión del backend. Sin storage configurado, el producto se guarda sin imagen.
+- **Consultar funciona sin cobertura**; **modificar exige conexión** (el servidor no ofrece
+  idempotencia y reintentar podría duplicar un alta).
+- El backend no cambia: el producto se guarda como «material» (la descripción es su `nombre`, la
+  localización su `ubicacion` con la forma `A-3`, la imagen su primera foto, y la cantidad su
+  disponible y su total a la vez). Lo que el servidor sigue exigiendo y el producto ya no tiene
+  (color, material, estado, precio, proveedor) se conserva al editar y recibe valores neutros al crear
+  ([research D1](specs/011-inventario-productos/research.md)).
+- Una categoría con productos no se puede borrar (el servidor respondería con un error 500).
 
 ## Facturación
 

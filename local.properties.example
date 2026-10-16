@@ -35,5 +35,17 @@ API_KEY=your-dev-api-key
 # PRO: optional in the PRE app, REQUIRED by the PRO app. Must be https://.
 # BASE_URL_HTTP_PRO=https://api.example.com/api
 
+# ---------------------------------------------------------------------------
+# Product images (specs/011-inventario-productos)
+# ---------------------------------------------------------------------------
+# A Supabase Storage project per environment, with a PUBLIC bucket whose policy lets the key
+# insert objects. All optional: without them products are saved without an image. Must be https://.
+# Local and PRE use PRE's storage; the PRO app only carries PRO's.
+# STORAGE_URL_PRE=https://your-pre-project.supabase.co
+# STORAGE_KEY_PRE=your-pre-anon-key
+# STORAGE_URL_PRO=https://your-pro-project.supabase.co
+# STORAGE_KEY_PRO=your-pro-anon-key
+# STORAGE_BUCKET=inventario
+
 # Uncomment and set if the Android Gradle Plugin can't auto-detect your SDK.
 # sdk.dir=/Users/you/Library/Android/sdk

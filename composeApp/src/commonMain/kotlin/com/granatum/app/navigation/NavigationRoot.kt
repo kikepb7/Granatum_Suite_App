@@ -48,7 +48,7 @@ import com.granatum.feature.clockin.presentation.navigation.ClockInGraphRoutes.C
 import com.granatum.feature.clockin.presentation.navigation.ClockInGraphRoutes.HistoryRoute
 import com.granatum.feature.clockin.presentation.navigation.ClockInGraphRoutes.TeamAttendanceRoute
 import com.granatum.feature.clockin.presentation.navigation.clockInGraph
-import com.granatum.feature.inventory.presentation.navigation.InventoryGraphRoutes.MaterialListRoute
+import com.granatum.feature.inventory.presentation.navigation.InventoryGraphRoutes.ProductListRoute
 import com.granatum.feature.inventory.presentation.navigation.inventoryGraph
 import com.granatum.feature.invoicing.presentation.navigation.InvoicingGraphRoutes
 import com.granatum.feature.invoicing.presentation.navigation.InvoicingGraphRoutes.InvoiceListRoute
@@ -212,7 +212,7 @@ private fun SignedInRoot(role: UserRole) {
 
 private enum class RootTab(val label: StringResource, val route: Any, val qualifiedName: String?) {
     ClockIn(Res.string.tab_clock_in, ClockInRoute, ClockInRoute::class.qualifiedName),
-    Inventory(Res.string.tab_inventory, MaterialListRoute, MaterialListRoute::class.qualifiedName),
+    Inventory(Res.string.tab_inventory, ProductListRoute, ProductListRoute::class.qualifiedName),
     History(Res.string.tab_history, HistoryRoute, HistoryRoute::class.qualifiedName),
     Invoicing(Res.string.tab_invoicing, InvoiceListRoute, InvoicingGraphRoutes::class.qualifiedName),
     Team(Res.string.tab_team, TeamAttendanceRoute, TeamAttendanceRoute::class.qualifiedName),

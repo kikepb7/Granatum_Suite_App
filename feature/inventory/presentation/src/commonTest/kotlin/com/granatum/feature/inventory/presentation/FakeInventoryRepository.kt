@@ -3,14 +3,17 @@ package com.granatum.feature.inventory.presentation
 import com.granatum.core.domain.util.EmptyResult
 import com.granatum.core.domain.util.Result
 import com.granatum.feature.inventory.domain.model.CategoryModel
+import com.granatum.feature.inventory.domain.model.Dimensions
 import com.granatum.feature.inventory.domain.model.InventoryError
-import com.granatum.feature.inventory.domain.model.MaterialCondition
-import com.granatum.feature.inventory.domain.model.MaterialDraft
-import com.granatum.feature.inventory.domain.model.MaterialHistoryEntry
-import com.granatum.feature.inventory.domain.model.MaterialModel
-import com.granatum.feature.inventory.domain.model.MaterialSize
-import com.granatum.feature.inventory.domain.model.SizeUnit
+import com.granatum.feature.inventory.domain.model.ProductDraft
+import com.granatum.feature.inventory.domain.model.ProductHistoryEntry
+import com.granatum.feature.inventory.domain.model.ProductModel
+import com.granatum.feature.inventory.domain.model.StorageLocation
+import com.granatum.feature.inventory.domain.model.Warehouse
 import com.granatum.feature.inventory.domain.repository.InventoryRepository
+import com.granatum.feature.inventory.domain.repository.ProductImageStorage
+import com.granatum.feature.inventory.domain.usecase.InventoryUseCases
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
@@ -20,46 +23,68 @@ import kotlin.time.Instant
 val VASES = CategoryModel("c1", "Jarrones", null)
 val RIBBONS = CategoryModel("c2", "Cintas", "De raso")
 
-fun material(id: String, name: String, category: CategoryModel = VASES, available: Int = 5, total: Int = 10, condition: MaterialCondition = MaterialCondition.NUEVO) = MaterialModel(
-    id = id, name = name, category = category, available = available, total = total,
-    size = MaterialSize(20.0, 10.0, null, SizeUnit.CM), color = "Blanco", physicalMaterial = "Cristal",
-    condition = condition, location = "Almacén", unitPrice = 12.5, supplier = "Flores SL",
-    photos = listOf("https://example.test/a.jpg"), createdAt = Instant.fromEpochSeconds(0), updatedAt = Instant.fromEpochSeconds(0)
+fun product(
+    id: String,
+    description: String = "Producto $id",
+    category: CategoryModel = VASES,
+    quantity: Int = 5,
+    location: StorageLocation? = StorageLocation(Warehouse.A, 1),
+    updated: Long = 0
+) = ProductModel(
+    id = id, category = category, description = description, dimensions = Dimensions(20.0, 10.0), quantity = quantity,
+    imageUrl = "https://example.test/$id.jpg", location = location,
+    createdAt = Instant.fromEpochSeconds(0), updatedAt = Instant.fromEpochSeconds(updated)
 )
+
+fun useCases(repo: InventoryRepository, images: ProductImageStorage = FakeImageStorage()) = InventoryUseCases(repo, images)
+
+/** Answers uploads with [url], or [failure]; [gate], when set, holds the answer until completed. */
+class FakeImageStorage(override val isAvailable: Boolean = true) : ProductImageStorage {
+    var failure: InventoryError? = null
+    var url = "https://storage.test/productos/1.jpg"
+    var gate: CompletableDeferred<Unit>? = null
+    val uploads = mutableListOf<Pair<Int, String>>()
+
+    override suspend fun upload(bytes: ByteArray, contentType: String): Result<String, InventoryError> {
+        uploads += bytes.size to contentType
+        gate?.await()
+        return failure?.let { Result.Failure(it) } ?: Result.Success(url)
+    }
+}
 
 /** In-memory repository: records what the screens ask for and answers with [failure] when set. */
 class FakeInventoryRepository(
-    materials: List<MaterialModel> = emptyList(),
+    products: List<ProductModel> = emptyList(),
     categories: List<CategoryModel> = listOf(VASES, RIBBONS)
 ) : InventoryRepository {
-    val materials = MutableStateFlow(materials)
+    val products = MutableStateFlow(products)
     val categories = MutableStateFlow(categories)
     var failure: InventoryError? = null
     var refreshes = 0
-    val created = mutableListOf<MaterialDraft>()
-    val updated = mutableListOf<Pair<String, MaterialDraft>>()
-    val adjusted = mutableListOf<Triple<String, Int, String>>()
+    val created = mutableListOf<ProductDraft>()
+    val updated = mutableListOf<Pair<String, ProductDraft>>()
+    val quantities = mutableListOf<Triple<String, Int, String?>>()
     val deletedCategories = mutableListOf<String>()
 
-    override fun observeMaterials(): Flow<List<MaterialModel>> = materials
-    override fun observeMaterial(id: String): Flow<MaterialModel?> = materials.map { list -> list.firstOrNull { it.id == id } }
+    override fun observeProducts(): Flow<List<ProductModel>> = products
+    override fun observeProduct(id: String): Flow<ProductModel?> = products.map { list -> list.firstOrNull { it.id == id } }
     override fun observeCategories(): Flow<List<CategoryModel>> = categories
-    override fun observeHistory(materialId: String): Flow<List<MaterialHistoryEntry>> = MutableStateFlow(emptyList())
+    override fun observeHistory(productId: String): Flow<List<ProductHistoryEntry>> = MutableStateFlow(emptyList())
 
     private fun <T> answer(value: () -> T): Result<T, InventoryError> = failure?.let { Result.Failure(it) } ?: Result.Success(value())
 
     override suspend fun refresh(): EmptyResult<InventoryError> { refreshes++; return answer { } }
-    override suspend fun refreshMaterial(id: String): EmptyResult<InventoryError> = answer { }
-    override suspend fun refreshHistory(materialId: String): EmptyResult<InventoryError> = answer { }
+    override suspend fun refreshProduct(id: String): EmptyResult<InventoryError> = answer { }
+    override suspend fun refreshHistory(productId: String): EmptyResult<InventoryError> = answer { }
 
-    override suspend fun create(draft: MaterialDraft) = answer { created += draft; material("new", draft.name) }
-    override suspend fun update(id: String, draft: MaterialDraft) = answer { updated += id to draft; material(id, draft.name) }
-    override suspend fun adjustQuantity(id: String, available: Int, reason: String) = answer {
-        adjusted += Triple(id, available, reason)
-        materials.update { list -> list.map { if (it.id == id) it.copy(available = available) else it } }
-        materials.value.first { it.id == id }
+    override suspend fun create(draft: ProductDraft) = answer { created += draft; product("new", draft.description) }
+    override suspend fun update(id: String, draft: ProductDraft) = answer { updated += id to draft; product(id, draft.description) }
+    override suspend fun setQuantity(id: String, quantity: Int, reason: String?) = answer {
+        quantities += Triple(id, quantity, reason)
+        products.update { list -> list.map { if (it.id == id) it.copy(quantity = quantity) else it } }
+        products.value.first { it.id == id }
     }
-    override suspend fun delete(id: String): EmptyResult<InventoryError> = answer { materials.update { list -> list.filterNot { it.id == id } } }
+    override suspend fun delete(id: String): EmptyResult<InventoryError> = answer { products.update { list -> list.filterNot { it.id == id } } }
 
     override suspend fun createCategory(name: String, description: String?) = answer {
         CategoryModel("c${categories.value.size + 1}", name, description).also { c -> categories.update { it + c } }

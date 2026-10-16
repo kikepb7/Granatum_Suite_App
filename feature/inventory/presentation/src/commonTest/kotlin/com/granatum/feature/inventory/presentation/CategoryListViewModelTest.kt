@@ -2,7 +2,6 @@ package com.granatum.feature.inventory.presentation
 
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import com.granatum.feature.inventory.domain.model.InventoryError
-import com.granatum.feature.inventory.domain.usecase.InventoryUseCases
 import com.granatum.feature.inventory.domain.validation.CategoryIssue
 import com.granatum.feature.inventory.presentation.category.CategoryAction
 import com.granatum.feature.inventory.presentation.category.CategoryListViewModel
@@ -28,15 +27,15 @@ class CategoryListViewModelTest {
     @BeforeTest fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
     @AfterTest fun tearDown() = Dispatchers.resetMain()
 
-    private val repo = FakeInventoryRepository(listOf(material("1", "Jarrón", VASES)))
+    private val repo = FakeInventoryRepository(listOf(product("1", "Jarrón", VASES)))
 
     @Test
     fun a_category_in_use_cannot_be_deleted() = runTest {
-        val vm = CategoryListViewModel(InventoryUseCases(repo))
+        val vm = CategoryListViewModel(useCases(repo))
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.state.collect {} }
 
         val (vases, ribbons) = vm.state.value.rows
-        assertEquals(1, vases.materialCount)
+        assertEquals(1, vases.productCount)
         assertFalse(vases.canDelete)
         assertTrue(ribbons.canDelete)
 
@@ -51,7 +50,7 @@ class CategoryListViewModelTest {
 
     @Test
     fun creating_validates_and_then_saves() = runTest {
-        val vm = CategoryListViewModel(InventoryUseCases(repo))
+        val vm = CategoryListViewModel(useCases(repo))
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.state.collect {} }
 
         vm.onAction(CategoryAction.OnNew)
@@ -67,7 +66,7 @@ class CategoryListViewModelTest {
 
     @Test
     fun renaming_prefills_and_refreshes_the_materials() = runTest {
-        val vm = CategoryListViewModel(InventoryUseCases(repo))
+        val vm = CategoryListViewModel(useCases(repo))
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.state.collect {} }
 
         vm.onAction(CategoryAction.OnEdit(RIBBONS))
@@ -81,7 +80,7 @@ class CategoryListViewModelTest {
 
     @Test
     fun without_coverage_the_editor_stays_open_with_the_error() = runTest {
-        val vm = CategoryListViewModel(InventoryUseCases(repo))
+        val vm = CategoryListViewModel(useCases(repo))
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.state.collect {} }
         repo.failure = InventoryError.NoInternet
 

@@ -4,61 +4,61 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
-import com.granatum.feature.inventory.presentation.detail.MaterialDetailRoot
-import com.granatum.feature.inventory.presentation.form.MaterialFormRoot
-import com.granatum.feature.inventory.presentation.list.MaterialListRoot
-import com.granatum.feature.inventory.presentation.navigation.InventoryGraphRoutes.MaterialCreateRoute
-import com.granatum.feature.inventory.presentation.navigation.InventoryGraphRoutes.MaterialDetailRoute
-import com.granatum.feature.inventory.presentation.navigation.InventoryGraphRoutes.MaterialEditRoute
-import com.granatum.feature.inventory.presentation.navigation.InventoryGraphRoutes.MaterialListRoute
 import com.granatum.feature.inventory.presentation.category.CategoryListRoot
+import com.granatum.feature.inventory.presentation.detail.ProductDetailRoot
+import com.granatum.feature.inventory.presentation.form.ProductFormRoot
+import com.granatum.feature.inventory.presentation.list.ProductListRoot
 import com.granatum.feature.inventory.presentation.navigation.InventoryGraphRoutes.CategoryListRoute
+import com.granatum.feature.inventory.presentation.navigation.InventoryGraphRoutes.ProductCreateRoute
+import com.granatum.feature.inventory.presentation.navigation.InventoryGraphRoutes.ProductDetailRoute
+import com.granatum.feature.inventory.presentation.navigation.InventoryGraphRoutes.ProductEditRoute
+import com.granatum.feature.inventory.presentation.navigation.InventoryGraphRoutes.ProductListRoute
 import kotlinx.serialization.Serializable
 
 sealed interface InventoryGraphRoutes {
     @Serializable
-    data object MaterialListRoute : InventoryGraphRoutes
+    data object ProductListRoute : InventoryGraphRoutes
 
     @Serializable
-    data class MaterialDetailRoute(val materialId: String) : InventoryGraphRoutes
+    data class ProductDetailRoute(val productId: String) : InventoryGraphRoutes
 
     @Serializable
-    data object MaterialCreateRoute : InventoryGraphRoutes
+    data object ProductCreateRoute : InventoryGraphRoutes
 
     @Serializable
-    data class MaterialEditRoute(val materialId: String) : InventoryGraphRoutes
+    data class ProductEditRoute(val productId: String) : InventoryGraphRoutes
 
     @Serializable
     data object CategoryListRoute : InventoryGraphRoutes
 }
 
 fun NavGraphBuilder.inventoryGraph(navController: NavHostController) {
-    composable<MaterialListRoute> {
-        MaterialListRoot(
-            onNavigateToDetail = { materialId -> navController.navigate(MaterialDetailRoute(materialId)) },
-            onNavigateToCreate = { navController.navigate(MaterialCreateRoute) },
+    composable<ProductListRoute> {
+        ProductListRoot(
+            onNavigateToDetail = { productId -> navController.navigate(ProductDetailRoute(productId)) },
+            onNavigateToCreate = { navController.navigate(ProductCreateRoute) },
             onNavigateToCategories = { navController.navigate(CategoryListRoute) }
         )
     }
-    composable<MaterialDetailRoute> { backStackEntry ->
-        val route = backStackEntry.toRoute<MaterialDetailRoute>()
-        MaterialDetailRoot(
-            materialId = route.materialId,
+    composable<ProductDetailRoute> { backStackEntry ->
+        val route = backStackEntry.toRoute<ProductDetailRoute>()
+        ProductDetailRoot(
+            productId = route.productId,
             onNavigateBack = navController::popBackStack,
-            onNavigateToEdit = { materialId -> navController.navigate(MaterialEditRoute(materialId)) }
+            onNavigateToEdit = { productId -> navController.navigate(ProductEditRoute(productId)) }
         )
     }
-    composable<MaterialCreateRoute> {
-        MaterialFormRoot(
-            materialId = null,
+    composable<ProductCreateRoute> {
+        ProductFormRoot(
+            productId = null,
             onSaved = { navController.popBackStack() },
             onNavigateBack = navController::popBackStack
         )
     }
-    composable<MaterialEditRoute> { backStackEntry ->
-        val route = backStackEntry.toRoute<MaterialEditRoute>()
-        MaterialFormRoot(
-            materialId = route.materialId,
+    composable<ProductEditRoute> { backStackEntry ->
+        val route = backStackEntry.toRoute<ProductEditRoute>()
+        ProductFormRoot(
+            productId = route.productId,
             onSaved = { navController.popBackStack() },
             onNavigateBack = navController::popBackStack
         )

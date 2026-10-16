@@ -11,6 +11,7 @@ import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
+import io.ktor.client.statement.readRawBytes
 import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
@@ -216,4 +217,29 @@ class DemoBackendTest {
         assertEquals(HttpStatusCode.OK, get("/empleados", oldToken).status)
         assertEquals(HttpStatusCode.Unauthorized, get("/empleados", "not-a-demo-token").status)
     }
+
+    @Test
+    fun the_demo_storage_keeps_uploaded_images_and_serves_them_publicly() =
+        runTest {
+            val storage = "https://demo.granatum.invalid/storage/v1/object"
+            val upload =
+                http.post("$storage/inventario/productos/a.png") {
+                    header(HttpHeaders.Authorization, "Bearer demo")
+                    contentType(ContentType.Image.PNG)
+                    setBody(byteArrayOf(1, 2, 3))
+                }
+            assertEquals(HttpStatusCode.OK, upload.status)
+            val read = http.get("$storage/public/inventario/productos/a.png")
+            assertEquals(HttpStatusCode.OK, read.status)
+            assertEquals(listOf<Byte>(1, 2, 3), read.readRawBytes().toList())
+            assertEquals(HttpStatusCode.NotFound, http.get("$storage/public/inventario/productos/missing.png").status)
+        }
+
+    @Test
+    fun seeded_products_use_the_warehouse_section_locations() =
+        runTest {
+            val admin = token(DemoAccountsCatalog.ADMIN)
+            val locations = get("/materiales", admin).json().jsonArray.map { it.jsonObject["ubicacion"]!!.jsonPrimitive.content }
+            assertTrue(locations.all { Regex("^[ABC]-[1-5]$").matches(it) }, locations.toString())
+        }
 }
