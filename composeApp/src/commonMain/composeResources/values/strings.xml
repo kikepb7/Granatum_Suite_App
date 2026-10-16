@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Pestañas -->
-    <string name="tab_clock_in">Fichaje</string>
-    <string name="tab_history">Historial</string>
+    <string name="tab_clock_in">Fichajes</string>
+    <string name="tab_history">Histórico</string>
     <string name="tab_invoicing">Facturación</string>
     <string name="tab_inventory">Inventario</string>
     <string name="tab_team">Equipo</string>

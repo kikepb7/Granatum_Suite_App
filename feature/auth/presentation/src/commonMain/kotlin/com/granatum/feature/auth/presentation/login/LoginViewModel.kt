@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
  * navigation gate reacts to that. This screen only has to get the credentials to the server.
  */
 class LoginViewModel(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
 ) : ViewModel() {
 
     val emailState = TextFieldState()
@@ -44,6 +44,7 @@ class LoginViewModel(
         when (action) {
             LoginAction.OnSubmit -> submit()
             LoginAction.OnTogglePasswordVisibility -> _state.update { it.copy(isPasswordVisible = !it.isPasswordVisible) }
+
         }
     }
 

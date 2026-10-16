@@ -23,7 +23,6 @@ fun App() {
         legacySessionCleaner.clean()
         sessionStorage.load()
 
-
         // Logs once whether the configured backend is reachable. No-op outside the `local`
         // environment, and never surfaces anything to the user.
         healthProbe.check()

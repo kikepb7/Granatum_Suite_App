@@ -9,10 +9,11 @@ import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.darwin.Darwin
 import org.koin.dsl.module
 
-actual val platformCoreDataModule = module {
-    single<HttpClientEngine> { Darwin.create() }
-    single<DataStore<Preferences>> {
-        createDataStore(get())
+actual val platformCoreDataModule =
+    module {
+        single<HttpClientEngine> { Darwin.create() }
+        single<DataStore<Preferences>> {
+            createDataStore(get())
+        }
+        single<SecureStore> { KeychainSecureStore(get()) }
     }
-    single<SecureStore> { KeychainSecureStore(get()) }
-}

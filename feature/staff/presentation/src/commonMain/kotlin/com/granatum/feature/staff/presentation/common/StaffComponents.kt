@@ -7,14 +7,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
@@ -33,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.granatum.core.designsystem.components.buttons.AppButton
 import com.granatum.core.designsystem.components.buttons.AppButtonStyle
+import com.granatum.core.designsystem.components.cards.AppInsetCard
 import com.granatum.core.designsystem.components.dialogs.AppBottomSheet
 import com.granatum.core.designsystem.components.textfields.AppTextField
 import com.granatum.core.designsystem.theme.extended
@@ -167,11 +166,7 @@ fun CredentialsSheet(credentials: TemporaryCredentials, personName: String, onDi
                 )
             }
             Text(stringResource(Res.string.credentials_password), style = MaterialTheme.typography.labelMedium)
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.extended.secondaryFill,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
+            AppInsetCard(contentPadding = 0.dp) {
                 Row(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
                     Text(
                         text = if (visible) credentials.password else "•".repeat(credentials.password.length),

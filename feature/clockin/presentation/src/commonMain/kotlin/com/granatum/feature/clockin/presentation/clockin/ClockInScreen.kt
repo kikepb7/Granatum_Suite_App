@@ -1,11 +1,8 @@
 package com.granatum.feature.clockin.presentation.clockin
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,46 +10,57 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.granatum.core.designsystem.components.brand.AppGradientText
 import com.granatum.core.designsystem.components.buttons.AppButton
 import com.granatum.core.designsystem.components.buttons.AppButtonStyle
+import com.granatum.core.designsystem.components.buttons.AppPrimaryButton
+import com.granatum.core.designsystem.components.cards.AppHeroCard
+import com.granatum.core.designsystem.components.chips.AppStatusChip
+import com.granatum.core.designsystem.components.chips.AppTone
+import com.granatum.core.designsystem.components.feedback.AppBanner
+import com.granatum.core.designsystem.components.feedback.AppEmptyState
+import com.granatum.core.designsystem.components.lists.AppSectionHeader
+import com.granatum.core.designsystem.components.lists.AppTimelineItem
+import com.granatum.core.designsystem.components.motion.appEntrance
 import com.granatum.core.designsystem.components.topbar.AppTopBar
-import com.granatum.core.designsystem.theme.extended
+import com.granatum.core.designsystem.theme.AppTheme
+import com.granatum.core.designsystem.theme.largeTitle
 import com.granatum.core.presentation.util.ObserveAsEvents
 import com.granatum.feature.clockin.domain.model.ClockRejection
 import com.granatum.feature.clockin.domain.model.ShiftStatus
+import com.granatum.feature.clockin.domain.model.SyncState
 import com.granatum.feature.clockin.domain.model.TimelineItem
 import com.granatum.feature.clockin.presentation.common.TimelineRow
+import com.granatum.feature.clockin.presentation.common.timeLabel
 import granatumsuite.feature.clockin.presentation.generated.resources.Res
 import granatumsuite.feature.clockin.presentation.generated.resources.*
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
+import kotlin.time.Instant
 
 @Composable
 fun ClockInRoot(
@@ -86,7 +94,7 @@ fun ClockInScreen(
     val today = state.today
     val items = today.shifts.flatMap { it.items }
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.extended.surfaceLower,
+        containerColor = AppTheme.colors.background,
         contentWindowInsets = WindowInsets.safeDrawing,
         topBar = { AppTopBar(title = stringResource(Res.string.clockin_title)) },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
@@ -95,32 +103,29 @@ fun ClockInScreen(
             StatusHeader(status = state.status)
 
             Column(
-                modifier = Modifier.padding(horizontal = 24.dp),
+                modifier = Modifier.padding(horizontal = AppTheme.spacing.screenHorizontal),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 if (today.hasClockSkew) {
-                    Notice(
+                    AppBanner(
                         title = stringResource(Res.string.clock_skew_title),
                         caption = stringResource(Res.string.clock_skew_caption),
-                        background = MaterialTheme.colorScheme.extended.redCardBackground,
-                        content = MaterialTheme.colorScheme.extended.redCardText
+                        tone = AppTone.DANGER
                     )
                 }
                 if (today.pendingCount > 0) {
-                    Notice(
+                    AppBanner(
                         title = pluralStringResource(Res.plurals.pending_count, today.pendingCount, today.pendingCount),
                         caption = stringResource(Res.string.pending_caption),
-                        background = MaterialTheme.colorScheme.extended.yellowCardBackground,
-                        content = MaterialTheme.colorScheme.extended.yellowCardText
+                        tone = AppTone.WARNING
                     )
                 }
                 val tooOld = today.rejected.firstOrNull { it.rejection == ClockRejection.TooOld }
                 if (today.rejected.isNotEmpty()) {
-                    Notice(
+                    AppBanner(
                         title = pluralStringResource(Res.plurals.rejected_count, today.rejected.size, today.rejected.size),
                         caption = stringResource(Res.string.rejected_caption),
-                        background = MaterialTheme.colorScheme.extended.redCardBackground,
-                        content = MaterialTheme.colorScheme.extended.redCardText
+                        tone = AppTone.DANGER
                     )
                 }
                 if (tooOld != null) {
@@ -158,64 +163,45 @@ fun ClockInScreen(
 
 @Composable
 private fun StatusHeader(status: ShiftStatus) {
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 28.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Box(Modifier.size(10.dp).background(status.accentColor(), CircleShape))
+    val now = Clock.System.now().timeLabel()
+    AppHeroCard(modifier = Modifier.padding(horizontal = AppTheme.spacing.screenHorizontal, vertical = 12.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            AppStatusChip(text = stringResource(status.headline()), tone = status.tone(), showDot = true)
+            AppGradientText(
+                text = now,
+                style = MaterialTheme.typography.largeTitle.copy(fontSize = 64.sp, lineHeight = 70.sp)
+            )
             Text(
-                text = stringResource(status.headline()),
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.extended.textPrimary
+                text = stringResource(status.caption()),
+                style = MaterialTheme.typography.bodyMedium,
+                color = AppTheme.colors.onHeroMuted
             )
         }
-        Text(
-            text = stringResource(status.caption()),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.extended.textSecondary,
-            textAlign = TextAlign.Center
-        )
     }
 }
 
-/** Unsent and refused punches are the things this screen must never bury. */
-@Composable
-private fun Notice(title: String, caption: String, background: Color, content: Color) {
-    Surface(shape = RoundedCornerShape(14.dp), color = background, modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Box(Modifier.size(8.dp).background(content, CircleShape))
-            Column {
-                Text(text = title, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = content)
-                Text(text = caption, style = MaterialTheme.typography.bodySmall, color = content)
-            }
-        }
-    }
-}
 
 @Composable
 private fun TodayTimeline(items: List<TimelineItem>, modifier: Modifier = Modifier) {
     if (items.isEmpty()) {
-        Box(modifier = modifier, contentAlignment = Alignment.Center) {
-            Text(
-                text = stringResource(Res.string.today_empty),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.extended.textPlaceholder
-            )
-        }
+        AppEmptyState(title = stringResource(Res.string.today_empty), modifier = modifier)
         return
     }
     LazyColumn(
         modifier = modifier,
-        contentPadding = PaddingValues(horizontal = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        contentPadding = PaddingValues(horizontal = AppTheme.spacing.screenHorizontal)
     ) {
-        items(items = items, key = { it.eventId ?: "${it.type}-${it.at}" }) { TimelineRow(it) }
+        item(key = "today-header") { AppSectionHeader(title = stringResource(Res.string.today_title)) }
+        itemsIndexed(items = items, key = { _, item -> item.eventId ?: "${item.type}-${item.at}" }) { index, item ->
+            AppTimelineItem(
+                tone = item.syncState.tone(),
+                isFirst = index == 0,
+                isLast = index == items.lastIndex,
+                modifier = Modifier.appEntrance(index)
+            ) {
+                TimelineRow(item, withRail = false)
+            }
+        }
     }
 }
 
@@ -223,7 +209,7 @@ private fun TodayTimeline(items: List<TimelineItem>, modifier: Modifier = Modifi
 private fun ActionBar(state: ClockInUiState, onPrimaryClick: () -> Unit, onBreakClick: () -> Unit) {
     val status = state.status
     Column(
-        modifier = Modifier.fillMaxWidth().padding(24.dp),
+        modifier = Modifier.fillMaxWidth().padding(AppTheme.spacing.screenHorizontal),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         if (status != ShiftStatus.CLOCKED_OUT) {
@@ -239,36 +225,34 @@ private fun ActionBar(state: ClockInUiState, onPrimaryClick: () -> Unit, onBreak
             Text(
                 text = stringResource(Res.string.end_break_first),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.extended.textSecondary,
+                color = AppTheme.colors.textSecondary,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )
         }
-        Button(
+        AppPrimaryButton(
+            text = stringResource(if (status == ShiftStatus.CLOCKED_OUT) Res.string.action_clock_in else Res.string.action_clock_out),
             onClick = onPrimaryClick,
-            enabled = !state.isProcessing && (status == ShiftStatus.CLOCKED_OUT || state.canClockOut),
-            shape = RoundedCornerShape(18.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = status.accentColor()),
-            modifier = Modifier.fillMaxWidth().height(68.dp)
-        ) {
-            if (state.isProcessing) {
-                CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(24.dp))
-            } else {
-                Text(
-                    text = stringResource(if (status == ShiftStatus.CLOCKED_OUT) Res.string.action_clock_in else Res.string.action_clock_out),
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                )
-            }
-        }
+            enabled = status == ShiftStatus.CLOCKED_OUT || state.canClockOut,
+            isLoading = state.isProcessing,
+            height = 60.dp,
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }
 
+private fun SyncState.tone(): AppTone = when (this) {
+    SyncState.SYNCED -> AppTone.BRAND
+    SyncState.SYNCING -> AppTone.NEUTRAL
+    SyncState.PENDING -> AppTone.WARNING
+    SyncState.REJECTED -> AppTone.DANGER
+}
+
 /** Not being clocked in is a resting state, not a failure: it does not get the error colour. */
-@Composable
-private fun ShiftStatus.accentColor(): Color = when (this) {
-    ShiftStatus.CLOCKED_OUT -> MaterialTheme.colorScheme.primary
-    ShiftStatus.CLOCKED_IN -> MaterialTheme.colorScheme.extended.success
-    ShiftStatus.ON_BREAK -> MaterialTheme.colorScheme.extended.yellowCardText
+private fun ShiftStatus.tone(): AppTone = when (this) {
+    ShiftStatus.CLOCKED_OUT -> AppTone.BRAND
+    ShiftStatus.CLOCKED_IN -> AppTone.SUCCESS
+    ShiftStatus.ON_BREAK -> AppTone.WARNING
 }
 
 private fun ShiftStatus.headline() = when (this) {

@@ -21,16 +21,17 @@ import org.koin.dsl.module
 
 expect val platformCoreDataModule: Module
 
-val coreDataModule = module {
-    includes(platformCoreDataModule)
-    single<AppLogger> { KermitLogger }
-    single {
-        HttpClientFactory(get(), get(), get()).create(get())
+val coreDataModule =
+    module {
+        includes(platformCoreDataModule)
+        single<AppLogger> { KermitLogger }
+        single {
+            HttpClientFactory(get(), get(), get()).create(get())
+        }
+        singleOf(::BackendHealthProbe)
+        singleOf(::KtorAuthRepositoryImpl) bind AuthRepository::class
+        singleOf(::LegacySessionCleaner)
+        single { SecureSessionStorage(get(), get()) } bind SessionStorage::class
+        singleOf(::SessionEvents)
+        single { SessionStateHolder(get(), get(), CoroutineScope(SupervisorJob() + Dispatchers.Default)) }
     }
-    singleOf(::BackendHealthProbe)
-    singleOf(::KtorAuthRepositoryImpl) bind AuthRepository::class
-    singleOf(::LegacySessionCleaner)
-    single { SecureSessionStorage(get(), get()) } bind SessionStorage::class
-    singleOf(::SessionEvents)
-    single { SessionStateHolder(get(), get(), CoroutineScope(SupervisorJob() + Dispatchers.Default)) }
-}

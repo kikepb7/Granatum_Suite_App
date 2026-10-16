@@ -1,17 +1,10 @@
 package com.granatum.feature.clockin.presentation.common
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -20,7 +13,10 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.granatum.core.designsystem.theme.extended
+import com.granatum.core.designsystem.components.cards.AppCard
+import com.granatum.core.designsystem.components.chips.AppStatusChip
+import com.granatum.core.designsystem.components.chips.AppTone
+import com.granatum.core.designsystem.theme.AppTheme
 import com.granatum.feature.clockin.domain.model.ClockEventType
 import com.granatum.feature.clockin.domain.model.SyncState
 import com.granatum.feature.clockin.domain.model.TimelineItem
@@ -35,59 +31,56 @@ import kotlin.time.Instant
 
 /** One line of a shift: time, what it was, whether it is registered, and why not if it was refused. */
 @Composable
-fun TimelineRow(item: TimelineItem, modifier: Modifier = Modifier) {
+fun TimelineRow(item: TimelineItem, modifier: Modifier = Modifier, withRail: Boolean = true) {
     val label = itemLabel(item)
     val badge = syncLabel(item.syncState)
-    Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.extended.surfaceHigher,
-        modifier = modifier.fillMaxWidth()
-    ) {
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
-                modifier = Modifier.semantics(mergeDescendants = true) {
-                    contentDescription = "${item.at.timeLabel()} $label, $badge"
-                }
-            ) {
-                Text(
-                    text = item.at.timeLabel(),
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.extended.textPrimary
-                )
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.extended.textSecondary,
-                    modifier = Modifier.weight(1f)
-                )
-                SyncBadge(item.syncState)
+    val tone = when (item.syncState) {
+        SyncState.SYNCED -> AppTone.SUCCESS
+        SyncState.SYNCING -> AppTone.NEUTRAL
+        SyncState.PENDING -> AppTone.WARNING
+        SyncState.REJECTED -> AppTone.DANGER
+    }
+    AppCard(tone = if (withRail) tone else null, modifier = modifier.fillMaxWidth(), contentPadding = 14.dp) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            modifier = Modifier.semantics(mergeDescendants = true) {
+                contentDescription = "${item.at.timeLabel()} $label, $badge"
             }
-            item.rejection?.let {
-                Text(
-                    text = it.toUiText().asString(),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.extended.redCardText,
-                    modifier = Modifier.padding(top = 6.dp)
-                )
-            }
+        ) {
+            Text(
+                text = item.at.timeLabel(),
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                color = AppTheme.colors.textPrimary
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                color = AppTheme.colors.textSecondary,
+                modifier = Modifier.weight(1f)
+            )
+            SyncBadge(item.syncState)
+        }
+        item.rejection?.let {
+            Text(
+                text = it.toUiText().asString(),
+                style = MaterialTheme.typography.bodySmall,
+                color = AppTheme.colors.danger,
+                modifier = Modifier.padding(top = 6.dp)
+            )
         }
     }
 }
 
 @Composable
 fun SyncBadge(syncState: SyncState) {
-    val color = when (syncState) {
-        SyncState.SYNCED -> MaterialTheme.colorScheme.extended.success
-        SyncState.SYNCING -> MaterialTheme.colorScheme.extended.textSecondary
-        SyncState.PENDING -> MaterialTheme.colorScheme.extended.yellowCardText
-        SyncState.REJECTED -> MaterialTheme.colorScheme.extended.redCardText
+    val tone = when (syncState) {
+        SyncState.SYNCED -> AppTone.SUCCESS
+        SyncState.SYNCING -> AppTone.NEUTRAL
+        SyncState.PENDING -> AppTone.WARNING
+        SyncState.REJECTED -> AppTone.DANGER
     }
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        Box(Modifier.size(7.dp).background(color, CircleShape))
-        Text(text = syncLabel(syncState), style = MaterialTheme.typography.labelMedium, color = color)
-    }
+    AppStatusChip(text = syncLabel(syncState), tone = tone, showDot = true)
 }
 
 @Composable

@@ -17,4 +17,5 @@ data class LoginState(
 sealed interface LoginAction {
     data object OnSubmit : LoginAction
     data object OnTogglePasswordVisibility : LoginAction
+
 }

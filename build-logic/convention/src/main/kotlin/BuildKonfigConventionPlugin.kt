@@ -58,7 +58,9 @@ class BuildKonfigConventionPlugin: Plugin<Project> {
                     "The '$flavor' flavor must use an encrypted connection, but got: $url"
                 )
 
-            val requestedFlavor = providers.gradleProperty("buildkonfig.flavor").orNull
+            // Also from local.properties, so an Xcode build (whose Gradle call takes no -P) can
+
+            val requestedFlavor = resolve("buildkonfig.flavor")
             if (requestedFlavor != null && requestedFlavor !in FLAVORS) {
                 throw IllegalStateException(
                     "Unknown buildkonfig.flavor '$requestedFlavor'. Valid flavors: ${FLAVORS.joinToString()}"

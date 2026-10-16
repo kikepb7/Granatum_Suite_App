@@ -41,6 +41,28 @@ Las reglas técnicas no negociables están en la **[constitución del proyecto](
 
 No hace falta configurar ninguna URL: el entorno `local` ya apunta a la máquina anfitriona en ambas plataformas.
 
+## Versión de demostración (sin servidor)
+
+Para enseñar o probar la app sin backend:
+
+```bash
+./gradlew :composeApp:installDebug -Pbuildkonfig.flavor=demo
+```
+
+En iOS (Xcode no pasa `-P` a Gradle) añade `buildkonfig.flavor=demo` a `local.properties` y
+compila desde Xcode; quítalo después.
+
+- La app **arranca ya con la sesión del administrador** (Lucía Ferrer): sin login, con todas las
+  pestañas.
+- Al **cerrar sesión**, el login ofrece entrar como empleado (Marcos Vidal) o volver como
+  administración con un toque.
+- Todo funciona contra un backend simulado dentro de la app (`core/data/demo`), con las mismas
+  rutas, campos y códigos de error que el real y datos de ejemplo de una floristería: fichajes de
+  tres semanas, inventario, facturas (las que subas se «reconocen» a los 6 segundos), trimestres y
+  personal. Los cambios se pierden al cerrar la app.
+- Solo existe en la build `demo`: el sabor se elige al compilar, y ninguna build local, de staging
+  o de producción puede entrar en él.
+
 ## Iniciar sesión en local
 
 La app ya no entra sin credenciales: necesita una cuenta real del backend. Solo el propietario se

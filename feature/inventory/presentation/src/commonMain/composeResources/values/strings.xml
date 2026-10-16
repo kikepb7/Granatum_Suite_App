@@ -2,7 +2,10 @@
 <resources>
     <!-- Lista -->
     <string name="inventory_title">Inventario</string>
-    <string name="search_placeholder">Buscar por nombre, ubicación o proveedor</string>
+    <string name="stat_materials">Materiales</string>
+    <string name="stat_out_of_stock">Agotados</string>
+    <string name="stat_units">Unidades libres</string>
+    <string name="search_placeholder">Buscar material</string>
     <string name="filter_all_categories">Todas</string>
     <string name="filter_out_of_stock">Agotados</string>
     <string name="filter_any_condition">Cualquier estado</string>

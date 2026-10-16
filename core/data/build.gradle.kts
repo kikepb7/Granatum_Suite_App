@@ -12,6 +12,9 @@ kotlin {
                 implementation(projects.core.domain)
 
                 implementation(libs.bundles.ktor.common)
+                // The demo build's in-memory backend runs on Ktor's mock engine (DemoMode).
+                implementation(libs.ktor.client.mock)
+                implementation(libs.kotlinx.datetime)
                 implementation(libs.touchlab.kermit)
                 implementation(libs.koin.core)
 
