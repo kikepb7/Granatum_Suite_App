@@ -43,6 +43,7 @@ fun InventoryError.toUiText(): UiText = UiText.Resource(
     when (this) {
         InventoryError.NoInternet -> Res.string.error_no_internet
         InventoryError.ProductNotFound -> Res.string.error_product_not_found
+        InventoryError.ProductInUse -> Res.string.error_product_in_use
         InventoryError.CategoryNotFound -> Res.string.error_category_not_found
         InventoryError.QuantityOutOfRange -> Res.string.error_quantity_out_of_range
         InventoryError.Invalid -> Res.string.error_invalid

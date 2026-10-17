@@ -45,7 +45,7 @@ class InventoryUiTest {
     @Test
     fun every_error_has_its_own_message() {
         val errors = listOf(
-            InventoryError.NoInternet, InventoryError.ProductNotFound, InventoryError.CategoryNotFound,
+            InventoryError.NoInternet, InventoryError.ProductNotFound, InventoryError.ProductInUse, InventoryError.CategoryNotFound,
             InventoryError.QuantityOutOfRange, InventoryError.Invalid, InventoryError.Forbidden,
             InventoryError.StorageUnavailable, InventoryError.ImageTooLarge, InventoryError.ImageInvalid, InventoryError.Unknown
         )

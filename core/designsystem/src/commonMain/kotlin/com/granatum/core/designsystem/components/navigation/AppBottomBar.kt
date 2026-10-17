@@ -48,7 +48,7 @@ private val BarItemHeight = 52.dp
 
 /**
  * Floating glass pill with the app's destinations. Only the selected one shows its label, inside
- * a brand-gradient capsule that grows with a spring while the others shrink to icons, so five
+ * a brand-gradient capsule that grows with a spring while the others shrink to icons, so up to six
  * destinations never crowd. Icons take the content colour set here, so a plain `Icon` just works.
  * The bar sits below the content in the layout (it never covers it) and keeps clear of the
  * system navigation area.

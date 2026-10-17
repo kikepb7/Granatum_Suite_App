@@ -180,6 +180,17 @@ class InventoryRepositoryTest {
     }
 
     @Test
+    fun `When a product is out at a scheduled event then deleting it is refused and it stays cached`() = runTest {
+        repo { ok(material()) }.refreshProduct("m1")
+        val repo = repo { ok("""{"code":"MATERIAL_EN_USO","message":"m"}""", HttpStatusCode.Conflict) }
+
+        val actual = repo.delete("m1")
+
+        assertEquals(expected = Result.Failure(InventoryError.ProductInUse), actual = actual)
+        assertEquals(expected = 1, actual = dao.materials.value.size)
+    }
+
+    @Test
     fun a_product_deleted_elsewhere_leaves_the_cache() = runTest {
         repo { ok(material()) }.refreshProduct("m1")
         val repo = repo { ok("""{"code":"MATERIAL_NOT_FOUND","message":"m"}""", HttpStatusCode.NotFound) }

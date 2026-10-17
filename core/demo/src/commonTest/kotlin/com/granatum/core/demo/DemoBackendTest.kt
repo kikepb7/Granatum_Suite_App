@@ -286,4 +286,54 @@ class DemoBackendTest {
             assertEquals(listOf(0x89.toByte(), 'P'.code.toByte(), 'N'.code.toByte(), 'G'.code.toByte()), bytes.take(4))
             assertEquals("image/png", image.headers[HttpHeaders.ContentType])
         }
+
+    @Test
+    fun `When an employee runs an event then the demo inventory follows its material`() =
+        runTest {
+            val employee = token(DemoAccountsCatalog.EMPLOYEE)
+            val admin = token(DemoAccountsCatalog.ADMIN)
+            val material = get("/eventos/materiales", employee).json().jsonArray.map { it.jsonObject }
+                .first { it["descripcion"]!!.jsonPrimitive.content.startsWith("Lazo") }
+            val id = material["id"]!!.jsonPrimitive.content
+            val free = material["cantidad"]!!.jsonPrimitive.content.toInt()
+
+            val created = post("/eventos", employee, """{"nombre":"Evento 9","descripcion":"Prueba","fecha":"2099-01-01"}""")
+            assertEquals(HttpStatusCode.Created, created.status)
+            val evento = created.json().jsonObject["id"]!!.jsonPrimitive.content
+
+            val reserved =
+                http.put("$base/eventos/$evento/materiales/$id") {
+                    header(HttpHeaders.Authorization, "Bearer $employee")
+                    contentType(ContentType.Application.Json)
+                    setBody("""{"cantidad":2}""")
+                }
+            assertEquals(HttpStatusCode.OK, reserved.status)
+            val after = get("/eventos/materiales", employee).json().jsonArray.map { it.jsonObject }.first { it["id"]!!.jsonPrimitive.content == id }
+            assertEquals(free - 2, after["cantidad"]!!.jsonPrimitive.content.toInt())
+
+            val tooMany =
+                http.put("$base/eventos/$evento/materiales/$id") {
+                    header(HttpHeaders.Authorization, "Bearer $employee")
+                    contentType(ContentType.Application.Json)
+                    setBody("""{"cantidad":${free + 5}}""")
+                }
+            assertEquals(HttpStatusCode.Conflict, tooMany.status)
+            assertEquals((free - 2).toString(), tooMany.json().jsonObject["disponible"]!!.jsonPrimitive.content)
+
+            val delete = http.delete("$base/materiales/$id") { header(HttpHeaders.Authorization, "Bearer $admin") }
+            assertEquals(HttpStatusCode.Conflict, delete.status)
+            assertEquals(HttpStatusCode.Forbidden, get("/materiales", employee).status)
+
+            assertEquals(HttpStatusCode.OK, post("/eventos/$evento/finalizar", employee, "{}").status)
+            val back = get("/eventos/materiales", employee).json().jsonArray.map { it.jsonObject }.first { it["id"]!!.jsonPrimitive.content == id }
+            assertEquals(free, back["cantidad"]!!.jsonPrimitive.content.toInt())
+        }
+
+    @Test
+    fun `When the demo starts then it has upcoming and finished events with reserved material`() =
+        runTest {
+            val events = get("/eventos", token(DemoAccountsCatalog.EMPLOYEE)).json().jsonArray.map { it.jsonObject }
+            assertTrue(events.any { it["estado"]!!.jsonPrimitive.content == "PROGRAMADO" && it["materiales"]!!.jsonArray.isNotEmpty() })
+            assertTrue(events.any { it["estado"]!!.jsonPrimitive.content == "FINALIZADO" })
+        }
 }

@@ -19,6 +19,21 @@ class UserRoleTest {
     }
 
     @Test
+    fun `When events are checked then everyone sees them and all but REPRESENTANTE manage them`() {
+        val expected = mapOf(
+            UserRole.ADMIN to (true to true),
+            UserRole.ENCARGADO to (true to true),
+            UserRole.EMPLEADO to (true to true),
+            UserRole.REPRESENTANTE to (true to false),
+            UserRole.DESCONOCIDO to (false to false)
+        )
+
+        val actual = UserRole.entries.associateWith { it.canSeeEvents to it.canManageEvents }
+
+        assertEquals(expected = expected, actual = actual)
+    }
+
+    @Test
     fun the_backend_name_maps_to_its_role_and_anything_else_to_unknown() {
         assertEquals(UserRole.REPRESENTANTE, UserRole.fromBackend("REPRESENTANTE"))
         assertEquals(UserRole.DESCONOCIDO, UserRole.fromBackend("AUDITOR"))

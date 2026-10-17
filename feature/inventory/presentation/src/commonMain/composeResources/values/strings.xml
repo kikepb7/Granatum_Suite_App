@@ -103,6 +103,7 @@
     <!-- Errores -->
     <string name="error_no_internet">Necesitas conexión para hacer cambios en el inventario</string>
     <string name="error_product_not_found">Este producto ya no existe; puede que lo haya borrado otra persona</string>
+    <string name="error_product_in_use">Este producto está reservado para un evento programado: quítalo del evento o finalízalo antes de borrarlo</string>
     <string name="error_category_not_found">Esa categoría ya no existe; elige otra</string>
     <string name="error_quantity_out_of_range">La cantidad no es válida</string>
     <string name="error_invalid">Revisa los datos e inténtalo de nuevo</string>

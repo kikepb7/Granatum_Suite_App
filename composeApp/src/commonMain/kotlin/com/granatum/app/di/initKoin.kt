@@ -6,6 +6,9 @@ import com.granatum.feature.clockin.data.di.clockInDataModule
 import com.granatum.feature.clockin.domain.di.clockInDomainModule
 import com.granatum.feature.clockin.presentation.di.clockInPresentationModule
 import com.granatum.feature.auth.presentation.di.authPresentationModule
+import com.granatum.feature.events.data.di.eventsDataModule
+import com.granatum.feature.events.domain.di.eventsDomainModule
+import com.granatum.feature.events.presentation.di.eventsPresentationModule
 import com.granatum.feature.inventory.data.di.inventoryDataModule
 import com.granatum.feature.inventory.domain.di.inventoryDomainModule
 import com.granatum.feature.inventory.presentation.di.inventoryPresentationModule
@@ -43,6 +46,9 @@ fun initKoin(config: KoinAppDeclaration? = null) {
             staffDataModule,
             staffDomainModule,
             staffPresentationModule,
+            eventsDataModule,
+            eventsDomainModule,
+            eventsPresentationModule,
             authPresentationModule
         )
     }

@@ -83,6 +83,51 @@ class DemoInventoryRoutes(
         materials += Material(id, category.id, description, height, width, quantity, warehouse, section, image, t, t)
     }
 
+    // The demo's side of backend 011's StockMateriales / UsoMateriales: what the events routes
+    // use to take units out of this inventory and put them back.
+
+    /** Set by [DemoBackend]: whether a material is out at a scheduled event. */
+    var materialInUse: (String) -> Boolean = { false }
+
+    /** Every material as the events picker shows it (`MaterialDisponibleDto`). */
+    fun availableJson(): JsonArray = JsonArray(materials.map { it.stockJson() })
+
+    /** Category, description, location and image of a material, or `null` if it is gone. */
+    fun summaryJson(id: String): JsonObject? = materials.firstOrNull { it.id == id }?.stockJson()
+
+    /** How many units a material has, or `null` if it does not exist. */
+    fun quantityOf(id: String): Int? = materials.firstOrNull { it.id == id }?.quantity
+
+    /** Takes units out with a history entry; the caller has checked there are enough. */
+    fun withdraw(id: String, units: Int, userId: String, reason: String) = move(id, -units, userId, reason)
+
+    /** Puts units back; nothing happens if the material is gone. */
+    fun putBack(id: String, units: Int, userId: String, reason: String) = move(id, units, userId, reason)
+
+    private fun move(id: String, delta: Int, userId: String, reason: String) {
+        val material = materials.firstOrNull { it.id == id } ?: return
+        val before = material.quantity
+        material.quantity = before + delta
+        material.updatedAt = state.now()
+        history += Change(state.newId(), id, "CANTIDAD", reason, state.now(), userId, before.toString(), material.quantity.toString())
+    }
+
+    private fun Material.stockJson() =
+        buildJsonObject {
+            put("id", id)
+            put("categoria", categories.first { it.id == categoryId }.name)
+            put("descripcion", description)
+            put("cantidad", quantity)
+            put(
+                "localizacion",
+                buildJsonObject {
+                    put("almacen", warehouse)
+                    put("seccion", section)
+                },
+            )
+            put("imagenUrl", imagePath?.let(images::signedUrl))
+        }
+
     /** The storage routes of the demo, which serve the images handed out here. */
     fun handlesStorage(path: String) = images.handles(path)
 
@@ -202,6 +247,9 @@ class DemoInventoryRoutes(
                 json(material.toJson())
             }
             s.size == 2 && request.method == HttpMethod.Delete -> {
+                if (materialInUse(material.id)) {
+                    return error(HttpStatusCode.Conflict, "MATERIAL_EN_USO", "El material está asignado a un evento programado")
+                }
                 materials -= material
                 material.imagePath?.let(images::remove)
                 DemoReply.NoContent

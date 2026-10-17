@@ -95,6 +95,7 @@ class InventoryRemoteDataSource(private val http: HttpClient) {
 
     private suspend fun HttpResponse.toInventoryError(): InventoryError = when (errorBody()?.code) {
         "MATERIAL_NOT_FOUND" -> InventoryError.ProductNotFound
+        "MATERIAL_EN_USO" -> InventoryError.ProductInUse
         "CATEGORIA_NOT_FOUND" -> InventoryError.CategoryNotFound
         "INVALID_OPERATION" -> InventoryError.QuantityOutOfRange
         "VALIDACION" -> InventoryError.Invalid

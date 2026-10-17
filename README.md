@@ -121,6 +121,22 @@ y se elige tocando un plano de los tres almacenes.
   ([research](specs/011-inventario-productos/research.md)).
 - Una categoría con productos no se puede borrar (el servidor respondería con un error 500).
 
+## Eventos
+
+Para todos los roles ([spec 012](specs/012-eventos/spec.md), backend feature 011). Cada evento tiene
+nombre (se propone «Evento N»), descripción y fecha, y lleva material del inventario.
+
+- **Reservar es retirar del inventario.** Añadir material a un evento descuenta sus unidades en el
+  momento; bajar la cantidad, quitarlo, borrar el evento o finalizarlo las devuelve. El siguiente
+  evento ve siempre el stock actualizado.
+- **Sin stock no se reserva nada**: el selector limita la cantidad a las unidades libres y, si otra
+  persona se las ha llevado mientras tanto, la app dice cuántas quedan.
+- **Finalización**: el servidor finaliza los eventos al acabar su día; también hay «Finalizar
+  ahora». Un evento finalizado se consulta pero no se modifica.
+- `ADMIN`, `ENCARGADO` y `EMPLEADO` crean y editan; `REPRESENTANTE` solo consulta.
+- Consultar funciona sin cobertura (caché local); cambiar algo exige conexión.
+- En inventario, un material reservado para un evento programado no se puede borrar.
+
 ## Facturación
 
 Solo para la administración: registra las facturas emitidas y recibidas del negocio contra

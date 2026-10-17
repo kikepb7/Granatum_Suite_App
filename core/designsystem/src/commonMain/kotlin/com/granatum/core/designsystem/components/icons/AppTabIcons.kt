@@ -7,6 +7,7 @@ import granatumsuite.core.designsystem.generated.resources.tab_clock_icon
 import granatumsuite.core.designsystem.generated.resources.tab_history_icon
 import granatumsuite.core.designsystem.generated.resources.tab_inventory_icon
 import granatumsuite.core.designsystem.generated.resources.tab_invoice_icon
+import granatumsuite.core.designsystem.generated.resources.tab_events_icon
 import granatumsuite.core.designsystem.generated.resources.users_icon
 import org.jetbrains.compose.resources.vectorResource
 
@@ -17,4 +18,5 @@ object AppTabIcons {
     val History: ImageVector @Composable get() = vectorResource(Res.drawable.tab_history_icon)
     val Invoice: ImageVector @Composable get() = vectorResource(Res.drawable.tab_invoice_icon)
     val Team: ImageVector @Composable get() = vectorResource(Res.drawable.users_icon)
+    val Events: ImageVector @Composable get() = vectorResource(Res.drawable.tab_events_icon)
 }

@@ -48,6 +48,7 @@ class DemoBackend(
     private val time = DemoTimeTrackingRoutes(state)
     private val inventory = DemoInventoryRoutes(state)
     private val invoicing = DemoInvoicingRoutes(state)
+    private val events = DemoEventsRoutes(state, inventory)
 
     suspend fun handle(
         scope: MockRequestHandleScope,
@@ -86,6 +87,7 @@ class DemoBackend(
             "fichajes" -> time.route(request)
             "materiales", "categorias" -> inventory.route(request)
             "facturacion" -> invoicing.route(request)
+            "eventos" -> events.route(request)
             else -> null
         } ?: notFound("RECURSO_NO_ENCONTRADO")
     }

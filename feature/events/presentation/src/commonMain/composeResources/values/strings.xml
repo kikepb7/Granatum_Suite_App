@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- List -->
+    <string name="events_title">Eventos</string>
+    <string name="refresh">Actualizar</string>
+    <string name="add_event">Nuevo evento</string>
+    <string name="tab_upcoming">Próximos</string>
+    <string name="tab_finished">Finalizados</string>
+    <string name="list_empty_upcoming">No hay eventos próximos</string>
+    <string name="list_empty_upcoming_hint">Crea uno y añádele el material que llevará.</string>
+    <string name="list_empty_finished">Todavía no ha terminado ningún evento</string>
+    <string name="list_stale">Sin conexión: mostrando lo último descargado</string>
+    <string name="next_event">Próximo evento</string>
+    <string name="stat_upcoming">Próximos</string>
+    <string name="stat_units">Unidades reservadas</string>
+
+    <!-- When -->
+    <string name="when_today">Hoy</string>
+    <string name="when_tomorrow">Mañana</string>
+    <string name="when_in_days">En %1$d días</string>
+    <string name="when_yesterday">Ayer</string>
+    <string name="when_days_ago">Hace %1$d días</string>
+
+    <!-- Status and materials -->
+    <string name="status_scheduled">Programado</string>
+    <string name="status_finished">Finalizado</string>
+    <string name="materials_none">Sin material</string>
+    <string name="materials_summary">%1$d materiales · %2$d uds.</string>
+    <string name="materials_summary_one">1 material · %1$d uds.</string>
+
+    <!-- Form -->
+    <string name="form_new">Nuevo evento</string>
+    <string name="form_edit">Editar evento</string>
+    <string name="field_name">Nombre</string>
+    <string name="field_description">Descripción (opcional)</string>
+    <string name="field_description_hint">Por ejemplo: Boda de Juan y María</string>
+    <string name="field_date">Fecha</string>
+    <string name="choose_date">Elegir fecha</string>
+    <string name="form_save">Guardar evento</string>
+    <string name="accept">Aceptar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="name_required">Escribe el nombre</string>
+    <string name="too_long">Máximo %1$d caracteres</string>
+    <string name="date_in_past">La fecha no puede ser anterior a hoy</string>
+    <string name="date_required">Elige la fecha del evento</string>
+
+    <!-- Detail -->
+    <string name="event_title">Evento</string>
+    <string name="edit">Editar</string>
+    <string name="delete">Borrar</string>
+    <string name="finish_now">Finalizar ahora</string>
+    <string name="finished_on">Finalizado el %1$s</string>
+    <string name="materials_title">Material del evento</string>
+    <string name="add_material">Añadir material</string>
+    <string name="materials_empty">Aún no lleva material</string>
+    <string name="materials_empty_hint">Lo que añadas se reserva del inventario hasta que el evento termine.</string>
+    <string name="material_missing">Ya no está en el inventario</string>
+    <string name="material_remove">Quitar del evento</string>
+    <string name="decrease">Una unidad menos</string>
+    <string name="increase">Una unidad más</string>
+    <string name="read_only_finished">El evento ha finalizado: su material ya volvió al inventario.</string>
+    <string name="event_not_found">Este evento ya no existe</string>
+    <string name="finish_title">¿Finalizar el evento?</string>
+    <string name="finish_description">Todo su material volverá al inventario y el evento ya no se podrá modificar.</string>
+    <string name="finish_confirm">Finalizar</string>
+    <string name="delete_title">¿Borrar este evento?</string>
+    <string name="delete_description">Si tenía material reservado, volverá al inventario. No se puede deshacer.</string>
+    <string name="delete_confirm">Borrar</string>
+    <string name="location_short">Almacén %1$s · %2$d</string>
+    <string name="units_short">uds.</string>
+
+    <!-- Picker -->
+    <string name="picker_title">Añadir material</string>
+    <string name="picker_search">Buscar material</string>
+    <string name="picker_free">%1$d libres</string>
+    <string name="picker_out_of_stock">Agotado</string>
+    <string name="picker_in_event">Ya lleva %1$d</string>
+    <string name="picker_empty">No hay material que coincida</string>
+    <string name="picker_add">Añadir %1$d</string>
+    <string name="picker_max">Máximo %1$d</string>
+    <string name="retry">Reintentar</string>
+
+    <!-- Messages and errors -->
+    <string name="material_added">Material añadido al evento</string>
+    <string name="event_finished_message">Evento finalizado: el material ha vuelto al inventario</string>
+    <string name="error_no_internet">Necesitas conexión para cambiar los eventos</string>
+    <string name="error_event_not_found">Este evento ya no existe; puede que lo haya borrado otra persona</string>
+    <string name="error_material_not_found">Ese material ya no está en el inventario</string>
+    <string name="error_insufficient_stock">No hay unidades suficientes: solo quedan %1$d disponibles</string>
+    <string name="error_event_finished">El evento ya ha finalizado y no se puede modificar</string>
+    <string name="error_date_in_past">La fecha no puede ser anterior a hoy</string>
+    <string name="error_invalid">Revisa los datos e inténtalo de nuevo</string>
+    <string name="error_forbidden">Tu rol no permite hacer este cambio</string>
+    <string name="error_unknown">No se ha podido completar la operación</string>
+</resources>

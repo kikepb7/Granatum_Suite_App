@@ -10,7 +10,15 @@ sealed interface UiText {
     class Resource(
         val id: StringResource,
         val args: Array<Any> = arrayOf()
-    ): UiText
+    ): UiText {
+        // By content, so UI states that carry texts can be compared whole (and in tests).
+        override fun equals(other: Any?): Boolean =
+            other is Resource && other.id == id && other.args.contentEquals(args)
+
+        override fun hashCode(): Int = 31 * id.hashCode() + args.contentHashCode()
+
+        override fun toString(): String = "Resource(${id.key}, ${args.contentToString()})"
+    }
 
     @Composable
     fun asString(): String {

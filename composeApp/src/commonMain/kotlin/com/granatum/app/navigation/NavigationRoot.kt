@@ -48,6 +48,9 @@ import com.granatum.feature.clockin.presentation.navigation.ClockInGraphRoutes.C
 import com.granatum.feature.clockin.presentation.navigation.ClockInGraphRoutes.HistoryRoute
 import com.granatum.feature.clockin.presentation.navigation.ClockInGraphRoutes.TeamAttendanceRoute
 import com.granatum.feature.clockin.presentation.navigation.clockInGraph
+import com.granatum.feature.events.presentation.navigation.EventsGraphRoutes
+import com.granatum.feature.events.presentation.navigation.EventsGraphRoutes.EventListRoute
+import com.granatum.feature.events.presentation.navigation.eventsGraph
 import com.granatum.feature.inventory.presentation.navigation.InventoryGraphRoutes.ProductListRoute
 import com.granatum.feature.inventory.presentation.navigation.inventoryGraph
 import com.granatum.feature.invoicing.presentation.navigation.InvoicingGraphRoutes
@@ -59,6 +62,7 @@ import com.granatum.feature.staff.presentation.navigation.staffGraph
 import granatumsuite.composeapp.generated.resources.Res
 import granatumsuite.composeapp.generated.resources.splash_loading
 import granatumsuite.composeapp.generated.resources.tab_clock_in
+import granatumsuite.composeapp.generated.resources.tab_events
 import granatumsuite.composeapp.generated.resources.tab_history
 import granatumsuite.composeapp.generated.resources.tab_inventory
 import granatumsuite.composeapp.generated.resources.tab_invoicing
@@ -143,7 +147,7 @@ private fun SignedInRoot(role: UserRole) {
     val selectedIndex = tabs.indexOfFirst { it.matches(currentRoute) }.coerceAtLeast(0)
 
     // The account is reached from the top bar of the main screens, so the bottom bar keeps at
-    // most five destinations (specs/008-facturacion, research D11).
+    // most six destinations (specs/008-facturacion D11, widened by specs/012-eventos D4).
     val session by koinInject<SessionStorage>().observeSession().collectAsStateWithLifecycle(initialValue = null)
     val initial = session?.email?.firstOrNull()?.uppercase() ?: "?"
     val accountAction = remember(initial, navController) {
@@ -169,6 +173,9 @@ private fun SignedInRoot(role: UserRole) {
             if (role.canManageInventory) {
                 inventoryGraph(navController = navController)
             }
+            if (role.canSeeEvents) {
+                eventsGraph(navController = navController, canManage = role.canManageEvents)
+            }
             if (role.canManageInvoicing) {
                 invoicingGraph(navController = navController)
             }
@@ -189,7 +196,7 @@ private fun SignedInRoot(role: UserRole) {
                 )
             }
         }
-        // A single destination needs no bar (representative: the record only).
+        // A single destination would need no bar; with events every role has at least two.
         if (tabs.size > 1) {
             AppBottomBar(
                 items = tabs.map { it.toBottomBarItem() },
@@ -213,6 +220,9 @@ private fun SignedInRoot(role: UserRole) {
 private enum class RootTab(val label: StringResource, val route: Any, val qualifiedName: String?) {
     ClockIn(Res.string.tab_clock_in, ClockInRoute, ClockInRoute::class.qualifiedName),
     Inventory(Res.string.tab_inventory, ProductListRoute, ProductListRoute::class.qualifiedName),
+
+    /** Every events screen keeps the tab selected: their routes share the graph's prefix. */
+    Events(Res.string.tab_events, EventListRoute, EventsGraphRoutes::class.qualifiedName),
     History(Res.string.tab_history, HistoryRoute, HistoryRoute::class.qualifiedName),
     Invoicing(Res.string.tab_invoicing, InvoiceListRoute, InvoicingGraphRoutes::class.qualifiedName),
     Team(Res.string.tab_team, TeamAttendanceRoute, TeamAttendanceRoute::class.qualifiedName),
@@ -243,6 +253,7 @@ private enum class RootTab(val label: StringResource, val route: Any, val qualif
     private fun icon() = when (this) {
         ClockIn -> AppTabIcons.Clock
         Inventory -> AppTabIcons.Inventory
+        Events -> AppTabIcons.Events
         History -> AppTabIcons.History
         Invoicing -> AppTabIcons.Invoice
         Team, Staff -> AppTabIcons.Team
@@ -250,12 +261,13 @@ private enum class RootTab(val label: StringResource, val route: Any, val qualif
 
     companion object {
         /**
-         * The tabs a role may use, in bar order (FR-009): Fichajes, Inventario, Histórico,
+         * The tabs a role may use, in bar order (FR-009): Fichajes, Inventario, Eventos, Histórico,
          * Facturación, then the team for the roles that see it.
          */
         fun forRole(role: UserRole): List<RootTab> = buildList {
             if (role.canClockIn) add(ClockIn)
             if (role.canManageInventory) add(Inventory)
+            if (role.canSeeEvents) add(Events)
             add(History)
             if (role.canManageInvoicing) add(Invoicing)
             if (role.canManageStaff) add(Staff) else if (role.canSeeTeam) add(Team)

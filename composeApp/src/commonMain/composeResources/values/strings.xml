@@ -6,6 +6,7 @@
     <string name="tab_invoicing">Facturación</string>
     <string name="tab_inventory">Inventario</string>
     <string name="tab_team">Equipo</string>
+    <string name="tab_events">Eventos</string>
 
     <!-- Cuenta -->
     <string name="account_title">Tu cuenta</string>

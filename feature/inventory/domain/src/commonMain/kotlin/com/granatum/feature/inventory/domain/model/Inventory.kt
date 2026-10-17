@@ -73,6 +73,9 @@ sealed interface InventoryError : Error {
     /** Every change needs a connection: nothing is queued for later. */
     data object NoInternet : InventoryError
     data object ProductNotFound : InventoryError
+
+    /** Assigned to a scheduled event, so it cannot be deleted (`409 MATERIAL_EN_USO`, backend 011). */
+    data object ProductInUse : InventoryError
     data object CategoryNotFound : InventoryError
     data object QuantityOutOfRange : InventoryError
     data object Invalid : InventoryError
