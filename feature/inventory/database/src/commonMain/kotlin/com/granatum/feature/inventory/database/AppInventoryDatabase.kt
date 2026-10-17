@@ -11,7 +11,7 @@ import com.granatum.feature.inventory.database.entity.MaterialHistoryEntity
 
 /**
  * A read cache, so each new model replaces the previous one instead of migrating it: version 2
- * (spec 006) replaced version 1, and version 3 (spec 011, the backend's 010 material) replaces 2.
+ * (spec 006) replaced version 1, version 3 (spec 011, the backend's 010 material) replaced 2, and version 4 (the English contract: history change types stored as `QUANTITY`, `LOCATION`…) replaces 3.
  * Nothing in it is waiting to be sent; it is downloaded again on the next refresh.
  */
 @Database(
@@ -20,7 +20,7 @@ import com.granatum.feature.inventory.database.entity.MaterialHistoryEntity
         MaterialEntity::class,
         MaterialHistoryEntity::class
     ],
-    version = 3
+    version = 4
 )
 @ConstructedBy(AppInventoryDatabaseConstructor::class)
 abstract class AppInventoryDatabase : RoomDatabase() {

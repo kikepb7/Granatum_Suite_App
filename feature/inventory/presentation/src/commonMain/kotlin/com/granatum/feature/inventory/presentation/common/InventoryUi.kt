@@ -18,12 +18,12 @@ import kotlin.math.roundToLong
 import kotlin.time.Instant
 
 fun HistoryChangeType.label() = when (this) {
-    HistoryChangeType.CANTIDAD -> Res.string.change_cantidad
-    HistoryChangeType.ESTADO -> Res.string.change_estado
-    HistoryChangeType.UBICACION -> Res.string.change_ubicacion
-    HistoryChangeType.PRECIO_UNITARIO -> Res.string.change_precio
-    HistoryChangeType.PROVEEDOR -> Res.string.change_proveedor
-    HistoryChangeType.OTRO -> Res.string.change_otro
+    HistoryChangeType.QUANTITY -> Res.string.change_quantity
+    HistoryChangeType.STATUS -> Res.string.change_status
+    HistoryChangeType.LOCATION -> Res.string.change_location
+    HistoryChangeType.UNIT_PRICE -> Res.string.change_unit_price
+    HistoryChangeType.SUPPLIER -> Res.string.change_supplier
+    HistoryChangeType.OTHER -> Res.string.change_other
 }
 
 fun StockFilter.label() = when (this) {

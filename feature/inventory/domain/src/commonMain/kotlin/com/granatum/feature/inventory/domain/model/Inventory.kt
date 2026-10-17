@@ -10,7 +10,7 @@ data class CategoryModel(val id: String, val name: String, val description: Stri
 /** The three warehouses. Named A, B and C for now; each has sections 1 to 5. */
 enum class Warehouse { A, B, C }
 
-/** Where a product is: a warehouse and one of its sections (the server's `localizacion`). */
+/** Where a product is: a warehouse and one of its sections (the server's `location`). */
 data class StorageLocation(val warehouse: Warehouse, val section: Int) {
     init {
         require(section in SECTIONS) { "Section $section out of $SECTIONS" }
@@ -58,7 +58,7 @@ data class ProductDraft(
     val location: StorageLocation?
 )
 
-enum class HistoryChangeType { CANTIDAD, ESTADO, UBICACION, PRECIO_UNITARIO, PROVEEDOR, OTRO }
+enum class HistoryChangeType { QUANTITY, STATUS, LOCATION, UNIT_PRICE, SUPPLIER, OTHER }
 
 data class ProductHistoryEntry(
     val id: String,
@@ -74,20 +74,20 @@ sealed interface InventoryError : Error {
     data object NoInternet : InventoryError
     data object ProductNotFound : InventoryError
 
-    /** Assigned to a scheduled event, so it cannot be deleted (`409 MATERIAL_EN_USO`, backend 011). */
+    /** Assigned to a scheduled event, so it cannot be deleted (`409 MATERIAL_IN_USE`, backend 011). */
     data object ProductInUse : InventoryError
     data object CategoryNotFound : InventoryError
     data object QuantityOutOfRange : InventoryError
     data object Invalid : InventoryError
     data object Forbidden : InventoryError
 
-    /** The server's image storage is not configured or is down (`503 ALMACEN_IMAGENES_NO_DISPONIBLE`). */
+    /** The server's image storage is not configured or is down (`503 IMAGE_STORAGE_UNAVAILABLE`). */
     data object StorageUnavailable : InventoryError
 
-    /** Over 10 MB (`413 IMAGEN_DEMASIADO_GRANDE`). */
+    /** Over 10 MB (`413 IMAGE_TOO_LARGE`). */
     data object ImageTooLarge : InventoryError
 
-    /** Not a JPEG, PNG or WebP by its bytes, or empty (`415 IMAGEN_NO_VALIDA`). */
+    /** Not a JPEG, PNG or WebP by its bytes, or empty (`415 INVALID_IMAGE`). */
     data object ImageInvalid : InventoryError
     data object Unknown : InventoryError
 }

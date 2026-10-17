@@ -2,14 +2,14 @@ package com.granatum.feature.inventory.data.repository
 
 import com.granatum.core.domain.util.EmptyResult
 import com.granatum.core.domain.util.Result
-import com.granatum.feature.inventory.data.dto.CategoriaDto
-import com.granatum.feature.inventory.data.dto.CategoriaRequestDto
+import com.granatum.feature.inventory.data.dto.CategoryDto
+import com.granatum.feature.inventory.data.dto.CategoryRequestDto
 import com.granatum.feature.inventory.data.dto.CreateMaterialRequestDto
-import com.granatum.feature.inventory.data.dto.DimensionesDto
-import com.granatum.feature.inventory.data.dto.HistorialMaterialDto
-import com.granatum.feature.inventory.data.dto.LocalizacionDto
+import com.granatum.feature.inventory.data.dto.DimensionsDto
+import com.granatum.feature.inventory.data.dto.MaterialHistoryDto
+import com.granatum.feature.inventory.data.dto.LocationDto
 import com.granatum.feature.inventory.data.dto.MaterialDto
-import com.granatum.feature.inventory.data.dto.UpdateCantidadRequestDto
+import com.granatum.feature.inventory.data.dto.UpdateQuantityRequestDto
 import com.granatum.feature.inventory.data.dto.UpdateMaterialRequestDto
 import com.granatum.feature.inventory.data.remote.InventoryRemoteDataSource
 import com.granatum.feature.inventory.database.dao.InventoryDao
@@ -67,7 +67,7 @@ class OfflineFirstInventoryRepository(
         val categories = when (val r = remote.categories()) { is Result.Failure -> return r; is Result.Success -> r.data }
         val materials = when (val r = remote.materials()) { is Result.Failure -> return r; is Result.Success -> r.data }
         // A material carries its category; the list of categories wins when both are present.
-        val allCategories = (categories + materials.map { it.categoria }).distinctBy { it.id }
+        val allCategories = (categories + materials.map { it.category }).distinctBy { it.id }
         dao.replaceAll(allCategories.map { it.toEntity() }, materials.map { it.toEntity() })
         return Result.Success(Unit)
     }
@@ -84,11 +84,11 @@ class OfflineFirstInventoryRepository(
     override suspend fun create(draft: ProductDraft): Result<ProductModel, InventoryError> {
         val location = draft.location ?: return Result.Failure(InventoryError.Invalid)
         val body = CreateMaterialRequestDto(
-            categoriaId = draft.categoryId ?: return Result.Failure(InventoryError.Invalid),
-            descripcion = draft.description.trim(),
-            dimensiones = draft.dimensions.toDto(),
-            cantidad = draft.quantity,
-            localizacion = location.toDto()
+            categoryId = draft.categoryId ?: return Result.Failure(InventoryError.Invalid),
+            description = draft.description.trim(),
+            dimensions = draft.dimensions.toDto(),
+            quantity = draft.quantity,
+            location = location.toDto()
         )
         return saved(remote.create(body))
     }
@@ -97,18 +97,18 @@ class OfflineFirstInventoryRepository(
     override suspend fun update(id: String, draft: ProductDraft): Result<ProductModel, InventoryError> {
         val location = draft.location ?: return Result.Failure(InventoryError.Invalid)
         val body = UpdateMaterialRequestDto(
-            categoriaId = draft.categoryId ?: return Result.Failure(InventoryError.Invalid),
-            descripcion = draft.description.trim(),
-            dimensiones = draft.dimensions.toDto(),
-            localizacion = location.toDto()
+            categoryId = draft.categoryId ?: return Result.Failure(InventoryError.Invalid),
+            description = draft.description.trim(),
+            dimensions = draft.dimensions.toDto(),
+            location = location.toDto()
         )
         return saved(remote.update(id, body), id)
     }
 
     /** The server records the change in the history; it requires a reason, so one is always sent. */
     override suspend fun setQuantity(id: String, quantity: Int, reason: String?): Result<ProductModel, InventoryError> {
-        val motive = reason?.trim()?.ifEmpty { null } ?: DEFAULT_REASON
-        return saved(remote.adjust(id, UpdateCantidadRequestDto(quantity, motive)), id)
+        val sentReason = reason?.trim()?.ifEmpty { null } ?: DEFAULT_REASON
+        return saved(remote.adjust(id, UpdateQuantityRequestDto(quantity, sentReason)), id)
     }
 
     override suspend fun delete(id: String): EmptyResult<InventoryError> = when (val r = remote.delete(id)) {
@@ -122,10 +122,10 @@ class OfflineFirstInventoryRepository(
     override suspend fun removeImage(id: String): Result<ProductModel, InventoryError> = saved(remote.removeImage(id), id)
 
     override suspend fun createCategory(name: String, description: String?): Result<CategoryModel, InventoryError> =
-        savedCategory(remote.createCategory(CategoriaRequestDto(name.trim(), description?.trim()?.ifBlank { null })))
+        savedCategory(remote.createCategory(CategoryRequestDto(name.trim(), description?.trim()?.ifBlank { null })))
 
     override suspend fun updateCategory(id: String, name: String, description: String?): Result<CategoryModel, InventoryError> =
-        savedCategory(remote.updateCategory(id, CategoriaRequestDto(name.trim(), description?.trim()?.ifBlank { null })))
+        savedCategory(remote.updateCategory(id, CategoryRequestDto(name.trim(), description?.trim()?.ifBlank { null })))
 
     override suspend fun deleteCategory(id: String): EmptyResult<InventoryError> = when (val r = remote.deleteCategory(id)) {
         is Result.Success -> { dao.deleteCategory(id); r }
@@ -136,14 +136,14 @@ class OfflineFirstInventoryRepository(
         when (result) {
             is Result.Success -> {
                 val dto = result.data
-                dao.upsertCategory(dto.categoria.toEntity())
+                dao.upsertCategory(dto.category.toEntity())
                 dao.upsertMaterial(dto.toEntity())
-                dto.toEntity().toDomain(dto.categoria.toEntity().toDomain())?.let { Result.Success(it) } ?: Result.Failure(InventoryError.Unknown)
+                dto.toEntity().toDomain(dto.category.toEntity().toDomain())?.let { Result.Success(it) } ?: Result.Failure(InventoryError.Unknown)
             }
             is Result.Failure -> { id?.let { forgetIfGone(it, result.error) }; result }
         }
 
-    private suspend fun savedCategory(result: Result<CategoriaDto, InventoryError>): Result<CategoryModel, InventoryError> =
+    private suspend fun savedCategory(result: Result<CategoryDto, InventoryError>): Result<CategoryModel, InventoryError> =
         when (result) {
             is Result.Success -> { dao.upsertCategory(result.data.toEntity()); Result.Success(result.data.toEntity().toDomain()) }
             is Result.Failure -> result
@@ -156,15 +156,15 @@ class OfflineFirstInventoryRepository(
 
     // Mapping
 
-    private fun CategoriaDto.toEntity() = CategoryEntity(id, nombre, descripcion)
+    private fun CategoryDto.toEntity() = CategoryEntity(id, name, description)
     private fun CategoryEntity.toDomain() = CategoryModel(id, name, description)
 
     private fun MaterialDto.toEntity() = MaterialEntity(
-        id = id, categoryId = categoria.id, description = descripcion,
-        height = dimensiones.alto, width = dimensiones.ancho, quantity = cantidad,
-        warehouse = localizacion.almacen, section = localizacion.seccion, imageUrl = imagenUrl,
-        createdAtEpochMillis = Instant.parse(fechaAlta).toEpochMilliseconds(),
-        updatedAtEpochMillis = Instant.parse(fechaUltimaModificacion).toEpochMilliseconds()
+        id = id, categoryId = category.id, description = description,
+        height = dimensions.height, width = dimensions.width, quantity = quantity,
+        warehouse = location.warehouse, section = location.section, imageUrl = imageUrl,
+        createdAtEpochMillis = Instant.parse(createdAt).toEpochMilliseconds(),
+        updatedAtEpochMillis = Instant.parse(updatedAt).toEpochMilliseconds()
     )
 
     /** Null for a location the app does not know, so one odd row does not hide the whole list. */
@@ -185,21 +185,21 @@ class OfflineFirstInventoryRepository(
         )
     }
 
-    private fun HistorialMaterialDto.toEntity() = MaterialHistoryEntity(
-        id, materialId, tipoCambio, valorAnterior, valorNuevo, motivo, Instant.parse(fecha).toEpochMilliseconds()
+    private fun MaterialHistoryDto.toEntity() = MaterialHistoryEntity(
+        id, materialId, changeType, previousValue, newValue, reason, Instant.parse(date).toEpochMilliseconds()
     )
 
     private fun MaterialHistoryEntity.toDomain() = ProductHistoryEntry(
-        id, enumValues<HistoryChangeType>().firstOrNull { it.name == type } ?: HistoryChangeType.OTRO,
+        id, enumValues<HistoryChangeType>().firstOrNull { it.name == type } ?: HistoryChangeType.OTHER,
         previousValue, newValue, reason, Instant.fromEpochMilliseconds(atEpochMillis)
     )
 
     /** The server takes up to two decimals. */
-    private fun Dimensions.toDto() = DimensionesDto(alto = height.twoDecimals(), ancho = width.twoDecimals())
+    private fun Dimensions.toDto() = DimensionsDto(height = height.twoDecimals(), width = width.twoDecimals())
 
     private fun Double.twoDecimals() = (this * 100).roundToLong() / 100.0
 
-    private fun StorageLocation.toDto() = LocalizacionDto(almacen = warehouse.name, seccion = section)
+    private fun StorageLocation.toDto() = LocationDto(warehouse = warehouse.name, section = section)
 
     private companion object {
         /** The server requires a reason; the person may leave it empty. */
