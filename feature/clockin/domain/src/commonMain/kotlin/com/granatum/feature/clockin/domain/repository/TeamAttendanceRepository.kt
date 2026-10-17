@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.LocalDate
 
 /**
- * ADMIN/ENCARGADO-only. Online-only by design: an admin reviewing hours or
+ * ADMIN/MANAGER-only. Online-only by design: an admin reviewing hours or
  * approving a correction is expected to have connectivity, and there is
  * nothing here the employee-facing offline queue needs to feed into.
  */

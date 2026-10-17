@@ -91,7 +91,7 @@ class CorrectionViewModel(
         val counted = shift.items.filter { it.syncState != SyncState.REJECTED }
         val breaks = counted.filter { it.type == ClockEventType.BREAK_START }.map { start ->
             val end = counted.firstOrNull { it.type == ClockEventType.BREAK_END && it.at >= start.at }
-            BreakFields(start.breakType ?: BreakType.OTRO, TextFieldState(start.at.timeLabel(timeZone)), TextFieldState(end?.at?.timeLabel(timeZone) ?: ""))
+            BreakFields(start.breakType ?: BreakType.OTHER, TextFieldState(start.at.timeLabel(timeZone)), TextFieldState(end?.at?.timeLabel(timeZone) ?: ""))
         }
         _state.update { it.copy(breaks = breaks, ready = true) }
     }

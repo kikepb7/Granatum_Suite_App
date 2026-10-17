@@ -24,15 +24,15 @@ enum class ClockRejection {
 
     companion object {
         /** Not a server code: the local cascade when a shift's entry was rejected. */
-        const val SHIFT_NOT_REGISTERED = "JORNADA_NO_REGISTRADA"
+        const val SHIFT_NOT_REGISTERED = "SHIFT_NOT_REGISTERED"
 
         private val PAST_TOLERANCE = 72.hours
 
         fun fromServerCode(code: String, occurredAt: Instant, now: Instant): ClockRejection = when (code) {
             // The server uses one code for both directions; the age of the punch tells them apart.
-            "DESVIACION_RELOJ" -> if (now - occurredAt > PAST_TOLERANCE) TooOld else ClockSkew
-            "EMPLEADO_INACTIVO" -> Inactive
-            "PAUSA_YA_ABIERTA", "PAUSA_NO_ABIERTA", "PAUSA_ABIERTA_AL_CERRAR", "FICHAJE_NO_EN_CURSO" -> InvalidTransition
+            "CLOCK_SKEW" -> if (now - occurredAt > PAST_TOLERANCE) TooOld else ClockSkew
+            "EMPLOYEE_INACTIVE" -> Inactive
+            "BREAK_ALREADY_OPEN", "BREAK_NOT_OPEN", "BREAK_OPEN_ON_CLOSE", "SHIFT_NOT_IN_PROGRESS" -> InvalidTransition
             SHIFT_NOT_REGISTERED -> ShiftNotRegistered
             else -> Unexpected
         }

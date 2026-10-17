@@ -7,7 +7,7 @@ import com.granatum.feature.clockin.domain.model.CorrectionModel
 import com.granatum.feature.clockin.domain.model.CorrectionValidation
 import com.granatum.feature.clockin.domain.repository.ClockInRepository
 
-/** Validates before sending what the server would reject as VALORES_INCOHERENTES (FR-020). */
+/** Validates before sending what the server would reject as INCONSISTENT_VALUES (FR-020). */
 class RequestCorrectionUseCase(private val repository: ClockInRepository) {
     suspend operator fun invoke(shiftServerId: String, draft: CorrectionDraft): Result<CorrectionModel, CorrectionError> {
         val issues = CorrectionValidation.validate(draft)

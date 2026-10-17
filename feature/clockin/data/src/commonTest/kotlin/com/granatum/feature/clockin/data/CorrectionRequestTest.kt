@@ -2,7 +2,7 @@ package com.granatum.feature.clockin.data
 
 import com.granatum.core.domain.util.Result
 import com.granatum.feature.clockin.data.datasource.local.OfflineFirstClockInRepositoryImpl
-import com.granatum.feature.clockin.data.remote.FichajeRemoteDataSource
+import com.granatum.feature.clockin.data.remote.ShiftRemoteDataSource
 import com.granatum.feature.clockin.data.sync.ShiftSyncEngine
 import com.granatum.feature.clockin.data.testing.FakeSessions
 import com.granatum.feature.clockin.data.testing.InMemoryEventDao
@@ -33,11 +33,11 @@ import kotlin.time.Instant
 /** spec 005, US5: contract field names and error mapping of a correction request. */
 class CorrectionRequestTest {
     private fun t(hhmm: String) = Instant.parse("2026-10-08T$hhmm:00Z")
-    private val draft = CorrectionDraft("Olvidé la salida", CorrectionValues(t("08:00"), t("16:00"), listOf(ProposedBreak(BreakType.COMIDA, t("12:00"), t("12:30")))))
+    private val draft = CorrectionDraft("Olvidé la salida", CorrectionValues(t("08:00"), t("16:00"), listOf(ProposedBreak(BreakType.MEAL, t("12:00"), t("12:30")))))
 
     private fun kotlinx.coroutines.test.TestScope.repo(handler: suspend MockRequestHandleScope.(HttpRequestData) -> HttpResponseData): OfflineFirstClockInRepositoryImpl {
         val (client, _) = mockClient(handler)
-        val remote = FichajeRemoteDataSource(client)
+        val remote = ShiftRemoteDataSource(client)
         val events = InMemoryEventDao(); val shifts = InMemoryShiftDao(); val server = InMemoryServerShiftDao()
         val sessions = FakeSessions().apply { signIn("ana") }
         val engine = ShiftSyncEngine(remote, events, shifts, server, sessions, emptyFlow(), SilentLogger)
@@ -50,19 +50,19 @@ class CorrectionRequestTest {
         var path = ""
         val repo = repo { request ->
             body = request.body.toByteArray().decodeToString(); path = request.url.encodedPath
-            json(HttpStatusCode.Created, """{"id":"c1","fichajeId":"srv","solicitanteId":"ana","estado":"PENDIENTE","motivo":"Olvidé la salida","valoresPropuestos":{"entrada":"2026-10-08T08:00:00Z","salida":"2026-10-08T16:00:00Z","pausas":[]},"creadaEn":"2026-10-08T18:00:00Z"}""")
+            json(HttpStatusCode.Created, """{"id":"c1","shiftId":"srv","requesterId":"ana","status":"PENDING","reason":"Olvidé la salida","proposedValues":{"clockIn":"2026-10-08T08:00:00Z","clockOut":"2026-10-08T16:00:00Z","breaks":[]},"originalValues":null,"createdAt":"2026-10-08T18:00:00Z","resolvedById":null}""")
         }
         val result = repo.requestCorrection("srv", draft)
-        assertTrue(path.endsWith("/fichajes/srv/correcciones"), path)
-        assertTrue(""""motivo":"Olvidé la salida"""" in body)
-        assertTrue(""""pausas":[{"tipo":"COMIDA","inicio":"2026-10-08T12:00:00Z","fin":"2026-10-08T12:30:00Z"}]""" in body, body)
-        assertEquals(CorrectionState.PENDIENTE, (result as Result.Success).data.state)
+        assertTrue(path.endsWith("/shifts/srv/corrections"), path)
+        assertTrue(""""reason":"Olvidé la salida"""" in body)
+        assertTrue(""""proposedValues":{"clockIn":"2026-10-08T08:00:00Z","clockOut":"2026-10-08T16:00:00Z","breaks":[{"type":"MEAL","start":"2026-10-08T12:00:00Z","end":"2026-10-08T12:30:00Z"}]""" in body, body)
+        assertEquals(CorrectionState.PENDING, (result as Result.Success).data.state)
     }
 
     @Test
     fun server_codes_map_to_errors() = runTest {
-        assertEquals(Result.Failure(CorrectionError.ShiftNotFinished), repo { json(HttpStatusCode.Conflict, error("FICHAJE_NO_FINALIZADO")) }.requestCorrection("srv", draft))
-        assertEquals(Result.Failure(CorrectionError.Inactive), repo { json(HttpStatusCode.Conflict, error("EMPLEADO_INACTIVO")) }.requestCorrection("srv", draft))
-        assertEquals(Result.Failure(CorrectionError.Invalid(emptySet())), repo { json(HttpStatusCode.UnprocessableEntity, error("VALORES_INCOHERENTES")) }.requestCorrection("srv", draft))
+        assertEquals(Result.Failure(CorrectionError.ShiftNotFinished), repo { json(HttpStatusCode.Conflict, error("SHIFT_NOT_FINISHED")) }.requestCorrection("srv", draft))
+        assertEquals(Result.Failure(CorrectionError.Inactive), repo { json(HttpStatusCode.Conflict, error("EMPLOYEE_INACTIVE")) }.requestCorrection("srv", draft))
+        assertEquals(Result.Failure(CorrectionError.Invalid(emptySet())), repo { json(HttpStatusCode.UnprocessableEntity, error("INCONSISTENT_VALUES")) }.requestCorrection("srv", draft))
     }
 }

@@ -4,7 +4,7 @@ import com.granatum.core.domain.auth.repository.SessionStorage
 import com.granatum.core.domain.logger.AppLogger
 import com.granatum.core.domain.util.Result
 import com.granatum.feature.clockin.data.mappers.toEntity
-import com.granatum.feature.clockin.data.remote.FichajeRemoteDataSource
+import com.granatum.feature.clockin.data.remote.ShiftRemoteDataSource
 import com.granatum.feature.clockin.data.remote.SendOutcome
 import com.granatum.feature.clockin.database.dao.ClockEventDao
 import com.granatum.feature.clockin.database.dao.ServerShiftDao
@@ -36,13 +36,13 @@ import kotlin.time.Clock
  * - A temporary failure stops the pass: what comes after must not overtake it.
  * - A definitive refusal marks the punch REJECTED and is never retried; if it was a shift's
  *   entry, the rest of that shift goes with it. Other shifts carry on.
- * - FICHAJE_YA_EN_CURSO on an entry means the shift already exists — opened from another
+ * - SHIFT_ALREADY_IN_PROGRESS on an entry means the shift already exists — opened from another
  *   device, or by an earlier attempt whose answer was lost — so it is adopted, not duplicated.
  *
  * Retrying is safe because every punch keeps the same `clientEventId` and the same body.
  */
 class ShiftSyncEngine(
-    private val remote: FichajeRemoteDataSource,
+    private val remote: ShiftRemoteDataSource,
     private val eventDao: ClockEventDao,
     private val shiftDao: ShiftDao,
     private val serverShiftDao: ServerShiftDao,
@@ -103,7 +103,7 @@ class ShiftSyncEngine(
                     return@withLock false
                 }
                 is SendOutcome.Refused -> when {
-                    event.type == CLOCK_IN && outcome.code == SHIFT_ALREADY_OPEN -> {
+                    event.type == CLOCK_IN && outcome.code == SHIFT_ALREADY_IN_PROGRESS -> {
                         if (!adoptOpenShift(employeeId, shift.localId, event)) {
                             eventDao.markRetry(event.id, clock.now().toEpochMilliseconds())
                             return@withLock false
@@ -115,7 +115,7 @@ class ShiftSyncEngine(
                         return@withLock true
                     }
                     else -> {
-                        if (outcome.code == KEY_REUSED) {
+                        if (outcome.code == CLIENT_EVENT_ID_REUSED) {
                             logger.error("clientEventId reused with a different body for ${event.id}: a serialisation bug")
                         }
                         eventDao.markRejected(event.id, outcome.code)
@@ -134,7 +134,7 @@ class ShiftSyncEngine(
     private suspend fun adoptOpenShift(employeeId: String, shiftLocalId: String, entry: ClockEventEntity): Boolean {
         val today = clock.todayIn(MADRID)
         val found = remote.fetchShifts(employeeId, today.minus(DatePeriod(days = 3)), today)
-        val open = (found as? Result.Success)?.data?.firstOrNull { it.estado == "EN_CURSO" } ?: return false
+        val open = (found as? Result.Success)?.data?.firstOrNull { it.status == IN_PROGRESS } ?: return false
         shiftDao.setServerId(shiftLocalId, open.id)
         eventDao.markSynced(entry.id, clock.now().toEpochMilliseconds())
         serverShiftDao.upsert(open.toEntity(fetchedAtEpochMillis = clock.now().toEpochMilliseconds()))
@@ -150,9 +150,10 @@ class ShiftSyncEngine(
     companion object {
         private const val POLL_INTERVAL_MS = 30_000L
         private const val CLOCK_IN = "CLOCK_IN"
-        const val SHIFT_ALREADY_OPEN = "FICHAJE_YA_EN_CURSO"
-        const val EMPLOYEE_INACTIVE = "EMPLEADO_INACTIVO"
-        const val KEY_REUSED = "CLIENT_EVENT_ID_REUTILIZADO"
+        private const val IN_PROGRESS = "IN_PROGRESS"
+        const val SHIFT_ALREADY_IN_PROGRESS = "SHIFT_ALREADY_IN_PROGRESS"
+        const val EMPLOYEE_INACTIVE = "EMPLOYEE_INACTIVE"
+        const val CLIENT_EVENT_ID_REUSED = "CLIENT_EVENT_ID_REUSED"
 
         /** The server reads civil dates in Madrid (backend contract, "Tiempo"). */
         val MADRID: TimeZone = TimeZone.of("Europe/Madrid")

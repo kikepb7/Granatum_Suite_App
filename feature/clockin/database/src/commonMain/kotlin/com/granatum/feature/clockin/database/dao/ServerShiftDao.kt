@@ -15,12 +15,12 @@ interface ServerShiftDao {
     @Upsert
     suspend fun upsertAll(shifts: List<ServerShiftEntity>)
 
-    @Query("SELECT * FROM server_shift WHERE employeeId = :employeeId ORDER BY entradaEpochMillis ASC")
+    @Query("SELECT * FROM server_shift WHERE employeeId = :employeeId ORDER BY clockInEpochMillis ASC")
     fun observeAll(employeeId: String): Flow<List<ServerShiftEntity>>
 
     @Query(
         "DELETE FROM server_shift WHERE employeeId = :employeeId " +
-            "AND entradaEpochMillis BETWEEN :fromEpochMillis AND :toEpochMillis"
+            "AND clockInEpochMillis BETWEEN :fromEpochMillis AND :toEpochMillis"
     )
     suspend fun deleteRange(employeeId: String, fromEpochMillis: Long, toEpochMillis: Long)
 

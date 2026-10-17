@@ -30,9 +30,9 @@
 
     <!-- Tipos de pausa -->
     <string name="break_sheet_title">¿Qué tipo de pausa?</string>
-    <string name="break_comida">Comida</string>
-    <string name="break_descanso">Descanso</string>
-    <string name="break_otro">Otro</string>
+    <string name="break_meal">Comida</string>
+    <string name="break_rest">Descanso</string>
+    <string name="break_other">Otro</string>
 
     <!-- Líneas de jornada -->
     <string name="event_clock_in">Entrada</string>
@@ -89,9 +89,9 @@
     <string name="corrections_title">Correcciones</string>
     <string name="corrections_empty">No has pedido ninguna corrección para esta jornada</string>
     <string name="corrections_offline">Sin conexión: no se pueden consultar las correcciones</string>
-    <string name="correction_state_pendiente">Pendiente</string>
-    <string name="correction_state_aprobada">Aprobada</string>
-    <string name="correction_state_rechazada">Rechazada</string>
+    <string name="correction_state_pending">Pendiente</string>
+    <string name="correction_state_approved">Aprobada</string>
+    <string name="correction_state_rejected">Rechazada</string>
     <string name="correction_resolution">Motivo: %1$s</string>
     <string name="correction_only_closed">Solo se pueden corregir jornadas cerradas y ya registradas</string>
 

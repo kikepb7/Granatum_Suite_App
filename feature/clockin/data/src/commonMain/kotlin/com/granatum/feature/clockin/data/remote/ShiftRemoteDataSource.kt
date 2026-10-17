@@ -6,14 +6,14 @@ import com.granatum.core.data.networking.platformSafeCall
 import com.granatum.core.domain.util.DataError
 import com.granatum.core.domain.util.Error
 import com.granatum.core.domain.util.Result
-import com.granatum.feature.clockin.data.dto.CorreccionDto
-import com.granatum.feature.clockin.data.dto.CrearCorreccionRequestDto
-import com.granatum.feature.clockin.data.dto.EntradaRequestDto
-import com.granatum.feature.clockin.data.dto.FichajeDto
-import com.granatum.feature.clockin.data.dto.FinPausaRequestDto
-import com.granatum.feature.clockin.data.dto.InicioPausaRequestDto
-import com.granatum.feature.clockin.data.dto.ResumenMensualDto
-import com.granatum.feature.clockin.data.dto.SalidaRequestDto
+import com.granatum.feature.clockin.data.dto.BreakEndRequestDto
+import com.granatum.feature.clockin.data.dto.BreakStartRequestDto
+import com.granatum.feature.clockin.data.dto.ClockInRequestDto
+import com.granatum.feature.clockin.data.dto.ClockOutRequestDto
+import com.granatum.feature.clockin.data.dto.CreateShiftCorrectionRequestDto
+import com.granatum.feature.clockin.data.dto.MonthlyShiftSummaryDto
+import com.granatum.feature.clockin.data.dto.ShiftCorrectionDto
+import com.granatum.feature.clockin.data.dto.ShiftDto
 import com.granatum.feature.clockin.database.entity.ClockEventEntity
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -29,7 +29,7 @@ import kotlin.time.Instant
 
 /** What happened to a punch sent to the server (specs/005-fichaje-real, research D4). */
 sealed interface SendOutcome {
-    data class Registered(val shift: FichajeDto) : SendOutcome
+    data class Registered(val shift: ShiftDto) : SendOutcome
 
     /** No coverage, a timeout, 5xx or 429: try again later, in the same order. */
     data object Temporary : SendOutcome
@@ -42,33 +42,33 @@ sealed interface SendOutcome {
 data class RemoteFailure(val transport: DataError.Remote?, val code: String?) : Error
 
 /**
- * The time register routes of docs/openapi.json (backend d1857ad), as
- * specs/005-fichaje-real/contracts/fichaje-api.md uses them.
+ * The time register routes of docs/openapi.json (the English contract, docs/english-naming.md),
+ * as specs/005-fichaje-real/contracts/fichaje-api.md uses them.
  */
-class FichajeRemoteDataSource(private val httpClient: HttpClient) {
+class ShiftRemoteDataSource(private val httpClient: HttpClient) {
 
     suspend fun send(event: ClockEventEntity, serverShiftId: String?): SendOutcome {
         val occurredAt = formatOccurredAt(event.clientTimestampEpochMillis)
         val response = exchange {
             when (event.type) {
-                "CLOCK_IN" -> httpClient.post(constructRoute("/fichajes/entrada")) {
-                    setBody(EntradaRequestDto(event.id, occurredAt))
+                "CLOCK_IN" -> httpClient.post(constructRoute("/shifts/clock-in")) {
+                    setBody(ClockInRequestDto(event.id, occurredAt))
                 }
-                "BREAK_START" -> httpClient.post(constructRoute("/fichajes/${requireNotNull(serverShiftId)}/pausa/inicio")) {
-                    // Never null after migration 2 -> 3; OTRO rather than a crash that would block the queue.
-                    setBody(InicioPausaRequestDto(event.id, occurredAt, event.breakType ?: "OTRO"))
+                "BREAK_START" -> httpClient.post(constructRoute("/shifts/${requireNotNull(serverShiftId)}/break/start")) {
+                    // Never null after migration 2 -> 3; OTHER rather than a crash that would block the queue.
+                    setBody(BreakStartRequestDto(event.id, occurredAt, event.breakType ?: "OTHER"))
                 }
-                "BREAK_END" -> httpClient.post(constructRoute("/fichajes/${requireNotNull(serverShiftId)}/pausa/fin")) {
-                    setBody(FinPausaRequestDto(event.id, occurredAt))
+                "BREAK_END" -> httpClient.post(constructRoute("/shifts/${requireNotNull(serverShiftId)}/break/end")) {
+                    setBody(BreakEndRequestDto(event.id, occurredAt))
                 }
-                else -> httpClient.post(constructRoute("/fichajes/${requireNotNull(serverShiftId)}/salida")) {
-                    setBody(SalidaRequestDto(event.id, occurredAt))
+                else -> httpClient.post(constructRoute("/shifts/${requireNotNull(serverShiftId)}/clock-out")) {
+                    setBody(ClockOutRequestDto(event.id, occurredAt))
                 }
             }
         }
         val ok = (response as? Result.Success)?.data ?: return SendOutcome.Temporary
         return when {
-            ok.status.isSuccess() -> runCatching { SendOutcome.Registered(ok.body<FichajeDto>()) }
+            ok.status.isSuccess() -> runCatching { SendOutcome.Registered(ok.body<ShiftDto>()) }
                 .getOrElse { SendOutcome.Refused(UNREADABLE_RESPONSE) }
             ok.status.value >= 500 || ok.status == HttpStatusCode.TooManyRequests -> SendOutcome.Temporary
             // A 401 that is still a 401 here survived the HTTP client's refresh attempt: the
@@ -80,24 +80,24 @@ class FichajeRemoteDataSource(private val httpClient: HttpClient) {
     }
 
     /** The person's shifts whose entry falls between two civil dates, interpreted in Madrid by the server. */
-    suspend fun fetchShifts(employeeId: String, from: LocalDate, to: LocalDate): Result<List<FichajeDto>, RemoteFailure> =
-        getJson("/fichajes/empleado/$employeeId") {
-            parameter("desde", from.toString())
-            parameter("hasta", to.toString())
+    suspend fun fetchShifts(employeeId: String, from: LocalDate, to: LocalDate): Result<List<ShiftDto>, RemoteFailure> =
+        getJson("/shifts/employee/$employeeId") {
+            parameter("from", from.toString())
+            parameter("to", to.toString())
         }
 
-    suspend fun fetchMonthSummary(employeeId: String, year: Int, month: Int): Result<ResumenMensualDto, RemoteFailure> =
-        getJson("/fichajes/empleado/$employeeId/resumen") {
-            parameter("anio", year)
-            parameter("mes", month)
+    suspend fun fetchMonthSummary(employeeId: String, year: Int, month: Int): Result<MonthlyShiftSummaryDto, RemoteFailure> =
+        getJson("/shifts/employee/$employeeId/summary") {
+            parameter("year", year)
+            parameter("month", month)
         }
 
-    suspend fun fetchCorrections(shiftServerId: String): Result<List<CorreccionDto>, RemoteFailure> =
-        getJson("/fichajes/$shiftServerId/correcciones") {}
+    suspend fun fetchCorrections(shiftServerId: String): Result<List<ShiftCorrectionDto>, RemoteFailure> =
+        getJson("/shifts/$shiftServerId/corrections") {}
 
-    suspend fun createCorrection(shiftServerId: String, request: CrearCorreccionRequestDto): Result<CorreccionDto, RemoteFailure> {
+    suspend fun createCorrection(shiftServerId: String, request: CreateShiftCorrectionRequestDto): Result<ShiftCorrectionDto, RemoteFailure> {
         val sent = exchange {
-            httpClient.post(constructRoute("/fichajes/$shiftServerId/correcciones")) { setBody(request) }
+            httpClient.post(constructRoute("/shifts/$shiftServerId/corrections")) { setBody(request) }
         }
         return sent.decode()
     }
@@ -130,11 +130,11 @@ class FichajeRemoteDataSource(private val httpClient: HttpClient) {
     }
 
     companion object {
-        const val UNREADABLE_RESPONSE = "RESPUESTA_ILEGIBLE"
+        const val UNREADABLE_RESPONSE = "UNREADABLE_RESPONSE"
 
         /**
          * Always the same text for the same instant, because a retried punch must send exactly
-         * the same body or the server answers CLIENT_EVENT_ID_REUTILIZADO (research D5).
+         * the same body or the server answers CLIENT_EVENT_ID_REUSED (research D5).
          */
         fun formatOccurredAt(epochMillis: Long): String = Instant.fromEpochMilliseconds(epochMillis).toString()
     }

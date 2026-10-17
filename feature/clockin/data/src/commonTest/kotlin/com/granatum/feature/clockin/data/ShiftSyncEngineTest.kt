@@ -1,6 +1,6 @@
 package com.granatum.feature.clockin.data
 
-import com.granatum.feature.clockin.data.remote.FichajeRemoteDataSource
+import com.granatum.feature.clockin.data.remote.ShiftRemoteDataSource
 import com.granatum.feature.clockin.data.sync.ShiftSyncEngine
 import com.granatum.feature.clockin.data.testing.FakeSessions
 import com.granatum.feature.clockin.data.testing.InMemoryEventDao
@@ -8,9 +8,9 @@ import com.granatum.feature.clockin.data.testing.InMemoryServerShiftDao
 import com.granatum.feature.clockin.data.testing.InMemoryShiftDao
 import com.granatum.feature.clockin.data.testing.SilentLogger
 import com.granatum.feature.clockin.data.testing.error
-import com.granatum.feature.clockin.data.testing.fichajeJson
 import com.granatum.feature.clockin.data.testing.json
 import com.granatum.feature.clockin.data.testing.mockClient
+import com.granatum.feature.clockin.data.testing.shiftJson
 import com.granatum.feature.clockin.database.entity.ClockEventEntity
 import com.granatum.feature.clockin.database.entity.ShiftEntity
 import io.ktor.client.engine.mock.MockRequestHandleScope
@@ -40,7 +40,7 @@ class ShiftSyncEngineTest {
             log += "${request.method.value} ${request.url.encodedPath.substringAfter("/api")}"
             handler(request)
         }
-        return ShiftSyncEngine(FichajeRemoteDataSource(client), events, shifts, serverShifts, sessions, emptyFlow(), SilentLogger) to log
+        return ShiftSyncEngine(ShiftRemoteDataSource(client), events, shifts, serverShifts, sessions, emptyFlow(), SilentLogger) to log
     }
 
     private suspend fun shift(localId: String, employee: String = "ana", serverId: String? = null) =
@@ -53,21 +53,21 @@ class ShiftSyncEngineTest {
 
     /** A server that registers everything, opening shift `srv-<n>` on each entry. */
     private val happyServer: suspend MockRequestHandleScope.(HttpRequestData) -> HttpResponseData = { request ->
-        if (path(request) == "/fichajes/entrada") json(HttpStatusCode.Created, fichajeJson("srv-1"))
-        else json(HttpStatusCode.OK, fichajeJson("srv-1"))
+        if (path(request) == "/shifts/clock-in") json(HttpStatusCode.Created, shiftJson("srv-1"))
+        else json(HttpStatusCode.OK, shiftJson("srv-1"))
     }
 
     @Test
     fun a_whole_shift_goes_in_order_on_the_server_shift() = runTest {
         shift("s1")
-        punch("e1", "CLOCK_IN", 1, "s1"); punch("e2", "BREAK_START", 2, "s1", breakType = "COMIDA")
+        punch("e1", "CLOCK_IN", 1, "s1"); punch("e2", "BREAK_START", 2, "s1", breakType = "MEAL")
         punch("e3", "BREAK_END", 3, "s1"); punch("e4", "CLOCK_OUT", 4, "s1")
         val (engine, log) = engine(happyServer)
 
         assertTrue(engine.syncNow())
 
         assertEquals(
-            listOf("POST /fichajes/entrada", "POST /fichajes/srv-1/pausa/inicio", "POST /fichajes/srv-1/pausa/fin", "POST /fichajes/srv-1/salida"),
+            listOf("POST /shifts/clock-in", "POST /shifts/srv-1/break/start", "POST /shifts/srv-1/break/end", "POST /shifts/srv-1/clock-out"),
             log
         )
         assertTrue(events.rows.value.all { it.syncState == "SYNCED" })
@@ -78,11 +78,11 @@ class ShiftSyncEngineTest {
     @Test
     fun the_break_type_travels_with_the_break_start() = runTest {
         shift("s1", serverId = "srv-1")
-        punch("e2", "BREAK_START", 2, "s1", breakType = "DESCANSO")
+        punch("e2", "BREAK_START", 2, "s1", breakType = "REST")
         var body = ""
-        val (engine, _) = engine { request -> body = request.body.toByteArray().decodeToString(); json(HttpStatusCode.OK, fichajeJson("srv-1")) }
+        val (engine, _) = engine { request -> body = request.body.toByteArray().decodeToString(); json(HttpStatusCode.OK, shiftJson("srv-1")) }
         engine.syncNow()
-        assertTrue(""""tipo":"DESCANSO"""" in body, body)
+        assertTrue(""""type":"REST"""" in body, body)
     }
 
     @Test
@@ -90,7 +90,7 @@ class ShiftSyncEngineTest {
         listOf(HttpStatusCode.ServiceUnavailable, HttpStatusCode.TooManyRequests).forEach { status ->
             events.rows.value = emptyList(); shifts.rows.value = emptyList()
             shift("s1"); punch("e1", "CLOCK_IN", 1, "s1"); punch("e2", "CLOCK_OUT", 2, "s1")
-            val (engine, log) = engine { json(status, error("SERVICIO_SATURADO")) }
+            val (engine, log) = engine { json(status, error("SERVICE_BUSY")) }
             assertFalse(engine.syncNow())
             assertEquals(1, log.size, "the exit must not overtake the entry ($status)")
             assertTrue(events.rows.value.all { it.syncState == "PENDING" })
@@ -107,17 +107,21 @@ class ShiftSyncEngineTest {
 
     @Test
     fun an_already_open_shift_is_adopted_not_duplicated() = runTest {
-        shift("s1"); punch("e1", "CLOCK_IN", 1, "s1"); punch("e2", "BREAK_START", 2, "s1", breakType = "COMIDA")
+        shift("s1"); punch("e1", "CLOCK_IN", 1, "s1"); punch("e2", "BREAK_START", 2, "s1", breakType = "MEAL")
+        var lookup: io.ktor.http.Url? = null
         val (engine, log) = engine { request ->
+            if (request.method == HttpMethod.Get) lookup = request.url
             when {
-                path(request) == "/fichajes/entrada" -> json(HttpStatusCode.Conflict, error("FICHAJE_YA_EN_CURSO"))
-                request.method == HttpMethod.Get -> json(HttpStatusCode.OK, "[${fichajeJson("srv-other", estado = "CERRADO")},${fichajeJson("srv-open")}]")
-                else -> json(HttpStatusCode.OK, fichajeJson("srv-open"))
+                path(request) == "/shifts/clock-in" -> json(HttpStatusCode.Conflict, error("SHIFT_ALREADY_IN_PROGRESS"))
+                request.method == HttpMethod.Get -> json(HttpStatusCode.OK, "[${shiftJson("srv-other", status = "CLOSED")},${shiftJson("srv-open")}]")
+                else -> json(HttpStatusCode.OK, shiftJson("srv-open"))
             }
         }
         assertTrue(engine.syncNow())
+        assertEquals("/shifts/employee/ana", lookup?.encodedPath?.substringAfter("/api"))
+        assertTrue(lookup?.parameters?.contains("from") == true && lookup?.parameters?.contains("to") == true, lookup.toString())
         assertEquals("srv-open", shifts.get("s1")?.serverId)
-        assertEquals("POST /fichajes/srv-open/pausa/inicio", log.last())
+        assertEquals("POST /shifts/srv-open/break/start", log.last())
         assertTrue(events.rows.value.all { it.syncState == "SYNCED" })
     }
 
@@ -127,12 +131,12 @@ class ShiftSyncEngineTest {
         shift("new"); punch("n1", "CLOCK_IN", 3, "new")
         val (engine, log) = engine { request ->
             val body = request.body.toByteArray().decodeToString()
-            if ("\"o1\"" in body) json(HttpStatusCode.UnprocessableEntity, error("DESVIACION_RELOJ"))
-            else json(HttpStatusCode.Created, fichajeJson("srv-new"))
+            if ("\"o1\"" in body) json(HttpStatusCode.UnprocessableEntity, error("CLOCK_SKEW"))
+            else json(HttpStatusCode.Created, shiftJson("srv-new"))
         }
         assertTrue(engine.syncNow())
-        assertEquals("REJECTED" to "DESVIACION_RELOJ", events.byId("o1").let { it.syncState to it.rejectionCode })
-        assertEquals("REJECTED" to "JORNADA_NO_REGISTRADA", events.byId("o2").let { it.syncState to it.rejectionCode })
+        assertEquals("REJECTED" to "CLOCK_SKEW", events.byId("o1").let { it.syncState to it.rejectionCode })
+        assertEquals("REJECTED" to "SHIFT_NOT_REGISTERED", events.byId("o2").let { it.syncState to it.rejectionCode })
         assertEquals("SYNCED", events.byId("n1").syncState)
         assertEquals(2, log.size, "the refused shift's exit is never sent")
     }
@@ -140,7 +144,7 @@ class ShiftSyncEngineTest {
     @Test
     fun an_invalid_transition_is_rejected_and_never_retried() = runTest {
         shift("s1", serverId = "srv-1"); punch("e1", "BREAK_END", 1, "s1")
-        val (engine, log) = engine { json(HttpStatusCode.Conflict, error("PAUSA_NO_ABIERTA")) }
+        val (engine, log) = engine { json(HttpStatusCode.Conflict, error("BREAK_NOT_OPEN")) }
         engine.syncNow(); engine.syncNow()
         assertEquals("REJECTED", events.byId("e1").syncState)
         assertEquals(1, log.size)
@@ -150,7 +154,7 @@ class ShiftSyncEngineTest {
     fun an_inactive_person_stops_everything() = runTest {
         shift("s1"); punch("e1", "CLOCK_IN", 1, "s1")
         shift("s2"); punch("e2", "CLOCK_IN", 2, "s2")
-        val (engine, log) = engine { json(HttpStatusCode.Conflict, error("EMPLEADO_INACTIVO")) }
+        val (engine, log) = engine { json(HttpStatusCode.Conflict, error("EMPLOYEE_INACTIVE")) }
         engine.syncNow()
         assertEquals(1, log.size)
         assertEquals("PENDING", events.byId("e2").syncState)
@@ -164,7 +168,7 @@ class ShiftSyncEngineTest {
         val (engine, _) = engine { request ->
             bodies += request.body.toByteArray().decodeToString()
             if (first) { first = false; throw kotlinx.io.IOException("answer lost") }
-            json(HttpStatusCode.Created, fichajeJson("srv-1"))
+            json(HttpStatusCode.Created, shiftJson("srv-1"))
         }
         engine.syncNow(); engine.syncNow()
         assertEquals(2, bodies.size)
@@ -187,7 +191,7 @@ class ShiftSyncEngineTest {
         punch("e1", "CLOCK_OUT", 1, "missing")
         val (engine, log) = engine(happyServer)
         engine.syncNow()
-        assertEquals("JORNADA_NO_REGISTRADA", events.byId("e1").rejectionCode)
+        assertEquals("SHIFT_NOT_REGISTERED", events.byId("e1").rejectionCode)
         assertTrue(log.isEmpty())
     }
 }

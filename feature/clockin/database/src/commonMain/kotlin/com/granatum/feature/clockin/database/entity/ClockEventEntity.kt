@@ -26,8 +26,8 @@ data class ClockEventEntity(
     val employeeId: String? = null,
     /** The local shift it belongs to (version 3). */
     val shiftLocalId: String? = null,
-    /** COMIDA, DESCANSO or OTRO; only on BREAK_START (version 3). */
+    /** MEAL, REST or OTHER; only on BREAK_START (version 3; English values since version 4). */
     val breakType: String? = null,
-    /** The server's `code` when REJECTED, or JORNADA_NO_REGISTRADA (version 3). */
+    /** The server's `code` when REJECTED, or SHIFT_NOT_REGISTERED (version 3; English since version 4). */
     val rejectionCode: String? = null
 )

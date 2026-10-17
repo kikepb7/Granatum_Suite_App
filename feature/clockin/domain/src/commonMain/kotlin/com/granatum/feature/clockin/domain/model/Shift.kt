@@ -3,7 +3,7 @@ package com.granatum.feature.clockin.domain.model
 import kotlin.time.Instant
 
 /** The break types of the backend's contract, under the same names. */
-enum class BreakType { COMIDA, DESCANSO, OTRO }
+enum class BreakType { MEAL, REST, OTHER }
 
 enum class ShiftState { IN_PROGRESS, CLOSED, INCOMPLETE }
 
@@ -43,7 +43,7 @@ data class ShiftModel(
     val hasPending: Boolean get() = items.any { it.syncState == SyncState.PENDING || it.syncState == SyncState.SYNCING }
     val rejections: List<TimelineItem> get() = items.filter { it.syncState == SyncState.REJECTED }
 
-    /** Only closed shifts the server already knows can be corrected (FICHAJE_NO_FINALIZADO). */
+    /** Only closed shifts the server already knows can be corrected (SHIFT_NOT_FINISHED). */
     val canRequestCorrection: Boolean get() = serverId != null && state != ShiftState.IN_PROGRESS
 }
 

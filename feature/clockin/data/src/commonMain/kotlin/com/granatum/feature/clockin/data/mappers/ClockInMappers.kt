@@ -1,12 +1,12 @@
 package com.granatum.feature.clockin.data.mappers
 
-import com.granatum.feature.clockin.data.dto.CorreccionDto
+import com.granatum.feature.clockin.data.dto.BreakValuesDto
 import com.granatum.feature.clockin.data.dto.CorrectionRequestDto
 import com.granatum.feature.clockin.data.dto.EmployeeAttendanceSummaryDto
-import com.granatum.feature.clockin.data.dto.FichajeDto
-import com.granatum.feature.clockin.data.dto.PausaDto
-import com.granatum.feature.clockin.data.dto.ValoresFichajeDto
-import com.granatum.feature.clockin.data.dto.ValoresPausaDto
+import com.granatum.feature.clockin.data.dto.ShiftBreakDto
+import com.granatum.feature.clockin.data.dto.ShiftCorrectionDto
+import com.granatum.feature.clockin.data.dto.ShiftDto
+import com.granatum.feature.clockin.data.dto.ShiftValuesDto
 import com.granatum.feature.clockin.database.entity.ServerShiftEntity
 import com.granatum.feature.clockin.domain.model.BreakType
 import com.granatum.feature.clockin.domain.model.CorrectionModel
@@ -22,46 +22,46 @@ import kotlin.time.Instant
 
 internal val clockInJson = Json { ignoreUnknownKeys = true }
 
-fun FichajeDto.toEntity(fetchedAtEpochMillis: Long, corregido: Boolean = false, reconstruido: Boolean = false) = ServerShiftEntity(
+fun ShiftDto.toEntity(fetchedAtEpochMillis: Long, corrected: Boolean = false, reconstructed: Boolean = false) = ServerShiftEntity(
     id = id,
-    employeeId = empleadoId,
-    entradaEpochMillis = Instant.parse(entrada).toEpochMilliseconds(),
-    salidaEpochMillis = salida?.let { Instant.parse(it).toEpochMilliseconds() },
-    estado = estado,
-    minutosTrabajados = minutosTrabajados,
-    fueIncompleto = fueIncompleto,
-    pausasJson = clockInJson.encodeToString(pausas),
-    corregido = corregido,
-    reconstruido = reconstruido,
+    employeeId = employeeId,
+    clockInEpochMillis = Instant.parse(clockIn).toEpochMilliseconds(),
+    clockOutEpochMillis = clockOut?.let { Instant.parse(it).toEpochMilliseconds() },
+    status = status,
+    workedMinutes = workedMinutes,
+    wasIncomplete = wasIncomplete,
+    breaksJson = clockInJson.encodeToString(breaks),
+    corrected = corrected,
+    reconstructed = reconstructed,
     fetchedAtEpochMillis = fetchedAtEpochMillis
 )
 
-fun ServerShiftEntity.breaks(): List<PausaDto> =
-    runCatching { clockInJson.decodeFromString<List<PausaDto>>(pausasJson) }.getOrDefault(emptyList())
+fun ServerShiftEntity.breaks(): List<ShiftBreakDto> =
+    runCatching { clockInJson.decodeFromString<List<ShiftBreakDto>>(breaksJson) }.getOrDefault(emptyList())
 
-fun String.toBreakType(): BreakType = runCatching { BreakType.valueOf(this) }.getOrDefault(BreakType.OTRO)
+fun String.toBreakType(): BreakType = runCatching { BreakType.valueOf(this) }.getOrDefault(BreakType.OTHER)
 
-fun CorreccionDto.toDomain(): CorrectionModel = CorrectionModel(
+fun ShiftCorrectionDto.toDomain(): CorrectionModel = CorrectionModel(
     id = id,
-    shiftServerId = fichajeId,
-    state = runCatching { CorrectionState.valueOf(estado) }.getOrDefault(CorrectionState.PENDIENTE),
-    reason = motivo,
-    proposed = valoresPropuestos.toDomain(),
-    resolutionReason = motivoResolucion,
-    createdAt = Instant.parse(creadaEn),
-    resolvedAt = resueltaEn?.let(Instant::parse)
+    shiftServerId = shiftId,
+    state = runCatching { CorrectionState.valueOf(status) }.getOrDefault(CorrectionState.PENDING),
+    reason = reason,
+    proposed = proposedValues.toDomain(),
+    resolutionReason = resolutionReason,
+    createdAt = Instant.parse(createdAt),
+    resolvedAt = resolvedAt?.let(Instant::parse)
 )
 
-fun ValoresFichajeDto.toDomain() = CorrectionValues(
-    entry = Instant.parse(entrada),
-    exit = Instant.parse(salida),
-    breaks = pausas.map { ProposedBreak(it.tipo.toBreakType(), Instant.parse(it.inicio), Instant.parse(it.fin)) }
+fun ShiftValuesDto.toDomain() = CorrectionValues(
+    entry = Instant.parse(clockIn),
+    exit = Instant.parse(clockOut),
+    breaks = breaks.map { ProposedBreak(it.type.toBreakType(), Instant.parse(it.start), Instant.parse(it.end)) }
 )
 
-fun CorrectionValues.toDto() = ValoresFichajeDto(
-    entrada = entry.toString(),
-    salida = exit.toString(),
-    pausas = breaks.map { ValoresPausaDto(tipo = it.type.name, inicio = it.start.toString(), fin = it.end.toString()) }
+fun CorrectionValues.toDto() = ShiftValuesDto(
+    clockIn = entry.toString(),
+    clockOut = exit.toString(),
+    breaks = breaks.map { BreakValuesDto(type = it.type.name, start = it.start.toString(), end = it.end.toString()) }
 )
 
 // Team screen — unchanged until the team phase.

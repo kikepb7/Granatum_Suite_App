@@ -14,7 +14,7 @@ import kotlin.time.Instant
 class CorrectionValidationTest {
     private fun t(hhmm: String) = Instant.parse("2026-10-08T$hhmm:00Z")
     private fun draft(entry: String = "08:00", exit: String = "16:00", reason: String = "Olvidé fichar", vararg breaks: Pair<String, String>) =
-        CorrectionDraft(reason, CorrectionValues(t(entry), t(exit), breaks.map { ProposedBreak(BreakType.COMIDA, t(it.first), t(it.second)) }))
+        CorrectionDraft(reason, CorrectionValues(t(entry), t(exit), breaks.map { ProposedBreak(BreakType.MEAL, t(it.first), t(it.second)) }))
 
     @Test
     fun a_coherent_day_is_valid() {

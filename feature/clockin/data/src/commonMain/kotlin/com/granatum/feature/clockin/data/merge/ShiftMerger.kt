@@ -56,24 +56,24 @@ object ShiftMerger {
     private fun combine(server: ServerShiftEntity, unsent: List<ClockEventEntity>, now: Instant): ShiftModel {
         val items = (serverItems(server) + unsent.map { it.toItem(now) }).sortedBy { it.at }
         val hasUnsent = unsent.any { it.syncState != REJECTED }
-        val state = if (hasUnsent) stateOf(items) else when (server.estado) {
-            "EN_CURSO" -> ShiftState.IN_PROGRESS
-            "INCOMPLETO" -> ShiftState.INCOMPLETE
+        val state = if (hasUnsent) stateOf(items) else when (server.status) {
+            IN_PROGRESS -> ShiftState.IN_PROGRESS
+            INCOMPLETE -> ShiftState.INCOMPLETE
             else -> ShiftState.CLOSED
         }
-        val serverMinutes = server.minutosTrabajados
+        val serverMinutes = server.workedMinutes
         return ShiftModel(
             key = server.id,
             serverId = server.id,
-            start = Instant.fromEpochMilliseconds(server.entradaEpochMillis),
+            start = Instant.fromEpochMilliseconds(server.clockInEpochMillis),
             end = items.lastOrNull { it.type == ClockEventType.CLOCK_OUT && it.syncState != SyncState.REJECTED }?.at,
             items = items,
             state = state,
             workedMinutes = if (!hasUnsent && serverMinutes != null) serverMinutes else estimateMinutes(items, now),
             isWorkedMinutesProvisional = hasUnsent || serverMinutes == null,
-            incomplete = server.fueIncompleto || server.estado == "INCOMPLETO",
-            corrected = server.corregido,
-            reconstructed = server.reconstruido
+            incomplete = server.wasIncomplete || server.status == INCOMPLETE,
+            corrected = server.corrected,
+            reconstructed = server.reconstructed
         )
     }
 
@@ -92,12 +92,12 @@ object ShiftMerger {
     }
 
     private fun serverItems(server: ServerShiftEntity): List<TimelineItem> = buildList {
-        add(TimelineItem(ClockEventType.CLOCK_IN, Instant.fromEpochMilliseconds(server.entradaEpochMillis), SyncState.SYNCED))
-        server.breaks().forEach { pausa ->
-            add(TimelineItem(ClockEventType.BREAK_START, Instant.parse(pausa.inicio), SyncState.SYNCED, pausa.tipo.toBreakType()))
-            pausa.fin?.let { add(TimelineItem(ClockEventType.BREAK_END, Instant.parse(it), SyncState.SYNCED, pausa.tipo.toBreakType())) }
+        add(TimelineItem(ClockEventType.CLOCK_IN, Instant.fromEpochMilliseconds(server.clockInEpochMillis), SyncState.SYNCED))
+        server.breaks().forEach { shiftBreak ->
+            add(TimelineItem(ClockEventType.BREAK_START, Instant.parse(shiftBreak.start), SyncState.SYNCED, shiftBreak.type.toBreakType()))
+            shiftBreak.end?.let { add(TimelineItem(ClockEventType.BREAK_END, Instant.parse(it), SyncState.SYNCED, shiftBreak.type.toBreakType())) }
         }
-        server.salidaEpochMillis?.let {
+        server.clockOutEpochMillis?.let {
             add(TimelineItem(ClockEventType.CLOCK_OUT, Instant.fromEpochMilliseconds(it), SyncState.SYNCED))
         }
     }
@@ -137,4 +137,6 @@ object ShiftMerger {
 
     private const val SYNCED = "SYNCED"
     private const val REJECTED = "REJECTED"
+    private const val IN_PROGRESS = "IN_PROGRESS"
+    private const val INCOMPLETE = "INCOMPLETE"
 }

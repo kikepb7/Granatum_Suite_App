@@ -107,16 +107,16 @@ fun ShiftDetailScreen(state: ShiftDetailUiState, onBack: () -> Unit, onRequestCo
 @Composable
 private fun CorrectionCard(correction: CorrectionModel) {
     val tone = when (correction.state) {
-        CorrectionState.PENDIENTE -> AppTone.WARNING
-        CorrectionState.APROBADA -> AppTone.SUCCESS
-        CorrectionState.RECHAZADA -> AppTone.DANGER
+        CorrectionState.PENDING -> AppTone.WARNING
+        CorrectionState.APPROVED -> AppTone.SUCCESS
+        CorrectionState.REJECTED -> AppTone.DANGER
     }
     AppAccentCard(tone = tone, contentPadding = 14.dp) {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             val color = when (correction.state) {
-                CorrectionState.PENDIENTE -> MaterialTheme.colorScheme.extended.yellowCardText
-                CorrectionState.APROBADA -> MaterialTheme.colorScheme.extended.success
-                CorrectionState.RECHAZADA -> MaterialTheme.colorScheme.extended.redCardText
+                CorrectionState.PENDING -> MaterialTheme.colorScheme.extended.yellowCardText
+                CorrectionState.APPROVED -> MaterialTheme.colorScheme.extended.success
+                CorrectionState.REJECTED -> MaterialTheme.colorScheme.extended.redCardText
             }
             Text(stringResource(correction.state.label()), style = MaterialTheme.typography.labelLarge, color = color)
             Text(

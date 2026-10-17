@@ -14,7 +14,8 @@ import kotlin.uuid.Uuid
  * 3. Each person's punches are grouped into shifts ([groupLegacyEvents]); punches before a
  *    person's first entry belong to no shift and are rejected.
  * 4. FAILED no longer exists: it becomes PENDING and is sent again with the new format.
- * 5. Breaks recorded without a type get OTRO, because the server requires one.
+ * 5. Breaks recorded without a type get OTRO, because the server requires one (OTHER since
+ *    [Migration3To4]; the values written here are the version 3 ones).
  */
 object Migration2To3 : Migration(2, 3) {
 
