@@ -21,8 +21,8 @@ val inventoryDataModule = module {
         get<DatabaseFactory>()
             .create()
             .setDriver(BundledSQLiteDriver())
-            // A read cache: older versions (1, and spec 006's material in 2) are rebuilt from the server.
-            .fallbackToDestructiveMigrationFrom(true, 1, 2)
+            // A read cache: older versions (1, spec 006's material in 2, the Spanish change types in 3) are rebuilt from the server.
+            .fallbackToDestructiveMigrationFrom(true, 1, 2, 3)
             .build()
     }
     single { get<AppInventoryDatabase>().inventoryDao }

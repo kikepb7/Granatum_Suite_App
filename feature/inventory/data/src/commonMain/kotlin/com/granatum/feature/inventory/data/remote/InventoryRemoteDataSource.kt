@@ -5,12 +5,12 @@ import com.granatum.core.data.networking.constructRoute
 import com.granatum.core.data.networking.platformSafeCall
 import com.granatum.core.domain.util.DataError
 import com.granatum.core.domain.util.Result
-import com.granatum.feature.inventory.data.dto.CategoriaDto
-import com.granatum.feature.inventory.data.dto.CategoriaRequestDto
+import com.granatum.feature.inventory.data.dto.CategoryDto
+import com.granatum.feature.inventory.data.dto.CategoryRequestDto
 import com.granatum.feature.inventory.data.dto.CreateMaterialRequestDto
-import com.granatum.feature.inventory.data.dto.HistorialMaterialDto
+import com.granatum.feature.inventory.data.dto.MaterialHistoryDto
 import com.granatum.feature.inventory.data.dto.MaterialDto
-import com.granatum.feature.inventory.data.dto.UpdateCantidadRequestDto
+import com.granatum.feature.inventory.data.dto.UpdateQuantityRequestDto
 import com.granatum.feature.inventory.data.dto.UpdateMaterialRequestDto
 import com.granatum.feature.inventory.domain.model.InventoryError
 import io.ktor.client.HttpClient
@@ -33,17 +33,17 @@ import io.ktor.http.isSuccess
 /** The inventory routes of docs/openapi.json (backend 010), errors as its contracts/README.md lists them. */
 class InventoryRemoteDataSource(private val http: HttpClient) {
 
-    suspend fun materials() = call<List<MaterialDto>> { http.get(constructRoute("/materiales")) }
-    suspend fun material(id: String) = call<MaterialDto> { http.get(constructRoute("/materiales/$id")) }
-    suspend fun history(id: String) = call<List<HistorialMaterialDto>> { http.get(constructRoute("/materiales/$id/historial")) }
-    suspend fun create(body: CreateMaterialRequestDto) = call<MaterialDto> { http.post(constructRoute("/materiales")) { setBody(body) } }
-    suspend fun update(id: String, body: UpdateMaterialRequestDto) = call<MaterialDto> { http.put(constructRoute("/materiales/$id")) { setBody(body) } }
-    suspend fun adjust(id: String, body: UpdateCantidadRequestDto) = call<MaterialDto> { http.patch(constructRoute("/materiales/$id/cantidad")) { setBody(body) } }
-    suspend fun delete(id: String) = call<Unit> { http.delete(constructRoute("/materiales/$id")) }
+    suspend fun materials() = call<List<MaterialDto>> { http.get(constructRoute("/materials")) }
+    suspend fun material(id: String) = call<MaterialDto> { http.get(constructRoute("/materials/$id")) }
+    suspend fun history(id: String) = call<List<MaterialHistoryDto>> { http.get(constructRoute("/materials/$id/history")) }
+    suspend fun create(body: CreateMaterialRequestDto) = call<MaterialDto> { http.post(constructRoute("/materials")) { setBody(body) } }
+    suspend fun update(id: String, body: UpdateMaterialRequestDto) = call<MaterialDto> { http.put(constructRoute("/materials/$id")) { setBody(body) } }
+    suspend fun adjust(id: String, body: UpdateQuantityRequestDto) = call<MaterialDto> { http.patch(constructRoute("/materials/$id/quantity")) { setBody(body) } }
+    suspend fun delete(id: String) = call<Unit> { http.delete(constructRoute("/materials/$id")) }
 
-    /** One `imagen` part; the server decides the type by its bytes, not by the name or header. */
+    /** One `image` part; the server decides the type by its bytes, not by the name or header. */
     suspend fun uploadImage(id: String, bytes: ByteArray, fileName: String, mimeType: String) = call<MaterialDto> {
-        http.put(constructRoute("/materiales/$id/imagen")) {
+        http.put(constructRoute("/materials/$id/image")) {
             timeout {
                 requestTimeoutMillis = TRANSFER_TIMEOUT_MILLIS
                 socketTimeoutMillis = TRANSFER_TIMEOUT_MILLIS
@@ -52,7 +52,7 @@ class InventoryRemoteDataSource(private val http: HttpClient) {
                 MultiPartFormDataContent(
                     formData {
                         append(
-                            "imagen",
+                            "image",
                             bytes,
                             Headers.build {
                                 append(HttpHeaders.ContentType, mimeType)
@@ -65,12 +65,12 @@ class InventoryRemoteDataSource(private val http: HttpClient) {
         }
     }
 
-    suspend fun removeImage(id: String) = call<MaterialDto> { http.delete(constructRoute("/materiales/$id/imagen")) }
+    suspend fun removeImage(id: String) = call<MaterialDto> { http.delete(constructRoute("/materials/$id/image")) }
 
-    suspend fun categories() = call<List<CategoriaDto>> { http.get(constructRoute("/categorias")) }
-    suspend fun createCategory(body: CategoriaRequestDto) = call<CategoriaDto> { http.post(constructRoute("/categorias")) { setBody(body) } }
-    suspend fun updateCategory(id: String, body: CategoriaRequestDto) = call<CategoriaDto> { http.put(constructRoute("/categorias/$id")) { setBody(body) } }
-    suspend fun deleteCategory(id: String) = call<Unit> { http.delete(constructRoute("/categorias/$id")) }
+    suspend fun categories() = call<List<CategoryDto>> { http.get(constructRoute("/categories")) }
+    suspend fun createCategory(body: CategoryRequestDto) = call<CategoryDto> { http.post(constructRoute("/categories")) { setBody(body) } }
+    suspend fun updateCategory(id: String, body: CategoryRequestDto) = call<CategoryDto> { http.put(constructRoute("/categories/$id")) { setBody(body) } }
+    suspend fun deleteCategory(id: String) = call<Unit> { http.delete(constructRoute("/categories/$id")) }
 
     private suspend inline fun <reified T> call(noinline request: suspend () -> HttpResponse): Result<T, InventoryError> {
         var response: HttpResponse? = null
@@ -95,13 +95,13 @@ class InventoryRemoteDataSource(private val http: HttpClient) {
 
     private suspend fun HttpResponse.toInventoryError(): InventoryError = when (errorBody()?.code) {
         "MATERIAL_NOT_FOUND" -> InventoryError.ProductNotFound
-        "MATERIAL_EN_USO" -> InventoryError.ProductInUse
-        "CATEGORIA_NOT_FOUND" -> InventoryError.CategoryNotFound
+        "MATERIAL_IN_USE" -> InventoryError.ProductInUse
+        "CATEGORY_NOT_FOUND" -> InventoryError.CategoryNotFound
         "INVALID_OPERATION" -> InventoryError.QuantityOutOfRange
-        "VALIDACION" -> InventoryError.Invalid
-        "IMAGEN_NO_VALIDA" -> InventoryError.ImageInvalid
-        "IMAGEN_DEMASIADO_GRANDE" -> InventoryError.ImageTooLarge
-        "ALMACEN_IMAGENES_NO_DISPONIBLE" -> InventoryError.StorageUnavailable
+        "VALIDATION" -> InventoryError.Invalid
+        "INVALID_IMAGE" -> InventoryError.ImageInvalid
+        "IMAGE_TOO_LARGE" -> InventoryError.ImageTooLarge
+        "IMAGE_STORAGE_UNAVAILABLE" -> InventoryError.StorageUnavailable
         else -> when (status) {
             HttpStatusCode.Forbidden -> InventoryError.Forbidden
             // A proxy may cut a large upload before the server sees it.

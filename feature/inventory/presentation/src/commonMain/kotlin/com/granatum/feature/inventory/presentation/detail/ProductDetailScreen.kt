@@ -312,7 +312,7 @@ private fun History(entries: List<ProductHistoryEntry>, modifier: Modifier = Mod
         }
         entries.forEachIndexed { index, entry ->
             AppTimelineItem(
-                tone = if (entry.type == HistoryChangeType.CANTIDAD) AppTone.BRAND else AppTone.NEUTRAL,
+                tone = if (entry.type == HistoryChangeType.QUANTITY) AppTone.BRAND else AppTone.NEUTRAL,
                 isFirst = index == 0,
                 isLast = index == entries.lastIndex
             ) {
