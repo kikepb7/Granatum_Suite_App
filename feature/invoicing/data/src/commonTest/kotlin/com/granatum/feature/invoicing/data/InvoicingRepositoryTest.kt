@@ -41,7 +41,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-/** specs/008-facturacion, contracts/facturacion-api.md. */
+/** specs/008-facturacion, docs/openapi.json (/api/invoicing). */
 class InvoicingRepositoryTest {
     private class Sent(
         val method: String,
@@ -88,14 +88,14 @@ class InvoicingRepositoryTest {
 
     private val invoiceJson =
         """
-        {"id":"f1","estado":"BORRADOR","tipo":"RECIBIDA","version":3,
-         "emisor":{"nombre":"Flores SL","nif":"B12345678"},"destinatario":null,
-         "numero":"A-1","fechaEmision":"2026-10-01","concepto":null,"moneda":"EUR","rectificativa":false,
-         "lineas":[{"tipoIva":"21.00","base":"100.00","cuota":"21.00","recargo":"0.00","causaSinCuota":null},
-                   {"tipoIva":"0.00","base":"10.00","cuota":"0.00","recargo":"0.00","causaSinCuota":"EXENTA"}],
-         "retenciones":"15.00","total":"116.00","trimestreCerrado":false,
-         "reconocimiento":{"resultado":"RECONOCIDA","camposDudosos":["numero"]},
-         "avisos":[{"campo":"total","codigo":"NO_CUADRA","bloquea":true,"mensaje":"No cuadra"}]}
+        {"id":"f1","status":"DRAFT","type":"RECEIVED","version":3,
+         "issuer":{"name":"Flores SL","nif":"B12345678"},"recipient":null,
+         "number":"A-1","issueDate":"2026-10-01","concept":null,"currency":"EUR","corrective":false,
+         "vatLines":[{"vatRate":"21.00","base":"100.00","vatAmount":"21.00","surcharge":"0.00","noVatCause":null},
+                   {"vatRate":"0.00","base":"10.00","vatAmount":"0.00","surcharge":"0.00","noVatCause":"EXEMPT"}],
+         "withholdings":"15.00","total":"116.00","quarterClosed":false,
+         "recognition":{"result":"RECOGNIZED","uncertainFields":["number"]},
+         "notices":[{"field":"total","code":"TOTAL_MISMATCH","blocking":true,"message":"No cuadra"}]}
         """.trimIndent()
 
     @Test
@@ -108,7 +108,7 @@ class InvoicingRepositoryTest {
             assertEquals(Money(11600), invoice.total)
             assertEquals(Money(1500), invoice.withholding)
             assertEquals(NoQuotaCause.EXEMPT, invoice.lines[1].noQuotaCause)
-            assertEquals(listOf("numero"), invoice.recognition?.doubtfulFields)
+            assertEquals(listOf("number"), invoice.recognition?.doubtfulFields)
             assertTrue(invoice.hasBlockingWarnings)
             assertEquals(LocalDate(2026, 10, 1), invoice.issueDate)
         }
@@ -126,19 +126,19 @@ class InvoicingRepositoryTest {
             repository.save("f1", draft)
 
             val put = sent.last()
-            assertEquals("PUT /facturacion/facturas/f1", "${put.method} ${put.path}")
+            assertEquals("PUT /invoicing/invoices/f1", "${put.method} ${put.path}")
             val body = Json.parseToJsonElement(put.body).toString()
             assertTrue(""""version":3""" in body, body)
-            assertTrue(""""tipo":"RECIBIDA"""" in body)
-            assertTrue(""""emisor":{"nombre":"Flores SL","nif":"B12345678"}""" in body)
-            assertTrue(""""destinatario":null""" in body, "an empty party goes as null")
+            assertTrue(""""type":"RECEIVED"""" in body)
+            assertTrue(""""issuer":{"name":"Flores SL","nif":"B12345678"}""" in body)
+            assertTrue(""""recipient":null""" in body, "an empty party goes as null")
             assertTrue(
-                """"lineas":[{"tipoIva":"21.00","base":"100.00","cuota":"21.00","recargo":"0.00","causaSinCuota":null}]""" in body,
+                """"vatLines":[{"vatRate":"21.00","base":"100.00","vatAmount":"21.00","surcharge":"0.00","noVatCause":null}]""" in body,
                 body,
             )
-            assertTrue(""""retenciones":"15.00"""" in body)
+            assertTrue(""""withholdings":"15.00"""" in body)
             assertTrue(""""total":"106.00"""" in body)
-            assertTrue(""""fechaEmision":"2026-10-01"""" in body)
+            assertTrue(""""issueDate":"2026-10-01"""" in body)
         }
 
     @Test
@@ -148,9 +148,9 @@ class InvoicingRepositoryTest {
             repository.confirm("f1", 3)
             repository.discard("f1", 4)
             assertEquals("""{"version":3}""", sent[0].body)
-            assertEquals("/facturacion/facturas/f1/confirmar", sent[0].path)
+            assertEquals("/invoicing/invoices/f1/confirm", sent[0].path)
             assertEquals("""{"version":4}""", sent[1].body)
-            assertEquals("/facturacion/facturas/f1/descartar", sent[1].path)
+            assertEquals("/invoicing/invoices/f1/discard", sent[1].path)
         }
 
     @Test
@@ -159,10 +159,10 @@ class InvoicingRepositoryTest {
             val page =
                 repo {
                     json(
-                        """{"elementos":[{"id":"f1","estado":"CONFIRMADA","tipo":"EMITIDA","emisorNombre":"Yo","emisorNif":"B1",
-                "destinatarioNombre":"Cliente","destinatarioNif":"12345678Z","numero":"7","fechaEmision":"2026-09-30",
-                "total":1210.5,"numeroAvisos":0},{"id":"f2","estado":"PENDIENTE_RECONOCER","total":null,"numeroAvisos":2}],
-                "pagina":0,"tamano":50,"total":51}""",
+                        """{"items":[{"id":"f1","status":"CONFIRMED","type":"ISSUED","issuerName":"Yo","issuerNif":"B1",
+                "recipientName":"Cliente","recipientNif":"12345678Z","number":"7","issueDate":"2026-09-30",
+                "total":1210.5,"noticeCount":0},{"id":"f2","status":"PENDING_RECOGNITION","total":null,"noticeCount":2}],
+                "page":0,"size":50,"total":51}""",
                     )
                 }.invoices(
                     InvoiceFilter(
@@ -182,10 +182,11 @@ class InvoicingRepositoryTest {
             assertEquals("Cliente", data.items[0].counterparty?.name)
             assertNull(data.items[1].total)
             assertTrue(data.hasMore)
+            assertEquals("/invoicing/invoices", sent.single().path)
             val query = sent.single().query
-            assertTrue("estado=CONFIRMADA" in query && "tipo=EMITIDA" in query && "desde=2026-07-01" in query, query)
-            assertTrue("parte=cliente" in query && "pagina=0" in query && "tamano=50" in query, query)
-            assertTrue("hasta" !in query)
+            assertTrue("status=CONFIRMED" in query && "type=ISSUED" in query && "from=2026-07-01" in query, query)
+            assertTrue("party=cliente" in query && "page=0" in query && "size=50" in query, query)
+            assertTrue("to=" !in query)
         }
 
     @Test
@@ -194,7 +195,7 @@ class InvoicingRepositoryTest {
             val results =
                 repo {
                     json(
-                        """[{"fichero":1,"resultado":"ACEPTADA","facturaId":"n1"},{"fichero":2,"resultado":"DUPLICADA","facturaId":"f1"},{"fichero":3,"resultado":"FORMATO_NO_ADMITIDO","facturaId":null}]""",
+                        """[{"file":1,"result":"ACCEPTED","invoiceId":"n1"},{"file":2,"result":"DUPLICATE","invoiceId":"f1"},{"file":3,"result":"UNSUPPORTED_FORMAT","invoiceId":null}]""",
                         HttpStatusCode.Accepted,
                     )
                 }.upload(
@@ -209,9 +210,9 @@ class InvoicingRepositoryTest {
             assertEquals("f1", list[1].invoiceId)
 
             val request = sent.single()
-            assertEquals("POST /facturacion/facturas", "${request.method} ${request.path}")
+            assertEquals("POST /invoicing/invoices", "${request.method} ${request.path}")
             assertTrue(request.contentType!!.startsWith("multipart/form-data"), request.contentType)
-            assertEquals(3, Regex("""name="?ficheros"?""").findAll(request.body).count())
+            assertEquals(3, Regex("""name="?files"?""").findAll(request.body).count())
             assertTrue("""filename="fac_tura.pdf"""" in request.body, "quotes in names are neutralised")
             assertTrue("Content-Type: application/pdf" in request.body)
         }
@@ -225,26 +226,36 @@ class InvoicingRepositoryTest {
                 message: String = "",
             ) = (repo { error(code, status, message) }.confirm("f1", 0) as Result.Failure).error
 
-            assertEquals(InvoicingError.StaleVersion, errorFor("VERSION_DESACTUALIZADA", HttpStatusCode.Conflict))
-            assertEquals(InvoicingError.QuarterClosed, errorFor("TRIMESTRE_CERRADO", HttpStatusCode.Conflict))
-            assertEquals(InvoicingError.CompanyNotConfigured, errorFor("EMPRESA_SIN_CONFIGURAR", HttpStatusCode.Conflict))
-            assertEquals(InvoicingError.Duplicate, errorFor("FACTURA_DUPLICADA", HttpStatusCode.Conflict))
+            assertEquals(InvoicingError.StaleVersion, errorFor("STALE_VERSION", HttpStatusCode.Conflict))
+            assertEquals(InvoicingError.QuarterClosed, errorFor("QUARTER_CLOSED", HttpStatusCode.Conflict))
+            assertEquals(InvoicingError.QuarterOpen, errorFor("QUARTER_OPEN", HttpStatusCode.Conflict))
+            assertEquals(InvoicingError.QuarterHasPending("2"), errorFor("QUARTER_HAS_PENDING", HttpStatusCode.Conflict, "2"))
+            assertEquals(InvoicingError.StateNotAllowed, errorFor("STATUS_NOT_ALLOWED", HttpStatusCode.Conflict))
+            assertEquals(InvoicingError.CompanyNotConfigured, errorFor("COMPANY_NOT_CONFIGURED", HttpStatusCode.Conflict))
+            assertEquals(InvoicingError.InvalidTaxId, errorFor("INVALID_NIF", HttpStatusCode.BadRequest))
+            assertEquals(InvoicingError.NotFound, errorFor("INVOICE_NOT_FOUND", HttpStatusCode.NotFound))
+            assertEquals(InvoicingError.Duplicate, errorFor("DUPLICATE_INVOICE", HttpStatusCode.Conflict))
             assertEquals(
-                InvoicingError.Incoherent("total: NO_CUADRA"),
-                errorFor("FACTURA_INCOHERENTE", HttpStatusCode.UnprocessableEntity, "total: NO_CUADRA"),
+                InvoicingError.Incoherent("total: TOTAL_MISMATCH"),
+                errorFor("INCONSISTENT_INVOICE", HttpStatusCode.UnprocessableEntity, "total: TOTAL_MISMATCH"),
             )
+            assertEquals(InvoicingError.RecognitionUnavailable, errorFor("RECOGNITION_UNAVAILABLE", HttpStatusCode.ServiceUnavailable))
+            assertEquals(InvoicingError.InvalidPeriod, errorFor("INVALID_PERIOD", HttpStatusCode.BadRequest))
+            assertEquals(InvoicingError.Invalid, errorFor("VALIDATION", HttpStatusCode.BadRequest))
             assertEquals(InvoicingError.Forbidden, errorFor("FORBIDDEN", HttpStatusCode.Forbidden))
-            assertEquals(InvoicingError.TooLarge, errorFor("PETICION_DEMASIADO_GRANDE", HttpStatusCode.PayloadTooLarge))
+            assertEquals(InvoicingError.TooLarge, errorFor("REQUEST_TOO_LARGE", HttpStatusCode.PayloadTooLarge))
+            assertEquals(InvoicingError.TooLarge, errorFor("FILE_TOO_LARGE", HttpStatusCode.PayloadTooLarge))
+            assertEquals(InvoicingError.RateLimited, errorFor("TOO_MANY_REQUESTS", HttpStatusCode.TooManyRequests))
         }
 
     @Test
     fun an_unconfigured_company_is_null_not_a_failure() =
         runTest {
-            assertEquals(Result.Success(null), repo { error("EMPRESA_SIN_CONFIGURAR", HttpStatusCode.NotFound) }.company())
+            assertEquals(Result.Success(null), repo { error("COMPANY_NOT_CONFIGURED", HttpStatusCode.NotFound) }.company())
             val company =
                 (
                     repo {
-                        json("""{"razonSocial":"Granatum Flores SL","nif":"B12345678","reconocimientoActivo":true}""")
+                        json("""{"legalName":"Granatum Flores SL","nif":"B12345678","recognitionActive":true}""")
                     }.company() as Result.Success
                 ).data
             assertEquals(true, company?.recognitionEnabled)
@@ -283,8 +294,10 @@ class InvoicingRepositoryTest {
             val csv = (repository.reportFile(ReportPeriod.Quarterly(2026, 3), ReportFormat.CSV) as Result.Success).data
             assertEquals("text/csv", csv.mimeType)
             assertEquals("reporte-facturacion_2026-T3.csv", csv.fileName)
+            assertEquals("/invoicing/invoices/f1/original", sent.first().path)
+            assertEquals("/invoicing/reports", sent.last().path)
             val query = sent.last().query
-            assertTrue("periodo=TRIMESTRAL" in query && "anio=2026" in query && "trimestre=3" in query && "formato=csv" in query, query)
+            assertTrue("period=QUARTERLY" in query && "year=2026" in query && "quarter=3" in query && "format=csv" in query, query)
         }
 
     @Test
@@ -294,10 +307,10 @@ class InvoicingRepositoryTest {
                 (
                     repo {
                         json(
-                            """{"periodo":{"tipo":"TRIMESTRAL","anio":2026,"trimestre":3,"desde":"2026-07-01","hasta":"2026-09-30"},
-                    "emitidas":{"facturas":2,"base":"200.00","ivaPorTipo":{"21.00":"42.00","10.00":"1.00"},"recargo":"0.00","retenciones":"0.00","total":"243.00","sinCuota":{"EXENTA":"5.00"}},
-                    "recibidas":{"facturas":0,"base":"0.00","ivaPorTipo":{},"recargo":"0.00","retenciones":"0.00","total":"0.00","sinCuota":{}},
-                    "pendientes":1,"trimestresCerrados":[{"anio":2026,"trimestre":3,"desde":"2026-07-01"}],"calculadoEn":"2026-10-09T10:00:00Z"}""",
+                            """{"period":{"type":"QUARTERLY","year":2026,"quarter":3,"from":"2026-07-01","to":"2026-09-30"},
+                    "issued":{"invoices":2,"base":"200.00","vatByRate":{"21.00":"42.00","10.00":"1.00"},"surcharge":"0.00","withholdings":"0.00","total":"243.00","noVatBase":{"EXEMPT":"5.00"}},
+                    "received":{"invoices":0,"base":"0.00","vatByRate":{},"surcharge":"0.00","withholdings":"0.00","total":"0.00","noVatBase":{}},
+                    "pending":1,"closedQuarters":[{"year":2026,"quarter":3,"from":"2026-07-01T00:00:00Z"}],"calculatedAt":"2026-10-09T10:00:00Z"}""",
                         )
                     }.report(ReportPeriod.Quarterly(2026, 3)) as Result.Success
                 ).data
@@ -317,19 +330,22 @@ class InvoicingRepositoryTest {
         runTest {
             val repository =
                 repo { request ->
-                    if (request.url.encodedPath.endsWith("reabrir")) {
+                    if (request.url.encodedPath.endsWith("reopen")) {
                         json(
-                            """{"trimestre":2,"cerrado":false,"eventos":[{"accion":"CIERRE","autorId":"a","ocurridoEn":"2026-07-02T08:00:00Z"},{"accion":"REAPERTURA","autorId":"a","ocurridoEn":"2026-07-03T08:00:00Z","motivo":"Falta una factura"}]}""",
+                            """{"quarter":2,"closed":false,"events":[{"action":"CLOSE","authorId":"a","occurredAt":"2026-07-02T08:00:00Z"},{"action":"REOPEN","authorId":"a","occurredAt":"2026-07-03T08:00:00Z","reason":"Falta una factura"}]}""",
                         )
                     } else {
                         json(
-                            """[{"trimestre":2,"cerrado":true,"eventos":[]},{"trimestre":1,"cerrado":true,"eventos":[]},{"trimestre":4,"cerrado":false,"eventos":[]},{"trimestre":3,"cerrado":false,"eventos":[]}]""",
+                            """[{"quarter":2,"closed":true,"events":[]},{"quarter":1,"closed":true,"events":[]},{"quarter":4,"closed":false,"events":[]},{"quarter":3,"closed":false,"events":[]}]""",
                         )
                     }
                 }
             assertEquals(listOf(1, 2, 3, 4), (repository.quarters(2026) as Result.Success).data.map { it.quarter })
             val reopened = (repository.reopenQuarter(2026, 2, "  Falta una factura ") as Result.Success).data
-            assertEquals("""{"motivo":"Falta una factura"}""", sent.last().body)
+            assertEquals("/invoicing/quarters", sent.first().path)
+            assertEquals("year=2026", sent.first().query)
+            assertEquals("/invoicing/quarters/2026/2/reopen", sent.last().path)
+            assertEquals("""{"reason":"Falta una factura"}""", sent.last().body)
             assertEquals("Falta una factura", reopened.events.first().reason)
         }
 }

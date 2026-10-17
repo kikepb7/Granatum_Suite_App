@@ -5,16 +5,16 @@ import com.granatum.core.data.networking.constructRoute
 import com.granatum.core.data.networking.platformSafeCall
 import com.granatum.core.domain.util.DataError
 import com.granatum.core.domain.util.Result
-import com.granatum.feature.invoicing.data.dto.EmpresaDto
-import com.granatum.feature.invoicing.data.dto.EmpresaRequestDto
-import com.granatum.feature.invoicing.data.dto.EstadoTrimestreDto
-import com.granatum.feature.invoicing.data.dto.FacturaDto
-import com.granatum.feature.invoicing.data.dto.FacturaRequestDto
-import com.granatum.feature.invoicing.data.dto.HistorialDto
-import com.granatum.feature.invoicing.data.dto.PaginaResumenFacturaDto
-import com.granatum.feature.invoicing.data.dto.ReaperturaRequestDto
-import com.granatum.feature.invoicing.data.dto.ReporteDto
-import com.granatum.feature.invoicing.data.dto.ResultadoSubidaDto
+import com.granatum.feature.invoicing.data.dto.CompanyDto
+import com.granatum.feature.invoicing.data.dto.CompanyRequestDto
+import com.granatum.feature.invoicing.data.dto.HistoryDto
+import com.granatum.feature.invoicing.data.dto.InvoiceDto
+import com.granatum.feature.invoicing.data.dto.InvoiceRequestDto
+import com.granatum.feature.invoicing.data.dto.InvoiceSummaryPageDto
+import com.granatum.feature.invoicing.data.dto.QuarterStatusDto
+import com.granatum.feature.invoicing.data.dto.ReopenRequestDto
+import com.granatum.feature.invoicing.data.dto.ReportDto
+import com.granatum.feature.invoicing.data.dto.UploadResultDto
 import com.granatum.feature.invoicing.data.dto.VersionRequestDto
 import com.granatum.feature.invoicing.domain.model.InvoicingError
 import com.granatum.feature.invoicing.domain.model.InvoicingFile
@@ -38,42 +38,42 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.isSuccess
 
-/** The /api/facturacion routes of docs/openapi.json (backend d1857ad); errors per research D10. */
+/** The /api/invoicing routes of docs/openapi.json (backend 93ef398); errors per research D10. */
 class InvoicingRemoteDataSource(
     private val http: HttpClient,
 ) {
     suspend fun invoices(
-        estado: String?,
-        tipo: String?,
-        desde: String?,
-        hasta: String?,
-        parte: String?,
-        pagina: Int,
-        tamano: Int,
-    ) = call<PaginaResumenFacturaDto> {
-        http.get(constructRoute("$BASE/facturas")) {
-            estado?.let { parameter("estado", it) }
-            tipo?.let { parameter("tipo", it) }
-            desde?.let { parameter("desde", it) }
-            hasta?.let { parameter("hasta", it) }
-            parte?.let { parameter("parte", it) }
-            parameter("pagina", pagina)
-            parameter("tamano", tamano)
+        status: String?,
+        type: String?,
+        from: String?,
+        to: String?,
+        party: String?,
+        page: Int,
+        size: Int,
+    ) = call<InvoiceSummaryPageDto> {
+        http.get(constructRoute("$BASE/invoices")) {
+            status?.let { parameter("status", it) }
+            type?.let { parameter("type", it) }
+            from?.let { parameter("from", it) }
+            to?.let { parameter("to", it) }
+            party?.let { parameter("party", it) }
+            parameter("page", page)
+            parameter("size", size)
         }
     }
 
-    suspend fun invoice(id: String) = call<FacturaDto> { http.get(constructRoute("$BASE/facturas/$id")) }
+    suspend fun invoice(id: String) = call<InvoiceDto> { http.get(constructRoute("$BASE/invoices/$id")) }
 
-    /** One `ficheros` part per document, each with its own type and name (research D9). */
+    /** One `files` part per document, each with its own type and name (research D9). */
     suspend fun upload(documents: List<UploadDocument>) =
-        call<List<ResultadoSubidaDto>> {
+        call<List<UploadResultDto>> {
             http.submitFormWithBinaryData(
-                url = constructRoute("$BASE/facturas"),
+                url = constructRoute("$BASE/invoices"),
                 formData =
                     formData {
                         documents.forEach { document ->
                             append(
-                                "ficheros",
+                                "files",
                                 document.bytes,
                                 Headers.build {
                                     append(HttpHeaders.ContentType, document.mimeType)
@@ -87,85 +87,85 @@ class InvoicingRemoteDataSource(
 
     suspend fun save(
         id: String,
-        body: FacturaRequestDto,
-    ) = call<FacturaDto> {
-        http.put(constructRoute("$BASE/facturas/$id")) { setBody(body) }
+        body: InvoiceRequestDto,
+    ) = call<InvoiceDto> {
+        http.put(constructRoute("$BASE/invoices/$id")) { setBody(body) }
     }
 
     suspend fun confirm(
         id: String,
         version: Int,
-    ) = call<FacturaDto> {
-        http.post(constructRoute("$BASE/facturas/$id/confirmar")) { setBody(VersionRequestDto(version)) }
+    ) = call<InvoiceDto> {
+        http.post(constructRoute("$BASE/invoices/$id/confirm")) { setBody(VersionRequestDto(version)) }
     }
 
     suspend fun discard(
         id: String,
         version: Int,
-    ) = call<FacturaDto> {
-        http.post(constructRoute("$BASE/facturas/$id/descartar")) { setBody(VersionRequestDto(version)) }
+    ) = call<InvoiceDto> {
+        http.post(constructRoute("$BASE/invoices/$id/discard")) { setBody(VersionRequestDto(version)) }
     }
 
-    suspend fun recognize(id: String) = call<Unit> { http.post(constructRoute("$BASE/facturas/$id/reconocer")) }
+    suspend fun recognize(id: String) = call<Unit> { http.post(constructRoute("$BASE/invoices/$id/recognize")) }
 
-    suspend fun history(id: String) = call<HistorialDto> { http.get(constructRoute("$BASE/facturas/$id/historial")) }
+    suspend fun history(id: String) = call<HistoryDto> { http.get(constructRoute("$BASE/invoices/$id/history")) }
 
-    suspend fun original(id: String) = file("factura-$id") { http.get(constructRoute("$BASE/facturas/$id/original")) { longTransfer() } }
+    suspend fun original(id: String) = file("factura-$id") { http.get(constructRoute("$BASE/invoices/$id/original")) { longTransfer() } }
 
     suspend fun quarters(year: Int) =
-        call<List<EstadoTrimestreDto>> {
-            http.get(constructRoute("$BASE/trimestres")) { parameter("anio", year) }
+        call<List<QuarterStatusDto>> {
+            http.get(constructRoute("$BASE/quarters")) { parameter("year", year) }
         }
 
     suspend fun closeQuarter(
         year: Int,
         quarter: Int,
-    ) = call<EstadoTrimestreDto> {
-        http.post(constructRoute("$BASE/trimestres/$year/$quarter/cerrar"))
+    ) = call<QuarterStatusDto> {
+        http.post(constructRoute("$BASE/quarters/$year/$quarter/close"))
     }
 
     suspend fun reopenQuarter(
         year: Int,
         quarter: Int,
         reason: String,
-    ) = call<EstadoTrimestreDto> {
+    ) = call<QuarterStatusDto> {
         http.post(
-            constructRoute("$BASE/trimestres/$year/$quarter/reabrir"),
-        ) { setBody(ReaperturaRequestDto(reason)) }
+            constructRoute("$BASE/quarters/$year/$quarter/reopen"),
+        ) { setBody(ReopenRequestDto(reason)) }
     }
 
-    suspend fun report(params: ReportParams) = call<ReporteDto> { http.get(constructRoute("$BASE/reportes")) { report(params, "json") } }
+    suspend fun report(params: ReportParams) = call<ReportDto> { http.get(constructRoute("$BASE/reports")) { report(params, "json") } }
 
     suspend fun reportFile(
         params: ReportParams,
         format: String,
     ) = file("reporte-facturacion") {
-        http.get(constructRoute("$BASE/reportes")) {
+        http.get(constructRoute("$BASE/reports")) {
             report(params, format)
             longTransfer()
         }
     }
 
-    suspend fun company() = call<EmpresaDto> { http.get(constructRoute("$BASE/empresa")) }
+    suspend fun company() = call<CompanyDto> { http.get(constructRoute("$BASE/company")) }
 
-    suspend fun saveCompany(body: EmpresaRequestDto) = call<EmpresaDto> { http.put(constructRoute("$BASE/empresa")) { setBody(body) } }
+    suspend fun saveCompany(body: CompanyRequestDto) = call<CompanyDto> { http.put(constructRoute("$BASE/company")) { setBody(body) } }
 
     data class ReportParams(
-        val periodo: String,
-        val anio: Int,
-        val mes: Int?,
-        val trimestre: Int?,
+        val period: String,
+        val year: Int,
+        val month: Int?,
+        val quarter: Int?,
     )
 
     private fun HttpRequestBuilder.report(
         params: ReportParams,
         format: String,
     ) {
-        parameter("periodo", params.periodo)
-        parameter("anio", params.anio)
-        params.mes?.let { parameter("mes", it) }
-        params.trimestre?.let { parameter("trimestre", it) }
-        parameter("formato", format)
+        parameter("period", params.period)
+        parameter("year", params.year)
+        params.month?.let { parameter("month", it) }
+        params.quarter?.let { parameter("quarter", it) }
+        parameter("format", format)
     }
 
     /** Uploads of up to 50 MB and downloads of whole documents outlast the default 20 s. */
@@ -232,21 +232,21 @@ class InvoicingRemoteDataSource(
     private suspend fun HttpResponse.toInvoicingError(): InvoicingError {
         val body = errorBody()
         return when (body?.code) {
-            "EMPRESA_SIN_CONFIGURAR" -> InvoicingError.CompanyNotConfigured
-            "NIF_INVALIDO" -> InvoicingError.InvalidTaxId
-            "FACTURA_NOT_FOUND" -> InvoicingError.NotFound
-            "VERSION_DESACTUALIZADA" -> InvoicingError.StaleVersion
-            "ESTADO_NO_PERMITIDO" -> InvoicingError.StateNotAllowed
-            "TRIMESTRE_CERRADO" -> InvoicingError.QuarterClosed
-            "TRIMESTRE_ABIERTO" -> InvoicingError.QuarterOpen
-            "TRIMESTRE_CON_PENDIENTES" -> InvoicingError.QuarterHasPending(body.message)
-            "FACTURA_DUPLICADA" -> InvoicingError.Duplicate
-            "FACTURA_INCOHERENTE" -> InvoicingError.Incoherent(body.message)
-            "RECONOCIMIENTO_NO_DISPONIBLE" -> InvoicingError.RecognitionUnavailable
-            "PERIODO_INVALIDO" -> InvoicingError.InvalidPeriod
-            "VALIDACION" -> InvoicingError.Invalid
-            "PETICION_DEMASIADO_GRANDE" -> InvoicingError.TooLarge
-            "DEMASIADAS_PETICIONES" -> InvoicingError.RateLimited
+            "COMPANY_NOT_CONFIGURED" -> InvoicingError.CompanyNotConfigured
+            "INVALID_NIF" -> InvoicingError.InvalidTaxId
+            "INVOICE_NOT_FOUND" -> InvoicingError.NotFound
+            "STALE_VERSION" -> InvoicingError.StaleVersion
+            "STATUS_NOT_ALLOWED" -> InvoicingError.StateNotAllowed
+            "QUARTER_CLOSED" -> InvoicingError.QuarterClosed
+            "QUARTER_OPEN" -> InvoicingError.QuarterOpen
+            "QUARTER_HAS_PENDING" -> InvoicingError.QuarterHasPending(body.message)
+            "DUPLICATE_INVOICE" -> InvoicingError.Duplicate
+            "INCONSISTENT_INVOICE" -> InvoicingError.Incoherent(body.message)
+            "RECOGNITION_UNAVAILABLE" -> InvoicingError.RecognitionUnavailable
+            "INVALID_PERIOD" -> InvoicingError.InvalidPeriod
+            "VALIDATION" -> InvoicingError.Invalid
+            "FILE_TOO_LARGE", "REQUEST_TOO_LARGE" -> InvoicingError.TooLarge
+            "TOO_MANY_REQUESTS" -> InvoicingError.RateLimited
             else ->
                 when (status) {
                     HttpStatusCode.Forbidden -> InvoicingError.Forbidden
@@ -259,7 +259,7 @@ class InvoicingRemoteDataSource(
     }
 
     private companion object {
-        const val BASE = "/facturacion"
+        const val BASE = "/invoicing"
         const val TRANSFER_TIMEOUT_MILLIS = 120_000L
 
         fun String.safeFileName() = replace(Regex("[\"\\\\\r\n]"), "_")

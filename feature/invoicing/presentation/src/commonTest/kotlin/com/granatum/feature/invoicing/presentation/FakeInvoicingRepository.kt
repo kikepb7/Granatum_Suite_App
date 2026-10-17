@@ -70,7 +70,7 @@ fun invoice(
         if (blocking) {
             listOf(
                 com.granatum.feature.invoicing.domain.model
-                    .InvoiceWarning("total", "NO_CUADRA", true, "No cuadra"),
+                    .InvoiceWarning("total", "TOTAL_MISMATCH", true, "No cuadra"),
             )
         } else {
             emptyList()
@@ -153,7 +153,7 @@ class FakeInvoicingRepository : InvoicingRepositoryRecorder() {
                         if (savedWarnings) {
                             listOf(
                                 com.granatum.feature.invoicing.domain.model
-                                    .InvoiceWarning("total", "NO_CUADRA", true, "No cuadra"),
+                                    .InvoiceWarning("total", "TOTAL_MISMATCH", true, "No cuadra"),
                             )
                         } else {
                             emptyList()

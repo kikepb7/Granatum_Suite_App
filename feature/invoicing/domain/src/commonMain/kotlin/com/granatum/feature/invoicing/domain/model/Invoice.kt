@@ -8,21 +8,21 @@ enum class InvoiceState { PENDING_RECOGNITION, DRAFT, CONFIRMED, DISCARDED }
 enum class InvoiceType { ISSUED, RECEIVED }
 
 /** Why a VAT line has no quota; required when it is zero. */
-enum class NoQuotaCause { EXEMPT, REVERSE_CHARGE, INTRA_EU }
+enum class NoQuotaCause { EXEMPT, REVERSE_CHARGE, INTRA_COMMUNITY }
 
-/** The fields the server can attach a warning to (`AvisoDto.campo`). */
+/** The fields the server can attach a warning to (`InvoiceNoticeDto.field`). */
 object InvoiceField {
-    const val TYPE = "tipo"
-    const val ISSUER_NAME = "emisor.nombre"
-    const val ISSUER_TAX_ID = "emisor.nif"
-    const val RECIPIENT_NAME = "destinatario.nombre"
-    const val RECIPIENT_TAX_ID = "destinatario.nif"
-    const val NUMBER = "numero"
-    const val ISSUE_DATE = "fechaEmision"
-    const val CONCEPT = "concepto"
-    const val CURRENCY = "moneda"
-    const val LINES = "lineas"
-    const val WITHHOLDING = "retenciones"
+    const val TYPE = "type"
+    const val ISSUER_NAME = "issuer.name"
+    const val ISSUER_TAX_ID = "issuer.nif"
+    const val RECIPIENT_NAME = "recipient.name"
+    const val RECIPIENT_TAX_ID = "recipient.nif"
+    const val NUMBER = "number"
+    const val ISSUE_DATE = "issueDate"
+    const val CONCEPT = "concept"
+    const val CURRENCY = "currency"
+    const val LINES = "vatLines"
+    const val WITHHOLDING = "withholdings"
     const val TOTAL = "total"
 }
 

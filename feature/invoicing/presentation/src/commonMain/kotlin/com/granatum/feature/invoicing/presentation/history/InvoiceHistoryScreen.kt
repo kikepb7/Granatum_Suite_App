@@ -24,6 +24,7 @@ import com.granatum.feature.invoicing.presentation.common.ErrorState
 import com.granatum.feature.invoicing.presentation.common.LoadingState
 import com.granatum.feature.invoicing.presentation.common.SectionTitle
 import com.granatum.feature.invoicing.presentation.common.label
+import com.granatum.feature.invoicing.presentation.common.recognitionResultLabel
 import granatumsuite.feature.invoicing.presentation.generated.resources.*
 import granatumsuite.feature.invoicing.presentation.generated.resources.Res
 import org.jetbrains.compose.resources.stringResource
@@ -89,7 +90,11 @@ fun InvoiceHistoryRoot(
                     history.recognitions.forEach { attempt ->
                         Entry {
                             Text(
-                                stringResource(Res.string.history_recognition_item, attempt.result, attempt.createdAt.label()),
+                                stringResource(
+                                    Res.string.history_recognition_item,
+                                    recognitionResultLabel(attempt.result)?.let { stringResource(it) } ?: attempt.result,
+                                    attempt.createdAt.label(),
+                                ),
                                 fontWeight = FontWeight.SemiBold,
                             )
                             Text(attempt.model, style = MaterialTheme.typography.bodySmall)

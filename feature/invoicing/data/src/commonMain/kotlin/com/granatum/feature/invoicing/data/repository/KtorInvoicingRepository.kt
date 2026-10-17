@@ -3,7 +3,7 @@ package com.granatum.feature.invoicing.data.repository
 import com.granatum.core.domain.util.EmptyResult
 import com.granatum.core.domain.util.Result
 import com.granatum.core.domain.util.map
-import com.granatum.feature.invoicing.data.dto.EmpresaRequestDto
+import com.granatum.feature.invoicing.data.dto.CompanyRequestDto
 import com.granatum.feature.invoicing.data.mappers.toApi
 import com.granatum.feature.invoicing.data.mappers.toDomain
 import com.granatum.feature.invoicing.data.mappers.toDto
@@ -36,14 +36,14 @@ class KtorInvoicingRepository(
     ): Result<Page<InvoiceSummary>, InvoicingError> =
         remote
             .invoices(
-                estado = filter.state?.toApi(),
-                tipo = filter.type?.toApi(),
-                desde = filter.from?.toString(),
-                hasta = filter.to?.toString(),
-                parte = filter.text.trim().ifEmpty { null },
-                pagina = page,
-                tamano = FiscalLimits.PAGE_SIZE,
-            ).map { dto -> Page(dto.elementos.map { it.toDomain() }, dto.pagina, dto.tamano, dto.total) }
+                status = filter.state?.toApi(),
+                type = filter.type?.toApi(),
+                from = filter.from?.toString(),
+                to = filter.to?.toString(),
+                party = filter.text.trim().ifEmpty { null },
+                page = page,
+                size = FiscalLimits.PAGE_SIZE,
+            ).map { dto -> Page(dto.items.map { it.toDomain() }, dto.page, dto.size, dto.total) }
 
     override suspend fun invoice(id: String): Result<Invoice, InvoicingError> = remote.invoice(id).map { it.toDomain() }
 
@@ -117,12 +117,12 @@ class KtorInvoicingRepository(
         legalName: String,
         taxId: String,
     ): Result<Company, InvoicingError> =
-        remote.saveCompany(EmpresaRequestDto(razonSocial = legalName.trim(), nif = taxId.trim())).map { it.toDomain() }
+        remote.saveCompany(CompanyRequestDto(legalName = legalName.trim(), nif = taxId.trim())).map { it.toDomain() }
 
     private fun ReportPeriod.toParams() =
         when (this) {
-            is ReportPeriod.Monthly -> ReportParams("MENSUAL", year, month, null)
-            is ReportPeriod.Quarterly -> ReportParams("TRIMESTRAL", year, null, quarter)
-            is ReportPeriod.Yearly -> ReportParams("ANUAL", year, null, null)
+            is ReportPeriod.Monthly -> ReportParams("MONTHLY", year, month, null)
+            is ReportPeriod.Quarterly -> ReportParams("QUARTERLY", year, null, quarter)
+            is ReportPeriod.Yearly -> ReportParams("YEARLY", year, null, null)
         }
 }
