@@ -4,11 +4,11 @@ import com.granatum.core.data.networking.constructRoute
 import com.granatum.core.data.networking.platformSafeCall
 import com.granatum.core.domain.util.DataError
 import com.granatum.core.domain.util.Result
-import com.granatum.feature.events.data.dto.CantidadMaterialEventoRequestDto
-import com.granatum.feature.events.data.dto.EventoDto
-import com.granatum.feature.events.data.dto.EventoRequestDto
+import com.granatum.feature.events.data.dto.EventMaterialQuantityRequestDto
+import com.granatum.feature.events.data.dto.EventDto
+import com.granatum.feature.events.data.dto.EventRequestDto
 import com.granatum.feature.events.data.dto.EventsErrorBodyDto
-import com.granatum.feature.events.data.dto.MaterialDisponibleDto
+import com.granatum.feature.events.data.dto.AvailableMaterialDto
 import com.granatum.feature.events.domain.model.EventsError
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -23,27 +23,27 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.isSuccess
 import kotlinx.serialization.json.Json
 
-/** The event routes of docs/openapi.json (backend dc2f907), errors as specs/011-events/contracts lists them. */
+/** The event routes of docs/openapi.json (backend 93ef398), errors as specs/011-events/contracts lists them. */
 internal class EventsRemoteDataSource(private val http: HttpClient) {
 
     private val json = Json { ignoreUnknownKeys = true }
 
-    suspend fun events() = call<List<EventoDto>> { http.get(constructRoute(BASE)) }
-    suspend fun event(id: String) = call<EventoDto> { http.get(constructRoute("$BASE/$id")) }
-    suspend fun create(body: EventoRequestDto) = call<EventoDto> { http.post(constructRoute(BASE)) { setBody(body) } }
-    suspend fun update(id: String, body: EventoRequestDto) = call<EventoDto> { http.put(constructRoute("$BASE/$id")) { setBody(body) } }
+    suspend fun events() = call<List<EventDto>> { http.get(constructRoute(BASE)) }
+    suspend fun event(id: String) = call<EventDto> { http.get(constructRoute("$BASE/$id")) }
+    suspend fun create(body: EventRequestDto) = call<EventDto> { http.post(constructRoute(BASE)) { setBody(body) } }
+    suspend fun update(id: String, body: EventRequestDto) = call<EventDto> { http.put(constructRoute("$BASE/$id")) { setBody(body) } }
     suspend fun delete(id: String) = call<Unit> { http.delete(constructRoute("$BASE/$id")) }
-    suspend fun finish(id: String) = call<EventoDto> { http.post(constructRoute("$BASE/$id/finalizar")) }
+    suspend fun finish(id: String) = call<EventDto> { http.post(constructRoute("$BASE/$id/finish")) }
 
-    suspend fun setMaterial(id: String, materialId: String, quantity: Int) = call<EventoDto> {
-        http.put(constructRoute("$BASE/$id/materiales/$materialId")) { setBody(CantidadMaterialEventoRequestDto(quantity)) }
+    suspend fun setMaterial(id: String, materialId: String, quantity: Int) = call<EventDto> {
+        http.put(constructRoute("$BASE/$id/materials/$materialId")) { setBody(EventMaterialQuantityRequestDto(quantity)) }
     }
 
-    suspend fun removeMaterial(id: String, materialId: String) = call<EventoDto> {
-        http.delete(constructRoute("$BASE/$id/materiales/$materialId"))
+    suspend fun removeMaterial(id: String, materialId: String) = call<EventDto> {
+        http.delete(constructRoute("$BASE/$id/materials/$materialId"))
     }
 
-    suspend fun availableMaterials() = call<List<MaterialDisponibleDto>> { http.get(constructRoute("$BASE/materiales")) }
+    suspend fun availableMaterials() = call<List<AvailableMaterialDto>> { http.get(constructRoute("$BASE/materials")) }
 
     private suspend inline fun <reified T> call(noinline request: suspend () -> HttpResponse): Result<T, EventsError> {
         var response: HttpResponse? = null
@@ -69,17 +69,17 @@ internal class EventsRemoteDataSource(private val http: HttpClient) {
     private suspend fun HttpResponse.toEventsError(): EventsError {
         val body = runCatching { json.decodeFromString<EventsErrorBodyDto>(bodyAsText()) }.getOrNull()
         return when (body?.code) {
-            "EVENTO_NOT_FOUND" -> EventsError.EventNotFound
+            "EVENT_NOT_FOUND" -> EventsError.EventNotFound
             "MATERIAL_NOT_FOUND" -> EventsError.MaterialNotFound
-            "STOCK_INSUFICIENTE" -> EventsError.InsufficientStock(available = body.disponible ?: 0)
-            "EVENTO_FINALIZADO" -> EventsError.EventFinished
-            "FECHA_PASADA" -> EventsError.DateInPast
-            "VALIDACION" -> EventsError.Invalid
+            "INSUFFICIENT_STOCK" -> EventsError.InsufficientStock(available = body.available ?: 0)
+            "EVENT_FINISHED" -> EventsError.EventFinished
+            "DATE_IN_PAST" -> EventsError.DateInPast
+            "VALIDATION" -> EventsError.Invalid
             else -> if (status == HttpStatusCode.Forbidden) EventsError.Forbidden else EventsError.Unknown
         }
     }
 
     private companion object {
-        const val BASE = "/eventos"
+        const val BASE = "/events"
     }
 }

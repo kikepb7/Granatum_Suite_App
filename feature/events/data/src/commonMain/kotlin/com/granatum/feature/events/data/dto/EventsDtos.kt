@@ -2,53 +2,53 @@ package com.granatum.feature.events.data.dto
 
 import kotlinx.serialization.Serializable
 
-// Field names match docs/openapi.json (backend dc2f907) letter for letter (constitution principle VI).
+// Field names match docs/openapi.json (backend 93ef398) letter for letter (constitution principle VI).
 
 @Serializable
-internal data class EventoDto(
+internal data class EventDto(
     val id: String,
-    val nombre: String,
-    val descripcion: String? = null,
+    val name: String,
+    val description: String? = null,
     /** `2027-06-13`. */
-    val fecha: String,
-    /** `PROGRAMADO` or `FINALIZADO`. */
-    val estado: String,
-    val materiales: List<EventoMaterialDto> = emptyList(),
-    val creadoPor: String,
-    val finalizadoEn: String? = null,
-    val fechaAlta: String,
-    val fechaUltimaModificacion: String
+    val date: String,
+    /** `SCHEDULED` or `FINISHED`. */
+    val status: String,
+    val materials: List<EventMaterialDto> = emptyList(),
+    val createdBy: String,
+    val finishedAt: String? = null,
+    val createdAt: String,
+    val updatedAt: String
 )
 
 @Serializable
-internal data class EventoMaterialDto(
+internal data class EventMaterialDto(
     val materialId: String,
-    val categoria: String,
-    val descripcion: String,
-    val cantidad: Int,
-    val localizacion: LocalizacionEventoDto? = null,
-    val imagenUrl: String? = null
+    val category: String,
+    val description: String,
+    val quantity: Int,
+    val location: EventLocationDto? = null,
+    val imageUrl: String? = null
 )
 
 @Serializable
-internal data class MaterialDisponibleDto(
+internal data class AvailableMaterialDto(
     val id: String,
-    val categoria: String,
-    val descripcion: String,
-    val cantidad: Int,
-    val localizacion: LocalizacionEventoDto,
-    val imagenUrl: String? = null
+    val category: String,
+    val description: String,
+    val quantity: Int,
+    val location: EventLocationDto,
+    val imageUrl: String? = null
 )
 
 @Serializable
-internal data class LocalizacionEventoDto(val almacen: String, val seccion: Int)
+internal data class EventLocationDto(val warehouse: String, val section: Int)
 
 @Serializable
-internal data class EventoRequestDto(val nombre: String, val descripcion: String?, val fecha: String)
+internal data class EventRequestDto(val name: String, val description: String?, val date: String)
 
 @Serializable
-internal data class CantidadMaterialEventoRequestDto(val cantidad: Int)
+internal data class EventMaterialQuantityRequestDto(val quantity: Int)
 
-/** The error body; `disponible` only comes with `STOCK_INSUFICIENTE`. */
+/** The error body; `available` only comes with `INSUFFICIENT_STOCK`. */
 @Serializable
-internal data class EventsErrorBodyDto(val code: String? = null, val message: String? = null, val disponible: Int? = null)
+internal data class EventsErrorBodyDto(val code: String? = null, val message: String? = null, val available: Int? = null)

@@ -28,7 +28,7 @@ sealed interface EventsGraphRoutes {
 }
 
 /**
- * The events screens (specs/012-eventos). [canManage] is false for REPRESENTANTE, who reads:
+ * The events screens (specs/012-eventos). [canManage] is false for REPRESENTATIVE, who reads:
  * no create, edit, material or finish controls, matching the backend's rules.
  */
 fun NavGraphBuilder.eventsGraph(navController: NavHostController, canManage: Boolean) {

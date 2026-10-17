@@ -1,10 +1,10 @@
 package com.granatum.feature.events.data.mapper
 
-import com.granatum.feature.events.data.dto.EventoDto
-import com.granatum.feature.events.data.dto.EventoMaterialDto
-import com.granatum.feature.events.data.dto.EventoRequestDto
-import com.granatum.feature.events.data.dto.LocalizacionEventoDto
-import com.granatum.feature.events.data.dto.MaterialDisponibleDto
+import com.granatum.feature.events.data.dto.EventDto
+import com.granatum.feature.events.data.dto.EventMaterialDto
+import com.granatum.feature.events.data.dto.EventRequestDto
+import com.granatum.feature.events.data.dto.EventLocationDto
+import com.granatum.feature.events.data.dto.AvailableMaterialDto
 import com.granatum.feature.events.database.entity.EventEntity
 import com.granatum.feature.events.domain.model.AvailableMaterial
 import com.granatum.feature.events.domain.model.Event
@@ -21,18 +21,18 @@ import kotlin.time.Instant
 internal class EventMapper {
 
     private val json = Json { ignoreUnknownKeys = true }
-    private val materialsSerializer = ListSerializer(EventoMaterialDto.serializer())
+    private val materialsSerializer = ListSerializer(EventMaterialDto.serializer())
 
-    fun toEntity(dto: EventoDto) = EventEntity(
+    fun toEntity(dto: EventDto) = EventEntity(
         id = dto.id,
-        name = dto.nombre,
-        description = dto.descripcion,
-        date = dto.fecha,
-        status = dto.estado,
-        materialsJson = json.encodeToString(materialsSerializer, dto.materiales),
-        createdAtEpochMillis = Instant.parse(dto.fechaAlta).toEpochMilliseconds(),
-        updatedAtEpochMillis = Instant.parse(dto.fechaUltimaModificacion).toEpochMilliseconds(),
-        finishedAtEpochMillis = dto.finalizadoEn?.let { Instant.parse(it).toEpochMilliseconds() }
+        name = dto.name,
+        description = dto.description,
+        date = dto.date,
+        status = dto.status,
+        materialsJson = json.encodeToString(materialsSerializer, dto.materials),
+        createdAtEpochMillis = Instant.parse(dto.createdAt).toEpochMilliseconds(),
+        updatedAtEpochMillis = Instant.parse(dto.updatedAt).toEpochMilliseconds(),
+        finishedAtEpochMillis = dto.finishedAt?.let { Instant.parse(it).toEpochMilliseconds() }
     )
 
     fun toDomain(entity: EventEntity) = Event(
@@ -50,33 +50,33 @@ internal class EventMapper {
         finishedAt = entity.finishedAtEpochMillis?.let { Instant.fromEpochMilliseconds(it) }
     )
 
-    fun toDomain(dto: MaterialDisponibleDto) = AvailableMaterial(
+    fun toDomain(dto: AvailableMaterialDto) = AvailableMaterial(
         id = dto.id,
-        category = dto.categoria,
-        description = dto.descripcion,
-        quantity = dto.cantidad,
-        location = dto.localizacion.toDomain(),
-        imageUrl = dto.imagenUrl
+        category = dto.category,
+        description = dto.description,
+        quantity = dto.quantity,
+        location = dto.location.toDomain(),
+        imageUrl = dto.imageUrl
     )
 
-    fun toRequest(draft: EventDraft) = EventoRequestDto(
-        nombre = draft.name.trim(),
-        descripcion = draft.description?.trim()?.ifEmpty { null },
-        fecha = draft.date.toString()
+    fun toRequest(draft: EventDraft) = EventRequestDto(
+        name = draft.name.trim(),
+        description = draft.description?.trim()?.ifEmpty { null },
+        date = draft.date.toString()
     )
 
-    private fun EventoMaterialDto.toDomain() = EventMaterial(
+    private fun EventMaterialDto.toDomain() = EventMaterial(
         materialId = materialId,
-        category = categoria,
-        description = descripcion,
-        quantity = cantidad,
-        location = localizacion?.toDomain(),
-        imageUrl = imagenUrl
+        category = category,
+        description = description,
+        quantity = quantity,
+        location = location?.toDomain(),
+        imageUrl = imageUrl
     )
 
-    private fun LocalizacionEventoDto.toDomain() = MaterialLocation(warehouse = almacen, section = seccion)
+    private fun EventLocationDto.toDomain() = MaterialLocation(warehouse = warehouse, section = section)
 
     private companion object {
-        const val FINISHED = "FINALIZADO"
+        const val FINISHED = "FINISHED"
     }
 }
