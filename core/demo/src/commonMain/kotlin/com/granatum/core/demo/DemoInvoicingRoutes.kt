@@ -18,7 +18,7 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
 /**
- * `/api/facturacion…` (ADMIN only): uploads recognised a few seconds later, warnings, versions,
+ * `/api/invoicing…` (ADMIN only): uploads recognised a few seconds later, warnings, versions,
  * quarters, reports and company data, following the backend's specs/004-invoices rules.
  */
 class DemoInvoicingRoutes(
@@ -38,7 +38,7 @@ class DemoInvoicingRoutes(
         val mime: String,
         val uploadedAt: Instant,
     ) {
-        var status = "PENDIENTE_RECONOCER"
+        var status = "PENDING_RECOGNITION"
         var type: String? = null
         var version = 0
         var issuerName: String? = null
@@ -52,7 +52,7 @@ class DemoInvoicingRoutes(
         var lines: List<Line> = emptyList()
         var withholding = 0L
         var total: Long? = null
-        var doubtful: List<String> = emptyList()
+        var uncertainFields: List<String> = emptyList()
         var recognition: String? = null
         var recognizeAt: Instant? = uploadedAt + RECOGNITION_DELAY
         val recognitions = mutableListOf<JsonObject>()
@@ -69,10 +69,10 @@ class DemoInvoicingRoutes(
         val today = state.today()
         val lastQuarter = quarterOf(today.minus(DatePeriod(months = 3)))
         quarters[lastQuarter] = true
-        quarterEvents[lastQuarter] = mutableListOf(event("CIERRE", null, state.now() - 864_000.seconds))
+        quarterEvents[lastQuarter] = mutableListOf(event("CLOSE", null, state.now() - 864_000.seconds))
         seed(
-            "CONFIRMADA",
-            "RECIBIDA",
+            "CONFIRMED",
+            "RECEIVED",
             "Flores del Valle SL",
             "B11223344",
             "FV-2026-118",
@@ -81,8 +81,8 @@ class DemoInvoicingRoutes(
             0,
         )
         seed(
-            "CONFIRMADA",
-            "EMITIDA",
+            "CONFIRMED",
+            "ISSUED",
             "Hotel Alhambra SA",
             "A18000017",
             "GF-2026-041",
@@ -91,8 +91,8 @@ class DemoInvoicingRoutes(
             0,
         )
         seed(
-            "CONFIRMADA",
-            "RECIBIDA",
+            "CONFIRMED",
+            "RECEIVED",
             "Transportes Genil SL",
             "B18999888",
             "TG-882",
@@ -101,8 +101,8 @@ class DemoInvoicingRoutes(
             0,
         )
         seed(
-            "BORRADOR",
-            "RECIBIDA",
+            "DRAFT",
+            "RECEIVED",
             "Cerámicas Levante SL",
             "B46112233",
             "CL-5521",
@@ -110,7 +110,7 @@ class DemoInvoicingRoutes(
             listOf(Line(2100, 20_000, 4_200, 0, null)),
             0,
             total = 25_000,
-            doubtful = listOf("total"),
+            uncertainFields = listOf("total"),
         )
     }
 
@@ -124,7 +124,7 @@ class DemoInvoicingRoutes(
         lines: List<Line>,
         withholding: Long,
         total: Long? = null,
-        doubtful: List<String> = emptyList(),
+        uncertainFields: List<String> = emptyList(),
     ) {
         val invoice =
             Invoice(
@@ -135,7 +135,7 @@ class DemoInvoicingRoutes(
             )
         invoice.status = status
         invoice.type = type
-        if (type == "RECIBIDA") {
+        if (type == "RECEIVED") {
             invoice.issuerName = name
             invoice.issuerTaxId = taxId
             invoice.recipientName = companyName
@@ -151,10 +151,10 @@ class DemoInvoicingRoutes(
         invoice.lines = lines
         invoice.withholding = withholding
         invoice.total = total ?: (lines.sumOf { it.base + it.quota + it.surcharge } - withholding)
-        invoice.doubtful = doubtful
-        invoice.recognition = "RECONOCIDA"
+        invoice.uncertainFields = uncertainFields
+        invoice.recognition = "RECOGNIZED"
         invoice.recognizeAt = null
-        invoice.recognitions += recognitionEntry("RECONOCIDA")
+        invoice.recognitions += recognitionEntry("RECOGNIZED")
         invoices += invoice
     }
 
@@ -163,10 +163,10 @@ class DemoInvoicingRoutes(
         invoices.forEach { finishRecognition(it) }
         val s = request.segments.drop(1)
         return when (s.firstOrNull()) {
-            "empresa" -> company(request)
-            "facturas" -> invoices(request, s.drop(1))
-            "trimestres" -> quarters(request, s.drop(1))
-            "reportes" -> report(request)
+            "company" -> company(request)
+            "invoices" -> invoices(request, s.drop(1))
+            "quarters" -> quarters(request, s.drop(1))
+            "reports" -> report(request)
             else -> null
         }
     }
@@ -175,7 +175,7 @@ class DemoInvoicingRoutes(
 
     private fun company(request: DemoRequest): DemoReply? =
         when (request.method) {
-            HttpMethod.Get -> companyJson() ?: notFound("EMPRESA_SIN_CONFIGURAR")
+            HttpMethod.Get -> companyJson() ?: notFound("COMPANY_NOT_CONFIGURED")
             HttpMethod.Put -> {
                 val taxId =
                     request.body
@@ -184,9 +184,9 @@ class DemoInvoicingRoutes(
                         ?.filter { it.isLetterOrDigit() }
                         .orEmpty()
                 if (taxId.length != 9) {
-                    error(HttpStatusCode.UnprocessableEntity, "NIF_INVALIDO", "El NIF no es válido")
+                    error(HttpStatusCode.UnprocessableEntity, "INVALID_NIF", "El NIF no es válido")
                 } else {
-                    companyName = request.body.str("razonSocial")?.trim()
+                    companyName = request.body.str("legalName")?.trim()
                     companyTaxId = taxId
                     companyJson()
                 }
@@ -198,9 +198,9 @@ class DemoInvoicingRoutes(
         val name = companyName ?: return null
         return json(
             buildJsonObject {
-                put("razonSocial", name)
+                put("legalName", name)
                 put("nif", companyTaxId)
-                put("reconocimientoActivo", true)
+                put("recognitionActive", true)
             },
         )
     }
@@ -212,22 +212,22 @@ class DemoInvoicingRoutes(
         s: List<String>,
     ): DemoReply? {
         if (s.isEmpty()) return if (request.method == HttpMethod.Get) list(request) else upload(request)
-        val invoice = invoices.firstOrNull { it.id == s[0] } ?: return notFound("FACTURA_NOT_FOUND")
+        val invoice = invoices.firstOrNull { it.id == s[0] } ?: return notFound("INVOICE_NOT_FOUND")
         return when (s.getOrNull(1)) {
             null -> if (request.method == HttpMethod.Get) json(invoice.toJson()) else save(invoice, request)
-            "confirmar" -> confirm(invoice, request)
-            "descartar" -> discard(invoice, request)
-            "reconocer" -> {
-                if (invoice.status != "PENDIENTE_RECONOCER" && invoice.status != "BORRADOR") return conflict("ESTADO_NO_PERMITIDO")
+            "confirm" -> confirm(invoice, request)
+            "discard" -> discard(invoice, request)
+            "recognize" -> {
+                if (invoice.status != "PENDING_RECOGNITION" && invoice.status != "DRAFT") return conflict("STATUS_NOT_ALLOWED")
                 invoice.recognizeAt = state.now() + RECOGNITION_DELAY
                 DemoReply.Accepted
             }
             "original" -> DemoReply.Bytes(invoice.bytes, invoice.mime, "factura-${invoice.id}.${DemoDocuments.extension(invoice.mime)}")
-            "historial" ->
+            "history" ->
                 json(
                     buildJsonObject {
-                        put("reconocimientos", JsonArray(invoice.recognitions))
-                        put("cambios", JsonArray(invoice.changes))
+                        put("recognitions", JsonArray(invoice.recognitions))
+                        put("changes", JsonArray(invoice.changes))
                     },
                 )
             else -> null
@@ -235,16 +235,16 @@ class DemoInvoicingRoutes(
     }
 
     private fun list(request: DemoRequest): DemoReply {
-        val text = request.query["parte"]?.lowercase()
-        val from = request.query["desde"]?.let { LocalDate.parse(it) }
-        val to = request.query["hasta"]?.let { LocalDate.parse(it) }
-        val page = request.query["pagina"]?.toIntOrNull() ?: 0
-        val size = (request.query["tamano"]?.toIntOrNull() ?: 50).coerceIn(1, 200)
+        val text = request.query["party"]?.lowercase()
+        val from = request.query["from"]?.let { LocalDate.parse(it) }
+        val to = request.query["to"]?.let { LocalDate.parse(it) }
+        val page = request.query["page"]?.toIntOrNull() ?: 0
+        val size = (request.query["size"]?.toIntOrNull() ?: 50).coerceIn(1, 200)
         val filtered =
             invoices
                 .filter { invoice ->
-                    (request.query["estado"] == null || invoice.status == request.query["estado"]) &&
-                        (request.query["tipo"] == null || invoice.type == request.query["tipo"]) &&
+                    (request.query["status"] == null || invoice.status == request.query["status"]) &&
+                        (request.query["type"] == null || invoice.type == request.query["type"]) &&
                         (from == null || (invoice.date != null && invoice.date!! >= from)) &&
                         (to == null || (invoice.date != null && invoice.date!! <= to)) &&
                         (
@@ -261,47 +261,47 @@ class DemoInvoicingRoutes(
             filtered.drop(page * size).take(size).map { invoice ->
                 buildJsonObject {
                     put("id", invoice.id)
-                    put("estado", invoice.status)
-                    put("tipo", invoice.type)
-                    put("emisorNombre", invoice.issuerName)
-                    put("emisorNif", invoice.issuerTaxId)
-                    put("destinatarioNombre", invoice.recipientName)
-                    put("destinatarioNif", invoice.recipientTaxId)
-                    put("numero", invoice.number)
-                    put("fechaEmision", invoice.date?.toString())
+                    put("status", invoice.status)
+                    put("type", invoice.type)
+                    put("issuerName", invoice.issuerName)
+                    put("issuerNif", invoice.issuerTaxId)
+                    put("recipientName", invoice.recipientName)
+                    put("recipientNif", invoice.recipientTaxId)
+                    put("number", invoice.number)
+                    put("issueDate", invoice.date?.toString())
                     put("total", invoice.total?.let { JsonPrimitive(it / 100.0) } ?: JsonNull)
-                    put("numeroAvisos", warnings(invoice).size)
+                    put("noticeCount", notices(invoice).size)
                 }
             }
         return json(
             buildJsonObject {
-                put("elementos", JsonArray(elements))
-                put("pagina", page)
-                put("tamano", size)
+                put("items", JsonArray(elements))
+                put("page", page)
+                put("size", size)
                 put("total", filtered.size)
             },
         )
     }
 
     private fun upload(request: DemoRequest): DemoReply {
-        val parts = DemoDocuments.multipart(request.bytes, request.contentType)
-        if (parts.isEmpty()) return error(HttpStatusCode.BadRequest, "VALIDACION", "Falta la parte ficheros")
+        val parts = DemoDocuments.multipart(request.bytes, request.contentType).filter { it.name == "files" }
+        if (parts.isEmpty()) return error(HttpStatusCode.BadRequest, "VALIDATION", "Falta la parte files")
         val results =
             parts.mapIndexed { index, part ->
                 val mime = DemoDocuments.sniff(part.bytes)
-                val duplicate = invoices.firstOrNull { it.status != "DESCARTADA" && it.bytes.contentEquals(part.bytes) }
+                val duplicate = invoices.firstOrNull { it.status != "DISCARDED" && it.bytes.contentEquals(part.bytes) }
                 val (result, id) =
                     when {
-                        part.bytes.isEmpty() -> "VACIO" to null
-                        part.bytes.size > MAX_BYTES -> "DEMASIADO_GRANDE" to null
-                        mime == null -> "FORMATO_NO_ADMITIDO" to null
-                        duplicate != null -> "DUPLICADA" to duplicate.id
-                        else -> "ACEPTADA" to Invoice(state.newId(), part.bytes, mime, state.now()).also { invoices += it }.id
+                        part.bytes.isEmpty() -> "EMPTY" to null
+                        part.bytes.size > MAX_BYTES -> "TOO_LARGE" to null
+                        mime == null -> "UNSUPPORTED_FORMAT" to null
+                        duplicate != null -> "DUPLICATE" to duplicate.id
+                        else -> "ACCEPTED" to Invoice(state.newId(), part.bytes, mime, state.now()).also { invoices += it }.id
                     }
                 buildJsonObject {
-                    put("fichero", index + 1)
-                    put("resultado", result)
-                    put("facturaId", id)
+                    put("file", index + 1)
+                    put("result", result)
+                    put("invoiceId", id)
                 }
             }
         return json(JsonArray(results), HttpStatusCode.Accepted)
@@ -317,17 +317,17 @@ class DemoInvoicingRoutes(
         invoice.issuerTaxId = supplier.second
         invoice.recipientName = companyName
         invoice.recipientTaxId = companyTaxId
-        invoice.type = "RECIBIDA"
+        invoice.type = "RECEIVED"
         invoice.number = "R-${(1000..9999).random()}"
         invoice.date = state.today().minus(DatePeriod(days = 1))
         invoice.concept = "Material de floristería"
         invoice.lines = listOf(Line(2100, 12_500, 2_625, 0, null))
         invoice.total = 15_125
-        invoice.doubtful = listOf("numero")
-        invoice.recognition = "RECONOCIDA"
-        invoice.status = "BORRADOR"
+        invoice.uncertainFields = listOf("number")
+        invoice.recognition = "RECOGNIZED"
+        invoice.status = "DRAFT"
         invoice.version++
-        invoice.recognitions += recognitionEntry("RECONOCIDA")
+        invoice.recognitions += recognitionEntry("RECOGNIZED")
     }
 
     private fun save(
@@ -335,43 +335,43 @@ class DemoInvoicingRoutes(
         request: DemoRequest,
     ): DemoReply {
         val body = request.body
-        if (body.int("version") != invoice.version) return conflict("VERSION_DESACTUALIZADA")
-        if (invoice.status == "DESCARTADA") return conflict("ESTADO_NO_PERMITIDO")
-        if (invoice.status == "CONFIRMADA" && closed(invoice.date)) return conflict("TRIMESTRE_CERRADO")
+        if (body.int("version") != invoice.version) return conflict("STALE_VERSION")
+        if (invoice.status == "DISCARDED") return conflict("STATUS_NOT_ALLOWED")
+        if (invoice.status == "CONFIRMED" && closed(invoice.date)) return conflict("QUARTER_CLOSED")
         val before = invoice.toJson()
-        val issuer = body["emisor"] as? JsonObject
-        val recipient = body["destinatario"] as? JsonObject
+        val issuer = body["issuer"] as? JsonObject
+        val recipient = body["recipient"] as? JsonObject
         val updated =
             Invoice(invoice.id, invoice.bytes, invoice.mime, invoice.uploadedAt).apply {
-                type = body.str("tipo")
-                issuerName = issuer?.str("nombre")
+                type = body.str("type")
+                issuerName = issuer?.str("name")
                 issuerTaxId = issuer?.str("nif")
-                recipientName = recipient?.str("nombre")
+                recipientName = recipient?.str("name")
                 recipientTaxId = recipient?.str("nif")
-                number = body.str("numero")
-                date = body.str("fechaEmision")?.let { LocalDate.parse(it) }
-                concept = body.str("concepto")
-                corrective = body.bool("rectificativa") == true
+                number = body.str("number")
+                date = body.str("issueDate")?.let { LocalDate.parse(it) }
+                concept = body.str("concept")
+                corrective = body.bool("corrective") == true
                 lines =
-                    (body["lineas"] as? JsonArray).orEmpty().map { element ->
+                    (body["vatLines"] as? JsonArray).orEmpty().map { element ->
                         val line = element as JsonObject
                         Line(
-                            cents(line.str("tipoIva")),
+                            cents(line.str("vatRate")),
                             cents(line.str("base")),
-                            cents(line.str("cuota")),
-                            cents(line.str("recargo")),
-                            line.str("causaSinCuota"),
+                            cents(line.str("vatAmount")),
+                            cents(line.str("surcharge")),
+                            line.str("noVatCause"),
                         )
                     }
-                withholding = cents(body.str("retenciones"))
+                withholding = cents(body.str("withholdings"))
                 total = body.str("total")?.let { cents(it) }
             }
         if (updated.type == null) updated.type = classify(updated)
-        if (invoice.status == "CONFIRMADA" && warnings(updated).any { it.second }) {
+        if (invoice.status == "CONFIRMED" && notices(updated).any { it.second }) {
             return error(
                 HttpStatusCode.UnprocessableEntity,
-                "FACTURA_INCOHERENTE",
-                warnings(updated)
+                "INCONSISTENT_INVOICE",
+                notices(updated)
                     .filter {
                         it.second
                     }.joinToString("; ") { "${it.first}: ${it.third}" },
@@ -389,11 +389,11 @@ class DemoInvoicingRoutes(
         invoice.lines = updated.lines
         invoice.withholding = updated.withholding
         invoice.total = updated.total
-        if (invoice.status == "PENDIENTE_RECONOCER") {
-            invoice.status = "BORRADOR"
+        if (invoice.status == "PENDING_RECOGNITION") {
+            invoice.status = "DRAFT"
             invoice.recognizeAt = null
         }
-        if (invoice.status == "CONFIRMADA") invoice.changes += change("CORRECCION", request, before)
+        if (invoice.status == "CONFIRMED") invoice.changes += change("CORRECTION", request, before)
         invoice.version++
         return json(invoice.toJson())
     }
@@ -402,21 +402,21 @@ class DemoInvoicingRoutes(
         invoice: Invoice,
         request: DemoRequest,
     ): DemoReply {
-        if (request.body.int("version") != invoice.version) return conflict("VERSION_DESACTUALIZADA")
-        if (invoice.status != "BORRADOR") return conflict("ESTADO_NO_PERMITIDO")
-        if (companyName == null) return conflict("EMPRESA_SIN_CONFIGURAR")
-        if (closed(invoice.date)) return conflict("TRIMESTRE_CERRADO")
-        val blocking = warnings(invoice).filter { it.second }
-        if (blocking.any { it.third == "DUPLICADA" }) return conflict("FACTURA_DUPLICADA")
+        if (request.body.int("version") != invoice.version) return conflict("STALE_VERSION")
+        if (invoice.status != "DRAFT") return conflict("STATUS_NOT_ALLOWED")
+        if (companyName == null) return conflict("COMPANY_NOT_CONFIGURED")
+        if (closed(invoice.date)) return conflict("QUARTER_CLOSED")
+        val blocking = notices(invoice).filter { it.second }
+        if (blocking.any { it.third == "DUPLICATE" }) return conflict("DUPLICATE_INVOICE")
         if (blocking.isNotEmpty()) {
             return error(
                 HttpStatusCode.UnprocessableEntity,
-                "FACTURA_INCOHERENTE",
+                "INCONSISTENT_INVOICE",
                 blocking.joinToString("; ") { "${it.first}: ${it.third}" },
             )
         }
-        invoice.status = "CONFIRMADA"
-        invoice.doubtful = emptyList()
+        invoice.status = "CONFIRMED"
+        invoice.uncertainFields = emptyList()
         invoice.version++
         return json(invoice.toJson())
     }
@@ -425,156 +425,158 @@ class DemoInvoicingRoutes(
         invoice: Invoice,
         request: DemoRequest,
     ): DemoReply {
-        if (request.body.int("version") != invoice.version) return conflict("VERSION_DESACTUALIZADA")
-        if (invoice.status == "DESCARTADA") return conflict("ESTADO_NO_PERMITIDO")
-        if (invoice.status == "CONFIRMADA") {
-            if (closed(invoice.date)) return conflict("TRIMESTRE_CERRADO")
-            invoice.changes += change("DESCARTE", request, invoice.toJson())
+        if (request.body.int("version") != invoice.version) return conflict("STALE_VERSION")
+        if (invoice.status == "DISCARDED") return conflict("STATUS_NOT_ALLOWED")
+        if (invoice.status == "CONFIRMED") {
+            if (closed(invoice.date)) return conflict("QUARTER_CLOSED")
+            invoice.changes += change("DISCARD", request, invoice.toJson())
         }
-        invoice.status = "DESCARTADA"
+        invoice.status = "DISCARDED"
         invoice.recognizeAt = null
         invoice.version++
         return json(invoice.toJson())
     }
 
-    /** (field, blocking, code). Simplified from the backend's ValidadorFactura. */
-    private fun warnings(invoice: Invoice): List<Triple<String, Boolean, String>> {
-        if (invoice.status == "DESCARTADA") return emptyList()
+    /** (field, blocking, code). Simplified from the backend's InvoiceValidator. */
+    private fun notices(invoice: Invoice): List<Triple<String, Boolean, String>> {
+        if (invoice.status == "DISCARDED") return emptyList()
         return buildList {
             fun required(
                 field: String,
                 value: Any?,
             ) {
-                if (value == null || (value is String && value.isBlank())) add(Triple(field, true, "OBLIGATORIO"))
+                if (value == null || (value is String && value.isBlank())) add(Triple(field, true, "REQUIRED"))
             }
-            required("tipo", invoice.type)
-            required("emisor.nif", invoice.issuerTaxId)
-            required("numero", invoice.number)
-            required("fechaEmision", invoice.date)
+            required("type", invoice.type)
+            required("issuer.nif", invoice.issuerTaxId)
+            required("number", invoice.number)
+            required("issueDate", invoice.date)
             required("total", invoice.total)
-            if (invoice.lines.isEmpty()) add(Triple("lineas", true, "OBLIGATORIO"))
-            listOfNotNull("emisor.nif" to invoice.issuerTaxId, invoice.recipientTaxId?.let { "destinatario.nif" to it }).forEach { (field, value) ->
-                if (value != null && value.filter { it.isLetterOrDigit() }.length != 9) add(Triple(field, true, "NIF_INVALIDO"))
+            if (invoice.lines.isEmpty()) add(Triple("vatLines", true, "REQUIRED"))
+            listOfNotNull("issuer.nif" to invoice.issuerTaxId, invoice.recipientTaxId?.let { "recipient.nif" to it }).forEach { (field, value) ->
+                if (value != null && value.filter { it.isLetterOrDigit() }.length != 9) add(Triple(field, true, "INVALID_NIF"))
             }
             invoice.total?.let { total ->
                 if (invoice.lines.isNotEmpty() &&
                     abs(invoice.lines.sumOf { it.base + it.quota + it.surcharge } - invoice.withholding - total) > 1
                 ) {
-                    add(Triple("total", true, "NO_CUADRA"))
+                    add(Triple("total", true, "TOTAL_MISMATCH"))
                 }
             }
-            if (invoice.lines.any { it.quota == 0L && it.cause == null }) add(Triple("lineas", true, "SIN_CAUSA_CUOTA_CERO"))
-            if (closed(invoice.date) && invoice.status != "CONFIRMADA") add(Triple("fechaEmision", true, "TRIMESTRE_CERRADO"))
+            invoice.lines.forEachIndexed { index, line ->
+                if (line.quota == 0L && line.cause == null) add(Triple("vatLines[$index].noVatCause", true, "MISSING_NO_VAT_CAUSE"))
+            }
+            if (closed(invoice.date) && invoice.status != "CONFIRMED") add(Triple("issueDate", true, "QUARTER_CLOSED"))
             if (invoices.any {
                     it !== invoice &&
-                        it.status == "CONFIRMADA" &&
+                        it.status == "CONFIRMED" &&
                         it.issuerTaxId == invoice.issuerTaxId &&
                         it.number == invoice.number &&
                         it.date == invoice.date
                 }
             ) {
-                add(Triple("numero", true, "DUPLICADA"))
+                add(Triple("number", true, "DUPLICATE"))
             }
-            invoice.date?.let { if (it > state.today()) add(Triple("fechaEmision", false, "FECHA_FUTURA")) }
-            if (invoice.status != "CONFIRMADA") invoice.doubtful.forEach { add(Triple(it, false, "DUDOSO")) }
+            invoice.date?.let { if (it > state.today()) add(Triple("issueDate", false, "FUTURE_DATE")) }
+            if (invoice.status != "CONFIRMED") invoice.uncertainFields.forEach { add(Triple(it, false, "UNCERTAIN")) }
         }
     }
 
-    private fun warningMessage(code: String) =
+    private fun noticeMessage(code: String) =
         when (code) {
-            "OBLIGATORIO" -> "Dato obligatorio"
-            "NIF_INVALIDO" -> "El NIF no es válido"
-            "NO_CUADRA" -> "Las líneas menos las retenciones no suman el total"
-            "SIN_CAUSA_CUOTA_CERO" -> "Una línea sin cuota necesita su causa"
-            "TRIMESTRE_CERRADO" -> "La fecha cae en un trimestre cerrado"
-            "DUPLICADA" -> "Ya hay una factura confirmada con este emisor, número y fecha"
-            "FECHA_FUTURA" -> "La fecha es posterior a hoy"
+            "REQUIRED" -> "Dato obligatorio"
+            "INVALID_NIF" -> "El NIF no es válido"
+            "TOTAL_MISMATCH" -> "Las líneas menos las retenciones no suman el total"
+            "MISSING_NO_VAT_CAUSE" -> "Una línea sin cuota necesita su causa"
+            "QUARTER_CLOSED" -> "La fecha cae en un trimestre cerrado"
+            "DUPLICATE" -> "Ya hay una factura confirmada con este emisor, número y fecha"
+            "FUTURE_DATE" -> "La fecha es posterior a hoy"
             else -> "El reconocimiento no está seguro de este dato"
         }
 
     private fun classify(invoice: Invoice): String? =
         when (companyTaxId) {
             null -> null
-            invoice.issuerTaxId -> "EMITIDA"
-            invoice.recipientTaxId -> "RECIBIDA"
+            invoice.issuerTaxId -> "ISSUED"
+            invoice.recipientTaxId -> "RECEIVED"
             else -> null
         }
 
     private fun Invoice.toJson() =
         buildJsonObject {
             put("id", id)
-            put("estado", status)
-            put("tipo", type)
+            put("status", status)
+            put("type", type)
             put("version", version)
             put(
-                "emisor",
+                "issuer",
                 if (issuerName == null &&
                     issuerTaxId == null
                 ) {
                     JsonNull
                 } else {
                     buildJsonObject {
-                        put("nombre", issuerName)
+                        put("name", issuerName)
                         put("nif", issuerTaxId)
                     }
                 },
             )
             put(
-                "destinatario",
+                "recipient",
                 if (recipientName == null &&
                     recipientTaxId == null
                 ) {
                     JsonNull
                 } else {
                     buildJsonObject {
-                        put("nombre", recipientName)
+                        put("name", recipientName)
                         put("nif", recipientTaxId)
                     }
                 },
             )
-            put("numero", number)
-            put("fechaEmision", date?.toString())
-            put("concepto", concept)
-            put("moneda", "EUR")
-            put("rectificativa", corrective)
+            put("number", number)
+            put("issueDate", date?.toString())
+            put("concept", concept)
+            put("currency", "EUR")
+            put("corrective", corrective)
             put(
-                "lineas",
+                "vatLines",
                 buildJsonArray {
                     lines.forEach { line ->
                         add(
                             buildJsonObject {
-                                put("tipoIva", money(line.rate))
+                                put("vatRate", money(line.rate))
                                 put("base", money(line.base))
-                                put("cuota", money(line.quota))
-                                put("recargo", money(line.surcharge))
-                                put("causaSinCuota", line.cause)
+                                put("vatAmount", money(line.quota))
+                                put("surcharge", money(line.surcharge))
+                                put("noVatCause", line.cause)
                             },
                         )
                     }
                 },
             )
-            put("retenciones", money(withholding))
+            put("withholdings", money(withholding))
             put("total", total?.let { money(it) })
-            put("trimestreCerrado", closed(date))
+            put("quarterClosed", closed(date))
             put(
-                "reconocimiento",
+                "recognition",
                 recognition?.let { result ->
                     buildJsonObject {
-                        put("resultado", result)
-                        put("camposDudosos", JsonArray(doubtful.map { JsonPrimitive(it) }))
+                        put("result", result)
+                        put("uncertainFields", JsonArray(uncertainFields.map { JsonPrimitive(it) }))
                     }
                 }
                     ?: JsonNull,
             )
             put(
-                "avisos",
+                "notices",
                 JsonArray(
-                    warnings(this@toJson).map { (field, blocking, code) ->
+                    notices(this@toJson).map { (field, blocking, code) ->
                         buildJsonObject {
-                            put("campo", field)
-                            put("codigo", code)
-                            put("bloquea", blocking)
-                            put("mensaje", warningMessage(code))
+                            put("field", field)
+                            put("code", code)
+                            put("blocking", blocking)
+                            put("message", noticeMessage(code))
                         }
                     },
                 ),
@@ -583,10 +585,10 @@ class DemoInvoicingRoutes(
 
     private fun recognitionEntry(result: String) =
         buildJsonObject {
-            put("resultado", result)
-            put("modelo", "demo")
-            put("creadoEn", state.now().toString())
-            put("propuesta", JsonNull)
+            put("result", result)
+            put("model", "demo")
+            put("createdAt", state.now().toString())
+            put("proposal", JsonNull)
         }
 
     private fun change(
@@ -594,10 +596,10 @@ class DemoInvoicingRoutes(
         request: DemoRequest,
         before: JsonObject,
     ) = buildJsonObject {
-        put("accion", action)
-        put("autorId", request.caller?.employeeId)
-        put("ocurridoEn", state.now().toString())
-        put("valoresAnteriores", JsonObject(before.filterKeys { it in setOf("numero", "fechaEmision", "total", "retenciones", "tipo") }))
+        put("action", action)
+        put("authorId", request.caller?.employeeId)
+        put("occurredAt", state.now().toString())
+        put("previousValues", JsonObject(before.filterKeys { it in setOf("number", "issueDate", "total", "withholdings", "type") }))
     }
 
     // --- Quarters ---
@@ -611,19 +613,19 @@ class DemoInvoicingRoutes(
         reason: String?,
         at: Instant = state.now(),
     ) = buildJsonObject {
-        put("accion", action)
-        put("autorId", DemoState.ADMIN_ID)
-        put("ocurridoEn", at.toString())
-        put("motivo", reason)
+        put("action", action)
+        put("authorId", DemoState.ADMIN_ID)
+        put("occurredAt", at.toString())
+        put("reason", reason)
     }
 
     private fun quarterJson(
         year: Int,
         quarter: Int,
     ) = buildJsonObject {
-        put("trimestre", quarter)
-        put("cerrado", quarters[year to quarter] == true)
-        put("eventos", JsonArray(quarterEvents[year to quarter].orEmpty()))
+        put("quarter", quarter)
+        put("closed", quarters[year to quarter] == true)
+        put("events", JsonArray(quarterEvents[year to quarter].orEmpty()))
     }
 
     private fun quarters(
@@ -631,20 +633,20 @@ class DemoInvoicingRoutes(
         s: List<String>,
     ): DemoReply? {
         if (s.isEmpty()) {
-            val year = request.query["anio"]?.toIntOrNull() ?: return error(HttpStatusCode.BadRequest, "VALIDACION", "anio")
+            val year = request.query["year"]?.toIntOrNull() ?: return error(HttpStatusCode.BadRequest, "VALIDATION", "Falta el año")
             return json(JsonArray((1..4).map { quarterJson(year, it) }))
         }
         val year = s[0].toIntOrNull() ?: return null
         val quarter =
             s.getOrNull(1)?.toIntOrNull()?.takeIf { it in 1..4 }
-                ?: return error(HttpStatusCode.UnprocessableEntity, "PERIODO_INVALIDO", "Trimestre")
+                ?: return error(HttpStatusCode.UnprocessableEntity, "INVALID_PERIOD", "Trimestre no válido")
         val key = year to quarter
         return when (s.getOrNull(2)) {
-            "cerrar" -> {
-                if (quarters[key] == true) return conflict("TRIMESTRE_CERRADO")
+            "close" -> {
+                if (quarters[key] == true) return conflict("QUARTER_CLOSED")
                 val pending =
                     invoices.count {
-                        (it.status == "BORRADOR" || it.status == "PENDIENTE_RECONOCER") &&
+                        (it.status == "DRAFT" || it.status == "PENDING_RECOGNITION") &&
                             it.date?.let(::quarterOf) == key
                     }
                 if (pending >
@@ -652,24 +654,24 @@ class DemoInvoicingRoutes(
                 ) {
                     return error(
                         HttpStatusCode.Conflict,
-                        "TRIMESTRE_CON_PENDIENTES",
+                        "QUARTER_HAS_PENDING",
                         "Quedan $pending facturas sin confirmar en el trimestre",
                     )
                 }
                 quarters[key] = true
-                quarterEvents.getOrPut(key) { mutableListOf() } += event("CIERRE", null)
+                quarterEvents.getOrPut(key) { mutableListOf() } += event("CLOSE", null)
                 json(quarterJson(year, quarter))
             }
-            "reabrir" -> {
-                if (quarters[key] != true) return conflict("TRIMESTRE_ABIERTO")
+            "reopen" -> {
+                if (quarters[key] != true) return conflict("QUARTER_OPEN")
                 val reason =
                     request.body
-                        .str("motivo")
+                        .str("reason")
                         ?.trim()
                         .orEmpty()
-                if (reason.length !in 10..500) return error(HttpStatusCode.BadRequest, "VALIDACION", "motivo")
+                if (reason.length !in 10..500) return error(HttpStatusCode.BadRequest, "VALIDATION", "El motivo debe tener entre 10 y 500 caracteres")
                 quarters[key] = false
-                quarterEvents.getOrPut(key) { mutableListOf() } += event("REAPERTURA", reason)
+                quarterEvents.getOrPut(key) { mutableListOf() } += event("REOPEN", reason)
                 json(quarterJson(year, quarter))
             }
             else -> null
@@ -679,36 +681,36 @@ class DemoInvoicingRoutes(
     // --- Reports ---
 
     private fun report(request: DemoRequest): DemoReply {
-        val period = request.query["periodo"]?.uppercase()
-        val year = request.query["anio"]?.toIntOrNull() ?: return error(HttpStatusCode.BadRequest, "VALIDACION", "anio")
+        val period = request.query["period"]?.uppercase()
+        val year = request.query["year"]?.toIntOrNull() ?: return error(HttpStatusCode.BadRequest, "VALIDATION", "Falta el año")
         val (from, to, label) =
             when (period) {
-                "MENSUAL" -> {
-                    val month = request.query["mes"]?.toIntOrNull() ?: return error(HttpStatusCode.BadRequest, "VALIDACION", "mes")
+                "MONTHLY" -> {
+                    val month = request.query["month"]?.toIntOrNull() ?: return error(HttpStatusCode.BadRequest, "VALIDATION", "Falta el mes")
                     val start = LocalDate(year, month, 1)
                     Triple(start, start.plusMonths(1).minus(DatePeriod(days = 1)), "$year-${month.toString().padStart(2, '0')}")
                 }
-                "TRIMESTRAL" -> {
+                "QUARTERLY" -> {
                     val quarter =
-                        request.query["trimestre"]?.toIntOrNull() ?: return error(HttpStatusCode.BadRequest, "VALIDACION", "trimestre")
+                        request.query["quarter"]?.toIntOrNull() ?: return error(HttpStatusCode.BadRequest, "VALIDATION", "Falta el trimestre")
                     val start = LocalDate(year, (quarter - 1) * 3 + 1, 1)
                     Triple(start, start.plusMonths(3).minus(DatePeriod(days = 1)), "$year-T$quarter")
                 }
-                "ANUAL" -> Triple(LocalDate(year, 1, 1), LocalDate(year, 12, 31), "$year")
-                else -> return error(HttpStatusCode.UnprocessableEntity, "PERIODO_INVALIDO", "Periodo")
+                "YEARLY" -> Triple(LocalDate(year, 1, 1), LocalDate(year, 12, 31), "$year")
+                else -> return error(HttpStatusCode.UnprocessableEntity, "INVALID_PERIOD", "Periodo no válido")
             }
         val inPeriod = invoices.filter { it.date != null && it.date!! in from..to }
-        val confirmed = inPeriod.filter { it.status == "CONFIRMADA" }
+        val confirmed = inPeriod.filter { it.status == "CONFIRMED" }
 
         fun group(type: String): JsonObject {
             val list = confirmed.filter { it.type == type }
             val sign = { invoice: Invoice -> if (invoice.corrective) -1 else 1 }
             val lines = list.flatMap { invoice -> invoice.lines.map { sign(invoice) to it } }
             return buildJsonObject {
-                put("facturas", list.size)
+                put("invoices", list.size)
                 put("base", money(lines.sumOf { (s, l) -> s * l.base }))
                 put(
-                    "ivaPorTipo",
+                    "vatByRate",
                     JsonObject(
                         lines.groupBy { it.second.rate }.mapKeys { money(it.key) }.mapValues { (_, v) ->
                             JsonPrimitive(
@@ -722,11 +724,11 @@ class DemoInvoicingRoutes(
                         },
                     ),
                 )
-                put("recargo", money(lines.sumOf { (s, l) -> s * l.surcharge }))
-                put("retenciones", money(list.sumOf { sign(it) * it.withholding }))
+                put("surcharge", money(lines.sumOf { (s, l) -> s * l.surcharge }))
+                put("withholdings", money(list.sumOf { sign(it) * it.withholding }))
                 put("total", money(list.sumOf { sign(it) * (it.total ?: 0) }))
                 put(
-                    "sinCuota",
+                    "noVatBase",
                     JsonObject(
                         lines.filter { it.second.quota == 0L && it.second.cause != null }.groupBy { it.second.cause!! }.mapValues { (_, v) ->
                             JsonPrimitive(
@@ -742,30 +744,30 @@ class DemoInvoicingRoutes(
                 )
             }
         }
-        val issued = group("EMITIDA")
-        val received = group("RECIBIDA")
-        val pending = inPeriod.count { it.status == "BORRADOR" || it.status == "PENDIENTE_RECONOCER" }
-        return when (request.query["formato"]?.lowercase() ?: "json") {
+        val issued = group("ISSUED")
+        val received = group("RECEIVED")
+        val pending = inPeriod.count { it.status == "DRAFT" || it.status == "PENDING_RECOGNITION" }
+        return when (request.query["format"]?.lowercase() ?: "json") {
             "csv" ->
                 DemoReply.Bytes(
                     (
                         "Tipo;Facturas;Base;Retenciones;Total\r\n" +
                             "Emitidas;${issued.str(
-                                "facturas",
+                                "invoices",
                             )};${issued.str(
                                 "base",
                             )?.replace(
                                 '.',
                                 ',',
-                            )};${issued.str("retenciones")?.replace('.', ',')};${issued.str("total")?.replace('.', ',')}\r\n" +
+                            )};${issued.str("withholdings")?.replace('.', ',')};${issued.str("total")?.replace('.', ',')}\r\n" +
                             "Recibidas;${received.str(
-                                "facturas",
+                                "invoices",
                             )};${received.str(
                                 "base",
                             )?.replace(
                                 '.',
                                 ',',
-                            )};${received.str("retenciones")?.replace('.', ',')};${received.str("total")?.replace('.', ',')}\r\n"
+                            )};${received.str("withholdings")?.replace('.', ',')};${received.str("total")?.replace('.', ',')}\r\n"
                     ).encodeToByteArray(),
                     "text/csv",
                     "reporte-facturacion_$label.csv",
@@ -778,10 +780,10 @@ class DemoInvoicingRoutes(
                             "Del $from al $to",
                             "",
                             "Emitidas: ${issued.str(
-                                "facturas",
+                                "invoices",
                             )} facturas, base ${issued.str("base")} EUR, total ${issued.str("total")} EUR",
                             "Recibidas: ${received.str(
-                                "facturas",
+                                "invoices",
                             )} facturas, base ${received.str("base")} EUR, total ${received.str("total")} EUR",
                             "Pendientes de confirmar: $pending",
                         ),
@@ -793,35 +795,35 @@ class DemoInvoicingRoutes(
                 json(
                     buildJsonObject {
                         put(
-                            "periodo",
+                            "period",
                             buildJsonObject {
-                                put("tipo", period)
-                                put("anio", year)
-                                request.query["mes"]?.toIntOrNull()?.let { put("mes", it) }
-                                request.query["trimestre"]?.toIntOrNull()?.let { put("trimestre", it) }
-                                put("desde", from.toString())
-                                put("hasta", to.toString())
+                                put("type", period)
+                                put("year", year)
+                                put("month", if (period == "MONTHLY") request.query["month"]?.toIntOrNull() else null)
+                                put("quarter", if (period == "QUARTERLY") request.query["quarter"]?.toIntOrNull() else null)
+                                put("from", from.toString())
+                                put("to", to.toString())
                             },
                         )
-                        put("emitidas", issued)
-                        put("recibidas", received)
-                        put("pendientes", pending)
+                        put("issued", issued)
+                        put("received", received)
+                        put("pending", pending)
                         put(
-                            "trimestresCerrados",
+                            "closedQuarters",
                             JsonArray(
                                 quarters.filter { it.value && it.key.first == year }.keys.map { (y, q) ->
                                     buildJsonObject {
-                                        put("anio", y)
-                                        put("trimestre", q)
-                                        put("desde", LocalDate(y, (q - 1) * 3 + 1, 1).toString())
+                                        put("year", y)
+                                        put("quarter", q)
+                                        put("from", quarterEvents[y to q]?.lastOrNull { it.str("action") == "CLOSE" }?.str("occurredAt"))
                                     }
                                 },
                             ),
                         )
-                        put("calculadoEn", state.now().toString())
+                        put("calculatedAt", state.now().toString())
                     },
                 )
-            else -> error(HttpStatusCode.UnprocessableEntity, "PERIODO_INVALIDO", "Formato")
+            else -> error(HttpStatusCode.UnprocessableEntity, "VALIDATION", "Formato no válido")
         }
     }
 
