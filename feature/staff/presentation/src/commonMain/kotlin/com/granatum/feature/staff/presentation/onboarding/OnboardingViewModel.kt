@@ -24,7 +24,7 @@ import kotlinx.datetime.LocalDate
 
 data class OnboardingState(
     val contract: ContractType = ContractType.FULL_TIME,
-    val role: UserRole = UserRole.EMPLEADO,
+    val role: UserRole = UserRole.EMPLOYEE,
     val startDate: LocalDate,
     val issues: Map<StaffField, FieldIssue> = emptyMap(),
     val isSaving: Boolean = false,

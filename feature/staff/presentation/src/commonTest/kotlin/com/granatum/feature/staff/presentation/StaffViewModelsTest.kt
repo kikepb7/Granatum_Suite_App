@@ -111,7 +111,7 @@ private class FakeStaffRepository : StaffRepository {
             Result.Failure(StaffError.NoAccount)
         } else {
             answer {
-                TemporaryCredentials(employeeId, "a@b.es", UserRole.EMPLEADO, "Tmp-789")
+                TemporaryCredentials(employeeId, "a@b.es", UserRole.EMPLOYEE, "Tmp-789")
             }
         }
 }
@@ -185,11 +185,11 @@ class StaffViewModelsTest {
             assertEquals(mapOf(StaffField.EMAIL to FieldIssue.INVALID), vm.state.value.issues)
 
             vm.email.setTextAndPlaceCursorAtEnd("marta@granatum.es")
-            vm.setRole(UserRole.ENCARGADO)
+            vm.setRole(UserRole.MANAGER)
             vm.setContract(ContractType.PART_TIME)
             vm.submit()
             val sent = repo.onboarded.single()
-            assertEquals(UserRole.ENCARGADO, sent.role)
+            assertEquals(UserRole.MANAGER, sent.role)
             assertEquals(ContractType.PART_TIME, sent.contract)
             assertEquals(LocalDate(2026, 10, 9), sent.startDate)
             assertEquals(
@@ -289,9 +289,9 @@ class StaffViewModelsTest {
             vm.onAction(StaffDetailAction.OnGrantConfirm)
             assertEquals(FieldIssue.REQUIRED, vm.state.value.issues[StaffField.EMAIL])
             vm.grantEmail.setTextAndPlaceCursorAtEnd("ana@granatum.es")
-            vm.onAction(StaffDetailAction.OnGrantRole(UserRole.REPRESENTANTE))
+            vm.onAction(StaffDetailAction.OnGrantRole(UserRole.REPRESENTATIVE))
             vm.onAction(StaffDetailAction.OnGrantConfirm)
-            assertEquals(Triple("e1", "ana@granatum.es", UserRole.REPRESENTANTE), repo.granted.single())
+            assertEquals(Triple("e1", "ana@granatum.es", UserRole.REPRESENTATIVE), repo.granted.single())
             assertEquals(
                 "Tmp-456",
                 vm.state.value.credentials

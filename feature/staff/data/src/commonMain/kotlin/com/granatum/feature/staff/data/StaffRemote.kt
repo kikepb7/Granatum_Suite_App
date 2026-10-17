@@ -26,57 +26,57 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.isSuccess
 import kotlinx.datetime.LocalDate
 
-/** `/api/empleados`, `/api/auth/altas` and `/api/auth/cuentas` (backend 2ec33d0), errors per research D9. */
+/** `/api/employees`, `/api/auth/onboarding` and `/api/auth/accounts` (backend 93ef398), errors per research D9. */
 class KtorStaffRepository(
     private val http: HttpClient,
 ) : StaffRepository {
     override suspend fun members() =
-        call<List<EmpleadoDto>> { http.get(constructRoute("/empleados")) }.map { list ->
+        call<List<EmployeeDto>> { http.get(constructRoute("/employees")) }.map { list ->
             list.map { it.toDomain() }
         }
 
-    override suspend fun member(id: String) = call<EmpleadoDto> { http.get(constructRoute("/empleados/$id")) }.map { it.toDomain() }
+    override suspend fun member(id: String) = call<EmployeeDto> { http.get(constructRoute("/employees/$id")) }.map { it.toDomain() }
 
     override suspend fun update(
         id: String,
         edit: StaffEdit,
-    ) = call<EmpleadoDto> {
-        http.put(constructRoute("/empleados/$id")) {
-            setBody(ActualizarEmpleadoRequestDto(edit.name.trim(), edit.position.trim(), edit.contract.toApi(), edit.startDate.toString()))
+    ) = call<EmployeeDto> {
+        http.put(constructRoute("/employees/$id")) {
+            setBody(UpdateEmployeeRequestDto(edit.name.trim(), edit.position.trim(), edit.contract.toApi(), edit.startDate.toString()))
         }
     }.map { it.toDomain() }
 
     override suspend fun setActive(
         id: String,
         active: Boolean,
-    ) = call<EmpleadoDto> {
+    ) = call<EmployeeDto> {
         http.patch(
-            constructRoute("/empleados/$id/activo"),
-        ) { setBody(CambiarActivoRequestDto(active)) }
+            constructRoute("/employees/$id/active"),
+        ) { setBody(SetEmployeeActiveRequestDto(active)) }
     }.map { it.toDomain() }
 
     override suspend fun onboard(onboarding: Onboarding) =
-        call<AltaPersonaResponseDto> {
-            http.post(constructRoute("/auth/altas")) {
+        call<OnboardingResponseDto> {
+            http.post(constructRoute("/auth/onboarding")) {
                 setBody(
-                    AltaPersonaRequestDto(
-                        nombre = onboarding.name.trim(),
-                        documentoIdentidad = onboarding.identityDocument.trim(),
-                        puesto = onboarding.position.trim(),
-                        tipoContrato = onboarding.contract.toApi(),
-                        fechaAlta = onboarding.startDate.toString(),
+                    OnboardingRequestDto(
+                        name = onboarding.name.trim(),
+                        identityDocument = onboarding.identityDocument.trim(),
+                        position = onboarding.position.trim(),
+                        contractType = onboarding.contract.toApi(),
+                        hireDate = onboarding.startDate.toString(),
                         email = onboarding.email.trim().lowercase(),
-                        rol = onboarding.role.name,
+                        role = onboarding.role.name,
                     ),
                 )
             }
         }.map {
             TemporaryCredentials(
-                it.empleadoId,
+                it.employeeId,
                 it.email,
-                UserRole.fromBackend(it.rol),
-                it.passwordTemporal,
-                recordCreated = it.fichaCreada,
+                UserRole.fromBackend(it.role),
+                it.temporaryPassword,
+                recordCreated = it.staffRecordCreated,
             )
         }
 
@@ -84,37 +84,28 @@ class KtorStaffRepository(
         employeeId: String,
         email: String,
         role: UserRole,
-    ) = call<AltaCuentaResponseDto> {
-        http.post(constructRoute("/auth/cuentas")) { setBody(AltaCuentaRequestDto(employeeId, email.trim().lowercase(), role.name)) }
+    ) = call<AccountGrantResponseDto> {
+        http.post(constructRoute("/auth/accounts")) { setBody(AccountGrantRequestDto(employeeId, email.trim().lowercase(), role.name)) }
     }.map { it.toCredentials() }
 
     override suspend fun resetPassword(employeeId: String) =
-        call<AltaCuentaResponseDto> { http.post(constructRoute("/auth/cuentas/$employeeId/restablecer")) }.map { it.toCredentials() }
+        call<AccountGrantResponseDto> { http.post(constructRoute("/auth/accounts/$employeeId/reset")) }.map { it.toCredentials() }
 
-    private fun AltaCuentaResponseDto.toCredentials() = TemporaryCredentials(empleadoId, email, UserRole.fromBackend(rol), passwordTemporal)
+    private fun AccountGrantResponseDto.toCredentials() = TemporaryCredentials(employeeId, email, UserRole.fromBackend(role), temporaryPassword)
 
-    private fun EmpleadoDto.toDomain() =
+    private fun EmployeeDto.toDomain() =
         StaffMember(
             id = id,
-            name = nombre,
-            identityDocument = documentoIdentidad,
-            position = puesto,
-            contract =
-                when (tipoContrato) {
-                    "PARCIAL" -> ContractType.PART_TIME
-                    "POR_HORAS" -> ContractType.HOURLY
-                    else -> ContractType.FULL_TIME
-                },
-            startDate = LocalDate.parse(fechaAlta),
-            active = activo,
+            name = name,
+            identityDocument = identityDocument,
+            position = position,
+            contract = ContractType.entries.firstOrNull { it.name == contractType } ?: ContractType.FULL_TIME,
+            startDate = LocalDate.parse(hireDate),
+            active = active,
         )
 
-    private fun ContractType.toApi() =
-        when (this) {
-            ContractType.FULL_TIME -> "JORNADA_COMPLETA"
-            ContractType.PART_TIME -> "PARCIAL"
-            ContractType.HOURLY -> "POR_HORAS"
-        }
+    /** The contract enum names match the API values (`FULL_TIME`, `PART_TIME`, `HOURLY`). */
+    private fun ContractType.toApi() = name
 
     private suspend inline fun <reified T> call(noinline request: suspend () -> HttpResponse): Result<T, StaffError> {
         var response: HttpResponse? = null
@@ -142,15 +133,15 @@ class KtorStaffRepository(
 
     private suspend fun HttpResponse.toStaffError(): StaffError =
         when (errorBody()?.code) {
-            "EMPLEADO_NOT_FOUND", "EMPLEADO_NO_ENCONTRADO" -> StaffError.NotFound
-            "CUENTA_NO_ENCONTRADA" -> StaffError.NoAccount
-            "DOCUMENTO_INVALIDO" -> StaffError.InvalidDocument
-            "DOCUMENTO_DUPLICADO" -> StaffError.DuplicateDocument
-            "EMAIL_YA_REGISTRADO" -> StaffError.EmailTaken
-            "CUENTA_YA_EXISTE" -> StaffError.AccountExists
-            "VALORES_INCOHERENTES" -> StaffError.Incoherent
-            "VALIDACION" -> StaffError.Invalid
-            "DEMASIADAS_PETICIONES" -> StaffError.RateLimited
+            "EMPLOYEE_NOT_FOUND" -> StaffError.NotFound
+            "ACCOUNT_NOT_FOUND" -> StaffError.NoAccount
+            "INVALID_DOCUMENT" -> StaffError.InvalidDocument
+            "DUPLICATE_DOCUMENT" -> StaffError.DuplicateDocument
+            "EMAIL_ALREADY_REGISTERED" -> StaffError.EmailTaken
+            "ACCOUNT_ALREADY_EXISTS" -> StaffError.AccountExists
+            "INCONSISTENT_VALUES" -> StaffError.Incoherent
+            "VALIDATION" -> StaffError.Invalid
+            "TOO_MANY_REQUESTS" -> StaffError.RateLimited
             else ->
                 when (status) {
                     HttpStatusCode.Forbidden -> StaffError.Forbidden
