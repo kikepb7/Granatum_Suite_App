@@ -34,7 +34,7 @@ fun NoQuotaCause.label() =
     when (this) {
         NoQuotaCause.EXEMPT -> Res.string.cause_exempt
         NoQuotaCause.REVERSE_CHARGE -> Res.string.cause_reverse_charge
-        NoQuotaCause.INTRA_EU -> Res.string.cause_intra_eu
+        NoQuotaCause.INTRA_COMMUNITY -> Res.string.cause_intra_eu
     }
 
 fun ChangeAction.label() =
@@ -54,6 +54,22 @@ fun UploadOutcome.label() =
         UploadOutcome.EMPTY -> Res.string.upload_empty
         UploadOutcome.UNREADABLE_PDF -> Res.string.upload_unreadable_pdf
         UploadOutcome.UNKNOWN -> Res.string.upload_unknown
+    }
+
+/** The Spanish label of a recognition result (`RECOGNIZED`…); null for one this app does not know. */
+fun recognitionResultLabel(result: String) =
+    when (result) {
+        "RECOGNIZED" -> Res.string.recognition_recognized
+        "NOT_AN_INVOICE" -> Res.string.recognition_not_an_invoice
+        "MULTIPLE_INVOICES" -> Res.string.recognition_multiple_invoices
+        "UNREADABLE_PDF" -> Res.string.recognition_unreadable_pdf
+        "API_ERROR" -> Res.string.recognition_api_error
+        "NETWORK_ERROR" -> Res.string.recognition_network_error
+        "INVALID_RESPONSE" -> Res.string.recognition_invalid_response
+        "TIMEOUT" -> Res.string.recognition_timeout
+        "REFUSAL" -> Res.string.recognition_refusal
+        "MAX_TOKENS" -> Res.string.recognition_max_tokens
+        else -> null
     }
 
 fun InvoicingError.toUiText(): UiText =

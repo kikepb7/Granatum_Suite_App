@@ -30,18 +30,18 @@ class LineForm(
     }
 }
 
-/** Field keys for local format problems: the server's names, lines as `lineas[i].campo`. */
+/** Field keys for local format problems: the server's names, lines as `vatLines[i].field`. */
 object FormField {
     fun line(
         index: Int,
         field: String,
     ) = "${InvoiceField.LINES}[$index].$field"
 
-    const val RATE = "tipoIva"
+    const val RATE = "vatRate"
     const val BASE = "base"
-    const val QUOTA = "cuota"
-    const val SURCHARGE = "recargo"
-    const val CAUSE = "causaSinCuota"
+    const val QUOTA = "vatAmount"
+    const val SURCHARGE = "surcharge"
+    const val CAUSE = "noVatCause"
 }
 
 /**

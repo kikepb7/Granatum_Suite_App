@@ -203,7 +203,7 @@ class InvoiceDetailViewModelTest {
             repo.invoices["f1"] = invoice(state = InvoiceState.CONFIRMED)
             val vm = InvoiceDetailViewModel("f1", InvoicingUseCases(repo))
             vm.form.total.setTextAndPlaceCursorAtEnd("1")
-            repo.failNext = InvoicingError.Incoherent("total: NO_CUADRA")
+            repo.failNext = InvoicingError.Incoherent("total: TOTAL_MISMATCH")
 
             vm.onAction(InvoiceDetailAction.OnSave)
 

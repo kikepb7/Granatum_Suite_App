@@ -72,7 +72,7 @@ class InvoicingDomainTest {
 
     @Test
     fun blocking_warnings_and_pages() {
-        val withWarning = invoice(InvoiceState.DRAFT).copy(warnings = listOf(InvoiceWarning("total", "NO_CUADRA", true, "")))
+        val withWarning = invoice(InvoiceState.DRAFT).copy(warnings = listOf(InvoiceWarning("total", "TOTAL_MISMATCH", true, "")))
         assertTrue(withWarning.hasBlockingWarnings)
         assertTrue(Page(listOf(1), page = 0, size = 50, total = 51).hasMore)
         assertFalse(Page(listOf(1), page = 1, size = 50, total = 100).hasMore)

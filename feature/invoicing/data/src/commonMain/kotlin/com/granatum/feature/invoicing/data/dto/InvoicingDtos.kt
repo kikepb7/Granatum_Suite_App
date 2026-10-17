@@ -4,213 +4,231 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 
-// Field for field with docs/openapi.json (backend d1857ad), schemas of /api/facturacion.
-// Amounts are decimal strings except ResumenFactura.total, a JSON number (research D2, D12).
+// Field for field with docs/openapi.json (backend 93ef398), schemas of /api/invoicing.
+// Amounts are decimal strings except InvoiceSummary.total, a JSON number (research D2, D12).
 
+/** `InvoicePartyDto`. */
 @Serializable
-data class ParteDto(
-    val nombre: String? = null,
+data class PartyDto(
+    val name: String? = null,
     val nif: String? = null,
 )
 
+/** `InvoiceVatLineDto`. */
 @Serializable
-data class LineaIvaDto(
-    val tipoIva: String,
+data class VatLineDto(
+    val vatRate: String,
     val base: String,
-    val cuota: String,
-    val recargo: String = "0.00",
-    val causaSinCuota: String? = null,
+    val vatAmount: String,
+    val surcharge: String = "0.00",
+    val noVatCause: String? = null,
 )
 
-/** No defaults: the contract requires every field and kotlinx would leave defaults out. */
+/** `InvoiceVatLineRequest`. No defaults: the contract requires every field and kotlinx would leave defaults out. */
 @Serializable
-data class LineaIvaRequestDto(
-    val tipoIva: String,
+data class VatLineRequestDto(
+    val vatRate: String,
     val base: String,
-    val cuota: String,
-    val recargo: String,
-    val causaSinCuota: String?,
+    val vatAmount: String,
+    val surcharge: String,
+    val noVatCause: String?,
 )
 
+/** `InvoiceNoticeDto`. */
 @Serializable
-data class AvisoDto(
-    val campo: String,
-    val codigo: String,
-    val bloquea: Boolean,
-    val mensaje: String,
+data class NoticeDto(
+    val field: String,
+    val code: String,
+    val blocking: Boolean,
+    val message: String,
 )
 
+/** `InvoiceRecognitionSummaryDto`. */
 @Serializable
-data class ReconocimientoResumenDto(
-    val resultado: String,
-    val camposDudosos: List<String> = emptyList(),
+data class RecognitionSummaryDto(
+    val result: String,
+    val uncertainFields: List<String> = emptyList(),
 )
 
+/** `InvoiceDto`. */
 @Serializable
-data class FacturaDto(
+data class InvoiceDto(
     val id: String,
-    val estado: String,
-    val tipo: String? = null,
+    val status: String,
+    val type: String? = null,
     val version: Int,
-    val emisor: ParteDto? = null,
-    val destinatario: ParteDto? = null,
-    val numero: String? = null,
-    val fechaEmision: String? = null,
-    val concepto: String? = null,
-    val moneda: String = "EUR",
-    val rectificativa: Boolean = false,
-    val lineas: List<LineaIvaDto> = emptyList(),
-    val retenciones: String = "0.00",
+    val issuer: PartyDto? = null,
+    val recipient: PartyDto? = null,
+    val number: String? = null,
+    val issueDate: String? = null,
+    val concept: String? = null,
+    val currency: String = "EUR",
+    val corrective: Boolean = false,
+    val vatLines: List<VatLineDto> = emptyList(),
+    val withholdings: String = "0.00",
     val total: String? = null,
-    val trimestreCerrado: Boolean = false,
-    val reconocimiento: ReconocimientoResumenDto? = null,
-    val avisos: List<AvisoDto> = emptyList(),
+    val quarterClosed: Boolean = false,
+    val recognition: RecognitionSummaryDto? = null,
+    val notices: List<NoticeDto> = emptyList(),
 )
 
+/** `InvoiceRequest`. */
 @Serializable
-data class FacturaRequestDto(
-    val tipo: String?,
-    val emisor: ParteDto?,
-    val destinatario: ParteDto?,
-    val numero: String?,
-    val fechaEmision: String?,
-    val concepto: String?,
-    val moneda: String,
-    val rectificativa: Boolean,
-    val lineas: List<LineaIvaRequestDto>,
-    val retenciones: String,
+data class InvoiceRequestDto(
+    val type: String?,
+    val issuer: PartyDto?,
+    val recipient: PartyDto?,
+    val number: String?,
+    val issueDate: String?,
+    val concept: String?,
+    val currency: String,
+    val corrective: Boolean,
+    val vatLines: List<VatLineRequestDto>,
+    val withholdings: String,
     val total: String?,
     val version: Int,
 )
 
+/** `InvoiceVersionRequest`. */
 @Serializable
 data class VersionRequestDto(
     val version: Int,
 )
 
+/** `InvoiceSummary`. */
 @Serializable
-data class ResumenFacturaDto(
+data class InvoiceSummaryDto(
     val id: String,
-    val estado: String,
-    val tipo: String? = null,
-    val emisorNombre: String? = null,
-    val emisorNif: String? = null,
-    val destinatarioNombre: String? = null,
-    val destinatarioNif: String? = null,
-    val numero: String? = null,
-    val fechaEmision: String? = null,
+    val status: String,
+    val type: String? = null,
+    val issuerName: String? = null,
+    val issuerNif: String? = null,
+    val recipientName: String? = null,
+    val recipientNif: String? = null,
+    val number: String? = null,
+    val issueDate: String? = null,
     /** A JSON number on the wire: kept as an element and read as text, never as Double. */
     val total: JsonElement? = null,
-    val numeroAvisos: Int = 0,
+    val noticeCount: Int = 0,
 )
 
+/** `InvoicePageInvoiceSummary`. */
 @Serializable
-data class PaginaResumenFacturaDto(
-    val elementos: List<ResumenFacturaDto>,
-    val pagina: Int,
-    val tamano: Int,
+data class InvoiceSummaryPageDto(
+    val items: List<InvoiceSummaryDto>,
+    val page: Int,
+    val size: Int,
     val total: Long,
 )
 
+/** `InvoiceUploadResultDto`. */
 @Serializable
-data class ResultadoSubidaDto(
-    val fichero: Int,
-    val resultado: String,
-    val facturaId: String? = null,
+data class UploadResultDto(
+    val file: Int,
+    val result: String,
+    val invoiceId: String? = null,
 )
 
+/** `RecognitionHistoryEntry`; its free-form `proposal` is not shown, so it is not read. */
 @Serializable
-data class ReconocimientoHistorialDto(
-    val resultado: String,
-    val modelo: String,
-    val creadoEn: String,
+data class RecognitionHistoryDto(
+    val result: String,
+    val model: String,
+    val createdAt: String,
     val error: String? = null,
 )
 
+/** `InvoiceChangeHistoryEntry`. */
 @Serializable
-data class CambioHistorialDto(
-    val accion: String,
-    val autorId: String,
-    val ocurridoEn: String,
-    val valoresAnteriores: JsonObject? = null,
+data class ChangeHistoryDto(
+    val action: String,
+    val authorId: String,
+    val occurredAt: String,
+    val previousValues: JsonObject? = null,
 )
 
+/** `InvoiceHistory`. */
 @Serializable
-data class HistorialDto(
-    val reconocimientos: List<ReconocimientoHistorialDto> = emptyList(),
-    val cambios: List<CambioHistorialDto> = emptyList(),
+data class HistoryDto(
+    val recognitions: List<RecognitionHistoryDto> = emptyList(),
+    val changes: List<ChangeHistoryDto> = emptyList(),
 )
 
+/** `QuarterEvent`. */
 @Serializable
-data class EventoTrimestreDto(
-    val accion: String,
-    val autorId: String,
-    val ocurridoEn: String,
-    val motivo: String? = null,
+data class QuarterEventDto(
+    val action: String,
+    val authorId: String,
+    val occurredAt: String,
+    val reason: String? = null,
 )
 
+/** `QuarterStatus`. */
 @Serializable
-data class EstadoTrimestreDto(
-    val trimestre: Int,
-    val cerrado: Boolean,
-    val eventos: List<EventoTrimestreDto> = emptyList(),
+data class QuarterStatusDto(
+    val quarter: Int,
+    val closed: Boolean,
+    val events: List<QuarterEventDto> = emptyList(),
 )
 
+/** `QuarterReopenRequest`. */
 @Serializable
-data class ReaperturaRequestDto(
-    val motivo: String,
+data class ReopenRequestDto(
+    val reason: String,
 )
 
+/** `CompanyDto`. */
 @Serializable
-data class EmpresaDto(
-    val razonSocial: String,
+data class CompanyDto(
+    val legalName: String,
     val nif: String,
-    val reconocimientoActivo: Boolean = false,
+    val recognitionActive: Boolean = false,
 )
 
+/** `CompanyRequest`. */
 @Serializable
-data class EmpresaRequestDto(
-    val razonSocial: String,
+data class CompanyRequestDto(
+    val legalName: String,
     val nif: String,
 )
 
-// GET /reportes?formato=json: the contract only says "object"; shape from the backend's
-// ReporteDtos.kt at d1857ad.
+// GET /reports?format=json: the contract only says "object"; shape from the backend's
+// InvoicingReportDtos.kt at 93ef398.
 
 @Serializable
-data class PeriodoReporteDto(
-    val tipo: String,
-    val anio: Int,
-    val mes: Int? = null,
-    val trimestre: Int? = null,
-    val desde: String,
-    val hasta: String,
+data class ReportPeriodDto(
+    val type: String,
+    val year: Int,
+    val month: Int? = null,
+    val quarter: Int? = null,
+    val from: String,
+    val to: String,
 )
 
 @Serializable
-data class GrupoReporteDto(
-    val facturas: Int = 0,
+data class ReportTotalsDto(
+    val invoices: Int = 0,
     val base: String = "0.00",
-    val ivaPorTipo: Map<String, String> = emptyMap(),
-    val recargo: String = "0.00",
-    val retenciones: String = "0.00",
+    val vatByRate: Map<String, String> = emptyMap(),
+    val surcharge: String = "0.00",
+    val withholdings: String = "0.00",
     val total: String = "0.00",
-    val sinCuota: Map<String, String> = emptyMap(),
+    val noVatBase: Map<String, String> = emptyMap(),
 )
 
 @Serializable
-data class TrimestreCerradoDto(
-    val anio: Int,
-    val trimestre: Int,
-    val desde: String? = null,
+data class ClosedQuarterDto(
+    val year: Int,
+    val quarter: Int,
+    val from: String? = null,
 )
 
 @Serializable
-data class ReporteDto(
-    val periodo: PeriodoReporteDto,
-    val emitidas: GrupoReporteDto,
-    val recibidas: GrupoReporteDto,
-    val pendientes: Int = 0,
-    val trimestresCerrados: List<TrimestreCerradoDto> = emptyList(),
-    val calculadoEn: String,
+data class ReportDto(
+    val period: ReportPeriodDto,
+    val issued: ReportTotalsDto,
+    val received: ReportTotalsDto,
+    val pending: Int = 0,
+    val closedQuarters: List<ClosedQuarterDto> = emptyList(),
+    val calculatedAt: String,
 )

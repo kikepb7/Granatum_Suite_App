@@ -1,19 +1,19 @@
 package com.granatum.feature.invoicing.data.mappers
 
-import com.granatum.feature.invoicing.data.dto.AvisoDto
-import com.granatum.feature.invoicing.data.dto.CambioHistorialDto
-import com.granatum.feature.invoicing.data.dto.EmpresaDto
-import com.granatum.feature.invoicing.data.dto.EstadoTrimestreDto
-import com.granatum.feature.invoicing.data.dto.FacturaDto
-import com.granatum.feature.invoicing.data.dto.FacturaRequestDto
-import com.granatum.feature.invoicing.data.dto.GrupoReporteDto
-import com.granatum.feature.invoicing.data.dto.HistorialDto
-import com.granatum.feature.invoicing.data.dto.LineaIvaDto
-import com.granatum.feature.invoicing.data.dto.LineaIvaRequestDto
-import com.granatum.feature.invoicing.data.dto.ParteDto
-import com.granatum.feature.invoicing.data.dto.ReporteDto
-import com.granatum.feature.invoicing.data.dto.ResultadoSubidaDto
-import com.granatum.feature.invoicing.data.dto.ResumenFacturaDto
+import com.granatum.feature.invoicing.data.dto.ChangeHistoryDto
+import com.granatum.feature.invoicing.data.dto.CompanyDto
+import com.granatum.feature.invoicing.data.dto.HistoryDto
+import com.granatum.feature.invoicing.data.dto.InvoiceDto
+import com.granatum.feature.invoicing.data.dto.InvoiceRequestDto
+import com.granatum.feature.invoicing.data.dto.InvoiceSummaryDto
+import com.granatum.feature.invoicing.data.dto.NoticeDto
+import com.granatum.feature.invoicing.data.dto.PartyDto
+import com.granatum.feature.invoicing.data.dto.QuarterStatusDto
+import com.granatum.feature.invoicing.data.dto.ReportDto
+import com.granatum.feature.invoicing.data.dto.ReportTotalsDto
+import com.granatum.feature.invoicing.data.dto.UploadResultDto
+import com.granatum.feature.invoicing.data.dto.VatLineDto
+import com.granatum.feature.invoicing.data.dto.VatLineRequestDto
 import com.granatum.feature.invoicing.domain.model.ChangeAction
 import com.granatum.feature.invoicing.domain.model.Company
 import com.granatum.feature.invoicing.domain.model.Invoice
@@ -45,165 +45,155 @@ import kotlin.time.Instant
 
 fun String.toInvoiceState(): InvoiceState =
     when (this) {
-        "PENDIENTE_RECONOCER" -> InvoiceState.PENDING_RECOGNITION
-        "BORRADOR" -> InvoiceState.DRAFT
-        "CONFIRMADA" -> InvoiceState.CONFIRMED
+        "PENDING_RECOGNITION" -> InvoiceState.PENDING_RECOGNITION
+        "DRAFT" -> InvoiceState.DRAFT
+        "CONFIRMED" -> InvoiceState.CONFIRMED
         else -> InvoiceState.DISCARDED
     }
 
-fun InvoiceState.toApi(): String =
-    when (this) {
-        InvoiceState.PENDING_RECOGNITION -> "PENDIENTE_RECONOCER"
-        InvoiceState.DRAFT -> "BORRADOR"
-        InvoiceState.CONFIRMED -> "CONFIRMADA"
-        InvoiceState.DISCARDED -> "DESCARTADA"
-    }
+/** The wire values are the enum's own names. */
+fun InvoiceState.toApi(): String = name
 
 fun String?.toInvoiceType(): InvoiceType? =
     when (this) {
-        "EMITIDA" -> InvoiceType.ISSUED
-        "RECIBIDA" -> InvoiceType.RECEIVED
+        "ISSUED" -> InvoiceType.ISSUED
+        "RECEIVED" -> InvoiceType.RECEIVED
         else -> null
     }
 
-fun InvoiceType.toApi(): String = if (this == InvoiceType.ISSUED) "EMITIDA" else "RECIBIDA"
+fun InvoiceType.toApi(): String = name
 
 fun String?.toNoQuotaCause(): NoQuotaCause? =
     when (this) {
-        "EXENTA" -> NoQuotaCause.EXEMPT
-        "INVERSION_SUJETO_PASIVO" -> NoQuotaCause.REVERSE_CHARGE
-        "INTRACOMUNITARIA" -> NoQuotaCause.INTRA_EU
+        "EXEMPT" -> NoQuotaCause.EXEMPT
+        "REVERSE_CHARGE" -> NoQuotaCause.REVERSE_CHARGE
+        "INTRA_COMMUNITY" -> NoQuotaCause.INTRA_COMMUNITY
         else -> null
     }
 
-fun NoQuotaCause.toApi(): String =
-    when (this) {
-        NoQuotaCause.EXEMPT -> "EXENTA"
-        NoQuotaCause.REVERSE_CHARGE -> "INVERSION_SUJETO_PASIVO"
-        NoQuotaCause.INTRA_EU -> "INTRACOMUNITARIA"
-    }
+fun NoQuotaCause.toApi(): String = name
 
 private fun money(text: String?): Money = Money.parse(text) ?: Money.ZERO
 
-private fun ParteDto.toDomain() = Party(name = nombre, taxId = nif)
+private fun PartyDto.toDomain() = Party(name = name, taxId = nif)
 
 /** An empty party is sent as null: the server treats both the same and null keeps it simple. */
-private fun Party?.toDto(): ParteDto? =
+private fun Party?.toDto(): PartyDto? =
     this?.takeUnless { it.isEmpty }?.let {
-        ParteDto(nombre = it.name?.trim()?.ifEmpty { null }, nif = it.taxId?.trim()?.ifEmpty { null })
+        PartyDto(name = it.name?.trim()?.ifEmpty { null }, nif = it.taxId?.trim()?.ifEmpty { null })
     }
 
-fun FacturaDto.toDomain() =
+fun InvoiceDto.toDomain() =
     Invoice(
         id = id,
-        state = estado.toInvoiceState(),
-        type = tipo.toInvoiceType(),
+        state = status.toInvoiceState(),
+        type = type.toInvoiceType(),
         version = version,
-        issuer = emisor?.toDomain(),
-        recipient = destinatario?.toDomain(),
-        number = numero,
-        issueDate = fechaEmision?.let { runCatching { LocalDate.parse(it) }.getOrNull() },
-        concept = concepto,
-        currency = moneda,
-        corrective = rectificativa,
-        lines = lineas.map { it.toDomain() },
-        withholding = money(retenciones),
+        issuer = issuer?.toDomain(),
+        recipient = recipient?.toDomain(),
+        number = number,
+        issueDate = issueDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() },
+        concept = concept,
+        currency = currency,
+        corrective = corrective,
+        lines = vatLines.map { it.toDomain() },
+        withholding = money(withholdings),
         total = Money.parse(total),
-        quarterClosed = trimestreCerrado,
-        recognition = reconocimiento?.let { RecognitionSummary(it.resultado, it.camposDudosos) },
-        warnings = avisos.map { it.toDomain() },
+        quarterClosed = quarterClosed,
+        recognition = recognition?.let { RecognitionSummary(it.result, it.uncertainFields) },
+        warnings = notices.map { it.toDomain() },
     )
 
-private fun LineaIvaDto.toDomain() =
+private fun VatLineDto.toDomain() =
     VatLine(
-        rate = money(tipoIva),
+        rate = money(vatRate),
         base = money(base),
-        quota = money(cuota),
-        surcharge = money(recargo),
-        noQuotaCause = causaSinCuota.toNoQuotaCause(),
+        quota = money(vatAmount),
+        surcharge = money(surcharge),
+        noQuotaCause = noVatCause.toNoQuotaCause(),
     )
 
-private fun AvisoDto.toDomain() = InvoiceWarning(field = campo, code = codigo, blocking = bloquea, message = mensaje)
+private fun NoticeDto.toDomain() = InvoiceWarning(field = field, code = code, blocking = blocking, message = message)
 
 fun InvoiceDraft.toDto() =
-    FacturaRequestDto(
-        tipo = type?.toApi(),
-        emisor = issuer.toDto(),
-        destinatario = recipient.toDto(),
-        numero = number?.trim()?.ifEmpty { null },
-        fechaEmision = issueDate?.toString(),
-        concepto = concept?.trim()?.ifEmpty { null },
-        moneda = currency,
-        rectificativa = corrective,
-        lineas =
+    InvoiceRequestDto(
+        type = type?.toApi(),
+        issuer = issuer.toDto(),
+        recipient = recipient.toDto(),
+        number = number?.trim()?.ifEmpty { null },
+        issueDate = issueDate?.toString(),
+        concept = concept?.trim()?.ifEmpty { null },
+        currency = currency,
+        corrective = corrective,
+        vatLines =
             lines.map {
-                LineaIvaRequestDto(
-                    tipoIva = it.rate.toApi(),
+                VatLineRequestDto(
+                    vatRate = it.rate.toApi(),
                     base = it.base.toApi(),
-                    cuota = it.quota.toApi(),
-                    recargo = it.surcharge.toApi(),
-                    causaSinCuota = it.noQuotaCause?.toApi(),
+                    vatAmount = it.quota.toApi(),
+                    surcharge = it.surcharge.toApi(),
+                    noVatCause = it.noQuotaCause?.toApi(),
                 )
             },
-        retenciones = withholding.toApi(),
+        withholdings = withholding.toApi(),
         total = total?.toApi(),
         version = version,
     )
 
-fun ResumenFacturaDto.toDomain() =
+fun InvoiceSummaryDto.toDomain() =
     InvoiceSummary(
         id = id,
-        state = estado.toInvoiceState(),
-        type = tipo.toInvoiceType(),
-        issuer = Party(emisorNombre, emisorNif).takeUnless { it.isEmpty },
-        recipient = Party(destinatarioNombre, destinatarioNif).takeUnless { it.isEmpty },
-        number = numero,
-        issueDate = fechaEmision?.let { runCatching { LocalDate.parse(it) }.getOrNull() },
+        state = status.toInvoiceState(),
+        type = type.toInvoiceType(),
+        issuer = Party(issuerName, issuerNif).takeUnless { it.isEmpty },
+        recipient = Party(recipientName, recipientNif).takeUnless { it.isEmpty },
+        number = number,
+        issueDate = issueDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() },
         total = (total as? JsonPrimitive)?.takeUnless { it is JsonNull }?.content?.let { Money.parseNumber(it) },
-        warningCount = numeroAvisos,
+        warningCount = noticeCount,
     )
 
-fun ResultadoSubidaDto.toDomain() =
+fun UploadResultDto.toDomain() =
     UploadResult(
-        position = fichero,
+        position = file,
         outcome =
-            when (resultado) {
-                "ACEPTADA" -> UploadOutcome.ACCEPTED
-                "DUPLICADA" -> UploadOutcome.DUPLICATE
-                "FORMATO_NO_ADMITIDO" -> UploadOutcome.UNSUPPORTED_FORMAT
-                "DEMASIADO_GRANDE" -> UploadOutcome.TOO_LARGE
-                "VACIO" -> UploadOutcome.EMPTY
-                "PDF_NO_LEGIBLE" -> UploadOutcome.UNREADABLE_PDF
+            when (result) {
+                "ACCEPTED" -> UploadOutcome.ACCEPTED
+                "DUPLICATE" -> UploadOutcome.DUPLICATE
+                "UNSUPPORTED_FORMAT" -> UploadOutcome.UNSUPPORTED_FORMAT
+                "TOO_LARGE" -> UploadOutcome.TOO_LARGE
+                "EMPTY" -> UploadOutcome.EMPTY
+                "UNREADABLE_PDF" -> UploadOutcome.UNREADABLE_PDF
                 else -> UploadOutcome.UNKNOWN
             },
-        invoiceId = facturaId,
+        invoiceId = invoiceId,
     )
 
 private fun instant(text: String): Instant = runCatching { Instant.parse(text) }.getOrElse { Instant.fromEpochSeconds(0) }
 
-fun HistorialDto.toDomain() =
+fun HistoryDto.toDomain() =
     InvoiceHistory(
         recognitions =
-            reconocimientos
-                .map { RecognitionAttempt(it.resultado, it.modelo, instant(it.creadoEn), it.error) }
+            recognitions
+                .map { RecognitionAttempt(it.result, it.model, instant(it.createdAt), it.error) }
                 .sortedByDescending { it.createdAt },
-        changes = cambios.map { it.toDomain() }.sortedByDescending { it.at },
+        changes = changes.map { it.toDomain() }.sortedByDescending { it.at },
     )
 
-private fun CambioHistorialDto.toDomain() =
+private fun ChangeHistoryDto.toDomain() =
     InvoiceChange(
         action =
-            when (accion) {
-                "CORRECCION" -> ChangeAction.CORRECTION
-                "DESCARTE" -> ChangeAction.DISCARD
-                "RECLASIFICACION" -> ChangeAction.RECLASSIFICATION
+            when (action) {
+                "CORRECTION" -> ChangeAction.CORRECTION
+                "DISCARD" -> ChangeAction.DISCARD
+                "RECLASSIFICATION" -> ChangeAction.RECLASSIFICATION
                 else -> ChangeAction.OTHER
             },
-        authorId = autorId,
-        at = instant(ocurridoEn),
+        authorId = authorId,
+        at = instant(occurredAt),
         // A free-form map (research D12): nested values are shown as their JSON text.
         previousValues =
-            valoresAnteriores.orEmpty().mapValues { (_, value) ->
+            previousValues.orEmpty().mapValues { (_, value) ->
                 when (value) {
                     is JsonNull -> ""
                     is JsonPrimitive -> value.content
@@ -212,49 +202,49 @@ private fun CambioHistorialDto.toDomain() =
             },
     )
 
-fun EstadoTrimestreDto.toDomain(year: Int) =
+fun QuarterStatusDto.toDomain(year: Int) =
     Quarter(
         year = year,
-        quarter = trimestre,
-        closed = cerrado,
+        quarter = quarter,
+        closed = closed,
         events =
-            eventos
+            events
                 .map {
                     QuarterEvent(
                         action =
-                            when (it.accion) {
-                                "CIERRE" -> QuarterAction.CLOSE
-                                "REAPERTURA" -> QuarterAction.REOPEN
+                            when (it.action) {
+                                "CLOSE" -> QuarterAction.CLOSE
+                                "REOPEN" -> QuarterAction.REOPEN
                                 else -> QuarterAction.OTHER
                             },
-                        authorId = it.autorId,
-                        at = instant(it.ocurridoEn),
-                        reason = it.motivo,
+                        authorId = it.authorId,
+                        at = instant(it.occurredAt),
+                        reason = it.reason,
                     )
                 }.sortedByDescending { it.at },
     )
 
-fun EmpresaDto.toDomain() = Company(legalName = razonSocial, taxId = nif, recognitionEnabled = reconocimientoActivo)
+fun CompanyDto.toDomain() = Company(legalName = legalName, taxId = nif, recognitionEnabled = recognitionActive)
 
-private fun GrupoReporteDto.toDomain() =
+private fun ReportTotalsDto.toDomain() =
     ReportGroup(
-        count = facturas,
+        count = invoices,
         base = money(base),
-        vatByRate = ivaPorTipo.entries.sortedBy { money(it.key) }.associate { it.key to money(it.value) },
-        surcharge = money(recargo),
-        withholding = money(retenciones),
+        vatByRate = vatByRate.entries.sortedBy { money(it.key) }.associate { it.key to money(it.value) },
+        surcharge = money(surcharge),
+        withholding = money(withholdings),
         total = money(total),
-        noQuota = sinCuota.mapNotNull { (cause, base) -> cause.toNoQuotaCause()?.let { it to money(base) } }.toMap(),
+        noQuota = noVatBase.mapNotNull { (cause, base) -> cause.toNoQuotaCause()?.let { it to money(base) } }.toMap(),
     )
 
-fun ReporteDto.toDomain(period: ReportPeriod) =
+fun ReportDto.toDomain(period: ReportPeriod) =
     Report(
         period = period,
-        from = LocalDate.parse(periodo.desde),
-        to = LocalDate.parse(periodo.hasta),
-        issued = emitidas.toDomain(),
-        received = recibidas.toDomain(),
-        pending = pendientes,
-        closedQuarters = trimestresCerrados.map { it.anio to it.trimestre },
-        computedAt = instant(calculadoEn),
+        from = LocalDate.parse(this.period.from),
+        to = LocalDate.parse(this.period.to),
+        issued = issued.toDomain(),
+        received = received.toDomain(),
+        pending = pending,
+        closedQuarters = closedQuarters.map { it.year to it.quarter },
+        computedAt = instant(calculatedAt),
     )

@@ -122,6 +122,16 @@
     <string name="history_changes">Cambios</string>
     <string name="history_empty">Sin cambios registrados</string>
     <string name="history_recognition_item">%1$s · %2$s</string>
+    <string name="recognition_recognized">Reconocida</string>
+    <string name="recognition_not_an_invoice">No es una factura</string>
+    <string name="recognition_multiple_invoices">Varias facturas</string>
+    <string name="recognition_unreadable_pdf">PDF no legible</string>
+    <string name="recognition_api_error">Error del servicio</string>
+    <string name="recognition_network_error">Error de red</string>
+    <string name="recognition_invalid_response">Respuesta no válida</string>
+    <string name="recognition_timeout">Tiempo agotado</string>
+    <string name="recognition_refusal">Rechazada</string>
+    <string name="recognition_max_tokens">Respuesta incompleta</string>
     <string name="history_author">Por %1$s</string>
     <string name="history_previous">Antes: %1$s = %2$s</string>
     <string name="change_correction">Corrección</string>
