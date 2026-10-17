@@ -1,10 +1,10 @@
 package com.granatum.core.data.auth
 
-import com.granatum.core.data.auth.dto.CambioPasswordRequestDto
+import com.granatum.core.data.auth.dto.ChangePasswordRequestDto
 import com.granatum.core.data.auth.dto.LoginRequestDto
 import com.granatum.core.data.auth.dto.LogoutRequestDto
-import com.granatum.core.data.auth.dto.RegistroRequestDto
-import com.granatum.core.data.auth.dto.ParTokensResponseDto
+import com.granatum.core.data.auth.dto.SignUpRequestDto
+import com.granatum.core.data.auth.dto.TokenPairResponseDto
 import com.granatum.core.data.auth.provider.AuthRoutes
 import com.granatum.core.data.mappers.normaliseEmail
 import com.granatum.core.data.mappers.toSession
@@ -53,14 +53,14 @@ class KtorAuthRepositoryImpl(
     override suspend fun registerOwner(registration: OwnerRegistration): Result<Session, AuthError> {
         val email = normaliseEmail(registration.email)
         val sent = exchange {
-            httpClient.post(constructRoute(AuthRoutes.REGISTER_ROUTE)) {
+            httpClient.post(constructRoute(AuthRoutes.SIGN_UP_ROUTE)) {
                 setBody(
-                    RegistroRequestDto(
+                    SignUpRequestDto(
                         email = email,
                         password = registration.password,
-                        nombre = registration.name.trim(),
-                        documentoIdentidad = registration.identityDocument.trim(),
-                        codigoArranque = registration.bootstrapCode.trim()
+                        name = registration.name.trim(),
+                        identityDocument = registration.identityDocument.trim(),
+                        bootstrapCode = registration.bootstrapCode.trim()
                     )
                 )
             }
@@ -79,7 +79,7 @@ class KtorAuthRepositoryImpl(
             ?: return Result.Failure(AuthError.InvalidSession)
         return exchangeForSession(email = current.email) {
             httpClient.post(constructRoute(AuthRoutes.CHANGE_PASSWORD_ROUTE)) {
-                setBody(CambioPasswordRequestDto(passwordActual = currentPassword, passwordNueva = newPassword))
+                setBody(ChangePasswordRequestDto(currentPassword = currentPassword, newPassword = newPassword))
             }
         }
     }
@@ -111,7 +111,7 @@ class KtorAuthRepositoryImpl(
         }
         if (!response.status.isSuccess()) return Result.Failure(response.toAuthError())
 
-        val tokens = runCatching { response.body<ParTokensResponseDto>() }.getOrElse {
+        val tokens = runCatching { response.body<TokenPairResponseDto>() }.getOrElse {
             logger.warn("Auth response did not match the contract: ${it::class.simpleName}")
             return Result.Failure(AuthError.Unknown)
         }

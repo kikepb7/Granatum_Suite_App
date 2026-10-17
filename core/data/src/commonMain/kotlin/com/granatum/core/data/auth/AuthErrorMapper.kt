@@ -26,17 +26,17 @@ suspend fun HttpResponse.errorBody(): ErrorBodyDto? =
 suspend fun HttpResponse.toAuthError(): AuthError {
     val body = errorBody()
     return when (body?.code) {
-        "CREDENCIALES_INVALIDAS" -> AuthError.InvalidCredentials
-        "DEMASIADAS_PETICIONES" -> AuthError.TooManyAttempts(retryAfterSeconds())
-        "SERVICIO_SATURADO" -> AuthError.ServiceBusy(retryAfterSeconds())
-        "PASSWORD_DEBIL" -> AuthError.WeakPassword(
-            body.requisitos.orEmpty().mapNotNull(PasswordRequirement::fromBackend).toSet()
+        "INVALID_CREDENTIALS" -> AuthError.InvalidCredentials
+        "TOO_MANY_REQUESTS" -> AuthError.TooManyAttempts(retryAfterSeconds())
+        "SERVICE_BUSY" -> AuthError.ServiceBusy(retryAfterSeconds())
+        "WEAK_PASSWORD" -> AuthError.WeakPassword(
+            body.requirements.orEmpty().mapNotNull(PasswordRequirement::fromBackend).toSet()
         )
-        "VALIDACION" -> AuthError.Validation
-        "CODIGO_ARRANQUE_INVALIDO" -> AuthError.InvalidBootstrapCode
-        "EMAIL_YA_REGISTRADO" -> AuthError.EmailTaken
-        "CUENTA_YA_EXISTE" -> AuthError.AccountExists
-        "DOCUMENTO_INVALIDO" -> AuthError.InvalidDocument
+        "VALIDATION" -> AuthError.Validation
+        "INVALID_BOOTSTRAP_CODE" -> AuthError.InvalidBootstrapCode
+        "EMAIL_ALREADY_REGISTERED" -> AuthError.EmailTaken
+        "ACCOUNT_ALREADY_EXISTS" -> AuthError.AccountExists
+        "INVALID_DOCUMENT" -> AuthError.InvalidDocument
         else -> AuthError.Unknown
     }
 }

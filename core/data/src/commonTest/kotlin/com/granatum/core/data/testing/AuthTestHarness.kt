@@ -35,6 +35,6 @@ fun MockRequestHandleScope.json(status: HttpStatusCode, body: String, vararg ext
 )
 
 fun tokensJson(access: String, refresh: String, mustChange: Boolean = false) =
-    """{"accessToken":"$access","refreshToken":"$refresh","expiresIn":900,"requiereCambioPassword":$mustChange}"""
+    """{"accessToken":"$access","refreshToken":"$refresh","expiresIn":900,"passwordChangeRequired":$mustChange}"""
 
 fun errorJson(code: String) = """{"code":"$code","message":"m"}"""

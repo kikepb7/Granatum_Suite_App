@@ -49,7 +49,7 @@ class KtorAuthRepositoryImplTest {
 
     @Test
     fun rejected_credentials_store_nothing() = runTest {
-        val h = AuthTestHarness { json(HttpStatusCode.Unauthorized, errorJson("CREDENCIALES_INVALIDAS")) }
+        val h = AuthTestHarness { json(HttpStatusCode.Unauthorized, errorJson("INVALID_CREDENTIALS")) }
         assertEquals(Result.Failure(AuthError.InvalidCredentials), h.repository.login("a@b.es", "x"))
         assertNull(h.storage.observeSession().first())
     }
@@ -81,7 +81,7 @@ class KtorAuthRepositoryImplTest {
         val result = h.repository.changePassword("Temp0ral!", "Mi-Clave-2026!")
 
         val sent = h.requestsTo("/auth/change-password").single()
-        assertEquals("""{"passwordActual":"Temp0ral!","passwordNueva":"Mi-Clave-2026!"}""", sent.body.text())
+        assertEquals("""{"currentPassword":"Temp0ral!","newPassword":"Mi-Clave-2026!"}""", sent.body.text())
         assertTrue(sent.headers["Authorization"]!!.startsWith("Bearer "))
         val session = (result as Result.Success).data
         assertEquals(false, session.mustChangePassword)
@@ -93,7 +93,7 @@ class KtorAuthRepositoryImplTest {
     fun a_wrong_current_password_neither_refreshes_nor_signs_out() = runTest {
         val h = AuthTestHarness { request ->
             if (request.url.encodedPath.endsWith("/auth/login")) json(HttpStatusCode.OK, tokensJson(TestTokens.access(), "r1"))
-            else json(HttpStatusCode.Unauthorized, errorJson("CREDENCIALES_INVALIDAS"))
+            else json(HttpStatusCode.Unauthorized, errorJson("INVALID_CREDENTIALS"))
         }
         h.repository.login("a@b.es", "x")
 
@@ -106,7 +106,7 @@ class KtorAuthRepositoryImplTest {
     fun a_weak_password_returns_the_servers_requirements() = runTest {
         val h = AuthTestHarness { request ->
             if (request.url.encodedPath.endsWith("/auth/login")) json(HttpStatusCode.OK, tokensJson(TestTokens.access(), "r1"))
-            else json(HttpStatusCode.UnprocessableEntity, """{"code":"PASSWORD_DEBIL","message":"m","requisitos":["FALTA_SIMBOLO"]}""")
+            else json(HttpStatusCode.UnprocessableEntity, """{"code":"WEAK_PASSWORD","message":"m","requirements":["MISSING_SYMBOL"]}""")
         }
         h.repository.login("a@b.es", "x")
         assertIs<AuthError.WeakPassword>((h.repository.changePassword("x", "y") as Result.Failure).error)
@@ -141,20 +141,20 @@ class KtorAuthRepositoryImplTest {
     @Test
     fun the_owner_signs_up_with_every_field_and_is_signed_in_right_after() = runTest {
         val h = AuthTestHarness { request ->
-            if (request.url.encodedPath.endsWith("/auth/registro")) {
-                json(HttpStatusCode.Created, """{"estado":"ACTIVA","mensaje":"ok"}""")
+            if (request.url.encodedPath.endsWith("/auth/sign-up")) {
+                json(HttpStatusCode.Created, """{"status":"ACTIVE","message":"ok"}""")
             } else {
                 json(HttpStatusCode.OK, tokensJson(TestTokens.access(sub = "e-1", role = "ADMIN"), "r1"))
             }
         }
 
         val result = h.repository.registerOwner(
-            OwnerRegistration(name = " Ana Martín ", identityDocument = "12345678Z", email = " Ana@Granatum.es", password = "Clave-2026!", bootstrapCode = " codigo ")
+            OwnerRegistration(name = " Ana Martín ", identityDocument = "12345678Z", email = " Ana@Granatum.es", password = "Clave-2026!", bootstrapCode = " code ")
         )
 
-        val sent = h.requestsTo("/auth/registro").single()
+        val sent = h.requestsTo("/auth/sign-up").single()
         assertEquals(
-            """{"email":"ana@granatum.es","password":"Clave-2026!","nombre":"Ana Martín","documentoIdentidad":"12345678Z","codigoArranque":"codigo"}""",
+            """{"email":"ana@granatum.es","password":"Clave-2026!","name":"Ana Martín","identityDocument":"12345678Z","bootstrapCode":"code"}""",
             sent.body.text()
         )
         assertTrue(!sent.headers.contains("Authorization"), "a public route")
@@ -164,7 +164,7 @@ class KtorAuthRepositoryImplTest {
 
     @Test
     fun a_rejected_sign_up_does_not_try_to_sign_in() = runTest {
-        val h = AuthTestHarness { json(HttpStatusCode.Forbidden, errorJson("CODIGO_ARRANQUE_INVALIDO")) }
+        val h = AuthTestHarness { json(HttpStatusCode.Forbidden, errorJson("INVALID_BOOTSTRAP_CODE")) }
         val result = h.repository.registerOwner(OwnerRegistration("Ana", "12345678Z", "a@b.es", "Clave-2026!", "mal"))
         assertEquals(Result.Failure(AuthError.InvalidBootstrapCode), result)
         assertTrue(h.requestsTo("/auth/login").isEmpty())

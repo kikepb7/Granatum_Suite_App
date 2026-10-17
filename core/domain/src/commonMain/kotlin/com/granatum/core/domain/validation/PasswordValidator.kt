@@ -13,11 +13,11 @@ object PasswordValidator {
 
     /** The unmet requirements; empty means the password is acceptable. */
     fun validate(password: String): Set<PasswordRequirement> = buildSet {
-        if (password.length < MIN_LENGTH) add(PasswordRequirement.LONGITUD_MINIMA)
-        if (password.length > MAX_LENGTH) add(PasswordRequirement.LONGITUD_MAXIMA)
-        if (password.none { it.isUpperCase() }) add(PasswordRequirement.FALTA_MAYUSCULA)
-        if (password.none { it.isLowerCase() }) add(PasswordRequirement.FALTA_MINUSCULA)
-        if (password.none { it.isDigit() }) add(PasswordRequirement.FALTA_DIGITO)
-        if (password.none { !it.isLetterOrDigit() && !it.isWhitespace() }) add(PasswordRequirement.FALTA_SIMBOLO)
+        if (password.length < MIN_LENGTH) add(PasswordRequirement.MIN_LENGTH)
+        if (password.length > MAX_LENGTH) add(PasswordRequirement.MAX_LENGTH)
+        if (password.none { it.isUpperCase() }) add(PasswordRequirement.MISSING_UPPERCASE)
+        if (password.none { it.isLowerCase() }) add(PasswordRequirement.MISSING_LOWERCASE)
+        if (password.none { it.isDigit() }) add(PasswordRequirement.MISSING_DIGIT)
+        if (password.none { !it.isLetterOrDigit() && !it.isWhitespace() }) add(PasswordRequirement.MISSING_SYMBOL)
     }
 }

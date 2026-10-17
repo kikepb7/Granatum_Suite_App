@@ -37,52 +37,52 @@ class AuthErrorMapperTest {
 
     @Test
     fun the_four_rejected_sign_in_cases_share_one_error() = runTest {
-        assertEquals(AuthError.InvalidCredentials, response(HttpStatusCode.Unauthorized, error("CREDENCIALES_INVALIDAS")).toAuthError())
+        assertEquals(AuthError.InvalidCredentials, response(HttpStatusCode.Unauthorized, error("INVALID_CREDENTIALS")).toAuthError())
     }
 
     @Test
     fun rate_limit_and_overload_carry_retry_after_when_present() = runTest {
         assertEquals(
             AuthError.TooManyAttempts(30),
-            response(HttpStatusCode.TooManyRequests, error("DEMASIADAS_PETICIONES"), HttpHeaders.RetryAfter to "30").toAuthError()
+            response(HttpStatusCode.TooManyRequests, error("TOO_MANY_REQUESTS"), HttpHeaders.RetryAfter to "30").toAuthError()
         )
         assertEquals(
             AuthError.ServiceBusy(5),
-            response(HttpStatusCode.ServiceUnavailable, error("SERVICIO_SATURADO"), HttpHeaders.RetryAfter to " 5 ").toAuthError()
+            response(HttpStatusCode.ServiceUnavailable, error("SERVICE_BUSY"), HttpHeaders.RetryAfter to " 5 ").toAuthError()
         )
     }
 
     @Test
     fun a_missing_or_non_numeric_retry_after_gives_no_figure() = runTest {
-        assertEquals(AuthError.TooManyAttempts(null), response(HttpStatusCode.TooManyRequests, error("DEMASIADAS_PETICIONES")).toAuthError())
+        assertEquals(AuthError.TooManyAttempts(null), response(HttpStatusCode.TooManyRequests, error("TOO_MANY_REQUESTS")).toAuthError())
         assertEquals(
             AuthError.TooManyAttempts(null),
-            response(HttpStatusCode.TooManyRequests, error("DEMASIADAS_PETICIONES"), HttpHeaders.RetryAfter to "Wed, 21 Oct 2026 07:28:00 GMT").toAuthError()
+            response(HttpStatusCode.TooManyRequests, error("TOO_MANY_REQUESTS"), HttpHeaders.RetryAfter to "Wed, 21 Oct 2026 07:28:00 GMT").toAuthError()
         )
     }
 
     @Test
     fun weak_password_keeps_the_requirements_it_knows() = runTest {
-        val body = error("PASSWORD_DEBIL", ""","requisitos":["FALTA_SIMBOLO","LONGITUD_MINIMA","ALGO_NUEVO"]""")
+        val body = error("WEAK_PASSWORD", ""","requirements":["MISSING_SYMBOL","MIN_LENGTH","SOMETHING_NEW"]""")
         assertEquals(
-            AuthError.WeakPassword(setOf(PasswordRequirement.FALTA_SIMBOLO, PasswordRequirement.LONGITUD_MINIMA)),
+            AuthError.WeakPassword(setOf(PasswordRequirement.MISSING_SYMBOL, PasswordRequirement.MIN_LENGTH)),
             response(HttpStatusCode.UnprocessableEntity, body).toAuthError()
         )
     }
 
     @Test
     fun validation_and_unknown_codes() = runTest {
-        assertEquals(AuthError.Validation, response(HttpStatusCode.BadRequest, error("VALIDACION")).toAuthError())
-        assertEquals(AuthError.Unknown, response(HttpStatusCode.Conflict, error("OTRA_COSA")).toAuthError())
+        assertEquals(AuthError.Validation, response(HttpStatusCode.BadRequest, error("VALIDATION")).toAuthError())
+        assertEquals(AuthError.Unknown, response(HttpStatusCode.Conflict, error("SOMETHING_ELSE")).toAuthError())
         assertEquals(AuthError.Unknown, response(HttpStatusCode.InternalServerError, "<html>oops</html>").toAuthError())
     }
 
     @Test
     fun owner_sign_up_codes() = runTest {
-        assertEquals(AuthError.InvalidBootstrapCode, response(HttpStatusCode.Forbidden, error("CODIGO_ARRANQUE_INVALIDO")).toAuthError())
-        assertEquals(AuthError.EmailTaken, response(HttpStatusCode.Conflict, error("EMAIL_YA_REGISTRADO")).toAuthError())
-        assertEquals(AuthError.AccountExists, response(HttpStatusCode.Conflict, error("CUENTA_YA_EXISTE")).toAuthError())
-        assertEquals(AuthError.InvalidDocument, response(HttpStatusCode.UnprocessableEntity, error("DOCUMENTO_INVALIDO")).toAuthError())
+        assertEquals(AuthError.InvalidBootstrapCode, response(HttpStatusCode.Forbidden, error("INVALID_BOOTSTRAP_CODE")).toAuthError())
+        assertEquals(AuthError.EmailTaken, response(HttpStatusCode.Conflict, error("EMAIL_ALREADY_REGISTERED")).toAuthError())
+        assertEquals(AuthError.AccountExists, response(HttpStatusCode.Conflict, error("ACCOUNT_ALREADY_EXISTS")).toAuthError())
+        assertEquals(AuthError.InvalidDocument, response(HttpStatusCode.UnprocessableEntity, error("INVALID_DOCUMENT")).toAuthError())
     }
 
     @Test

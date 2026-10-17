@@ -16,7 +16,7 @@ object TestTokens {
 
     fun access(
         sub: String = "emp-1",
-        role: String = "EMPLEADO",
+        role: String = "EMPLOYEE",
         pwdChange: Boolean = false,
         marker: String = ""
     ): String = jwt(

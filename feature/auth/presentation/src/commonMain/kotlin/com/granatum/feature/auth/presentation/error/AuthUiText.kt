@@ -58,11 +58,11 @@ fun SignOutReason.toUiText(): UiText = when (this) {
 
 fun PasswordRequirement.toUiText(): UiText = UiText.Resource(
     when (this) {
-        PasswordRequirement.LONGITUD_MINIMA -> Res.string.password_req_min_length
-        PasswordRequirement.LONGITUD_MAXIMA -> Res.string.password_req_max_length
-        PasswordRequirement.FALTA_MAYUSCULA -> Res.string.password_req_uppercase
-        PasswordRequirement.FALTA_MINUSCULA -> Res.string.password_req_lowercase
-        PasswordRequirement.FALTA_DIGITO -> Res.string.password_req_digit
-        PasswordRequirement.FALTA_SIMBOLO -> Res.string.password_req_symbol
+        PasswordRequirement.MIN_LENGTH -> Res.string.password_req_min_length
+        PasswordRequirement.MAX_LENGTH -> Res.string.password_req_max_length
+        PasswordRequirement.MISSING_UPPERCASE -> Res.string.password_req_uppercase
+        PasswordRequirement.MISSING_LOWERCASE -> Res.string.password_req_lowercase
+        PasswordRequirement.MISSING_DIGIT -> Res.string.password_req_digit
+        PasswordRequirement.MISSING_SYMBOL -> Res.string.password_req_symbol
     }
 )

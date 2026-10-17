@@ -22,7 +22,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
- * Research D4: only `TOKEN_ACCESO_EXPIRADO` refreshes, only a definitive rejection ends the
+ * Research D4: only `ACCESS_TOKEN_EXPIRED` refreshes, only a definitive rejection ends the
  * session, and concurrent refreshes collapse into one because the refresh token rotates.
  */
 class HttpClientFactoryRefreshTest {
@@ -32,12 +32,12 @@ class HttpClientFactoryRefreshTest {
 
     private val stored = Session(
         accessToken = expiredAccess, refreshToken = "r-old", employeeId = "emp-1",
-        role = UserRole.EMPLEADO, mustChangePassword = false, email = "ana@granatum.es"
+        role = UserRole.EMPLOYEE, mustChangePassword = false, email = "ana@granatum.es"
     )
 
     private suspend fun AuthTestHarness.signedIn(): AuthTestHarness = apply { storage.set(stored) }
 
-    private suspend fun AuthTestHarness.protectedCall(): HttpResponse = client.get(constructRoute("/fichajes"))
+    private suspend fun AuthTestHarness.protectedCall(): HttpResponse = client.get(constructRoute("/shifts"))
 
     /** A protected route that accepts only the fresh token. */
     private fun protectedRoute(refresh: suspend io.ktor.client.engine.mock.MockRequestHandleScope.() -> io.ktor.client.request.HttpResponseData) =
@@ -45,7 +45,7 @@ class HttpClientFactoryRefreshTest {
             when {
                 request.url.encodedPath.endsWith("/auth/refresh") -> refresh()
                 request.headers["Authorization"] == "Bearer $freshAccess" -> json(HttpStatusCode.OK, "[]")
-                else -> json(HttpStatusCode.Unauthorized, errorJson("TOKEN_ACCESO_EXPIRADO"))
+                else -> json(HttpStatusCode.Unauthorized, errorJson("ACCESS_TOKEN_EXPIRED"))
             }
         }
 
@@ -75,7 +75,7 @@ class HttpClientFactoryRefreshTest {
 
     @Test
     fun an_invalid_refresh_token_ends_the_session() = runTest {
-        val h = protectedRoute { json(HttpStatusCode.Unauthorized, errorJson("TOKEN_RENOVACION_INVALIDO")) }.signedIn()
+        val h = protectedRoute { json(HttpStatusCode.Unauthorized, errorJson("INVALID_REFRESH_TOKEN")) }.signedIn()
         h.protectedCall()
         assertNull(h.storage.observeSession().first())
         assertEquals(SignOutReason.SESSION_REJECTED, h.events.lastSignOutReason.value)
@@ -83,7 +83,7 @@ class HttpClientFactoryRefreshTest {
 
     @Test
     fun an_inactive_person_is_signed_out_with_that_reason() = runTest {
-        val h = protectedRoute { json(HttpStatusCode.Unauthorized, errorJson("EMPLEADO_INACTIVO")) }.signedIn()
+        val h = protectedRoute { json(HttpStatusCode.Unauthorized, errorJson("EMPLOYEE_INACTIVE")) }.signedIn()
         h.protectedCall()
         assertNull(h.storage.observeSession().first())
         assertEquals(SignOutReason.INACTIVE, h.events.lastSignOutReason.value)
@@ -100,7 +100,7 @@ class HttpClientFactoryRefreshTest {
     @Test
     fun server_errors_during_refresh_keep_the_session() = runTest {
         listOf(HttpStatusCode.ServiceUnavailable, HttpStatusCode.InternalServerError, HttpStatusCode.TooManyRequests).forEach { status ->
-            val h = protectedRoute { json(status, errorJson("SERVICIO_SATURADO")) }.signedIn()
+            val h = protectedRoute { json(status, errorJson("SERVICE_BUSY")) }.signedIn()
             h.protectedCall()
             assertEquals(stored, h.storage.observeSession().first(), "after $status")
         }
@@ -108,7 +108,7 @@ class HttpClientFactoryRefreshTest {
 
     @Test
     fun not_authenticated_on_a_protected_route_ends_the_session() = runTest {
-        val h = AuthTestHarness { json(HttpStatusCode.Unauthorized, errorJson("NO_AUTENTICADO")) }.signedIn()
+        val h = AuthTestHarness { json(HttpStatusCode.Unauthorized, errorJson("NOT_AUTHENTICATED")) }.signedIn()
         h.protectedCall()
         assertNull(h.storage.observeSession().first())
         assertEquals(SignOutReason.SESSION_REJECTED, h.events.lastSignOutReason.value)
@@ -124,8 +124,8 @@ class HttpClientFactoryRefreshTest {
 
     @Test
     fun the_401_body_is_still_readable_by_the_caller() = runTest {
-        val h = AuthTestHarness { json(HttpStatusCode.Unauthorized, errorJson("NO_AUTENTICADO")) }.signedIn()
-        assertTrue(h.protectedCall().bodyAsText().contains("NO_AUTENTICADO"))
+        val h = AuthTestHarness { json(HttpStatusCode.Unauthorized, errorJson("NOT_AUTHENTICATED")) }.signedIn()
+        assertTrue(h.protectedCall().bodyAsText().contains("NOT_AUTHENTICATED"))
     }
 
     @Test

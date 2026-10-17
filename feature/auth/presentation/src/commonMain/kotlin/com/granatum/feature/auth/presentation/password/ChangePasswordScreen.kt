@@ -154,7 +154,7 @@ internal fun RequirementList(unmet: Set<PasswordRequirement>) {
         )
         // The maximum is only worth showing once it is broken.
         PasswordRequirement.entries
-            .filter { it != PasswordRequirement.LONGITUD_MAXIMA || it in unmet }
+            .filter { it != PasswordRequirement.MAX_LENGTH || it in unmet }
             .forEach { requirement ->
                 val met = requirement !in unmet
                 val label = requirement.toUiText().asString()

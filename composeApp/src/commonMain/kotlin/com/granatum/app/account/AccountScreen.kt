@@ -136,9 +136,9 @@ fun AccountScreenRoot(
 fun roleName(role: UserRole): String = stringResource(
     when (role) {
         UserRole.ADMIN -> Res.string.role_admin
-        UserRole.ENCARGADO -> Res.string.role_manager
-        UserRole.EMPLEADO -> Res.string.role_employee
-        UserRole.REPRESENTANTE -> Res.string.role_representative
-        UserRole.DESCONOCIDO -> Res.string.role_unknown
+        UserRole.MANAGER -> Res.string.role_manager
+        UserRole.EMPLOYEE -> Res.string.role_employee
+        UserRole.REPRESENTATIVE -> Res.string.role_representative
+        UserRole.UNKNOWN -> Res.string.role_unknown
     }
 )

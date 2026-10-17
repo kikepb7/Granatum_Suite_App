@@ -13,12 +13,12 @@ object AuthRoutes : RouteProvider {
     val CHANGE_PASSWORD_ROUTE = route(path = "change-password")
 
     /** The owner's sign-up: public, and only useful with the deploy-time bootstrap code. */
-    val REGISTER_ROUTE = route(path = "registro")
+    val SIGN_UP_ROUTE = route(path = "sign-up")
 
     /**
      * Public routes: the credential travels in the body. They never get an `Authorization`
      * header — an expired access token there would only invite a rejection on a route that does
      * not need one.
      */
-    val PUBLIC_ROUTES = setOf(LOGIN_ROUTE, REFRESH_ROUTE, LOGOUT_ROUTE, REGISTER_ROUTE)
+    val PUBLIC_ROUTES = setOf(LOGIN_ROUTE, REFRESH_ROUTE, LOGOUT_ROUTE, SIGN_UP_ROUTE)
 }

@@ -3,7 +3,7 @@ package com.granatum.core.data.networking
 import com.granatum.core.data.environment.ActiveEnvironment
 import com.granatum.core.data.BuildKonfig
 import com.granatum.core.data.auth.SessionEvents
-import com.granatum.core.data.auth.dto.ParTokensResponseDto
+import com.granatum.core.data.auth.dto.TokenPairResponseDto
 import com.granatum.core.data.auth.dto.RefreshRequestDto
 import com.granatum.core.data.auth.errorBody
 import com.granatum.core.data.auth.provider.AuthRoutes
@@ -49,8 +49,8 @@ import kotlinx.serialization.json.Json
  * The shared HTTP client. Besides the usual plumbing it owns the session's continuity, the part
  * that makes this app usable offline (specs/004-login-roles, research D4):
  *
- * - Only `401 TOKEN_ACCESO_EXPIRADO` triggers a refresh. Every other 401 means something else:
- *   `CREDENCIALES_INVALIDAS` on a password change is a wrong password, not an expired session.
+ * - Only `401 ACCESS_TOKEN_EXPIRED` triggers a refresh. Every other 401 means something else:
+ *   `INVALID_CREDENTIALS` on a password change is a wrong password, not an expired session.
  * - Concurrent refreshes collapse into one inside Ktor's bearer provider (`AuthTokenHolder`
  *   serialises them), which matters because the refresh token rotates on every use: spending it
  *   twice would end the session.
@@ -86,7 +86,7 @@ class HttpClientFactory(
                 // Nor staff records: names and ID documents (specs/009-personal).
                 filter { request ->
                     val path = request.url.encodedPath
-                    !path.contains("/auth/") && !path.contains("/facturacion/") && !path.contains("/empleados")
+                    !path.contains("/auth/") && !path.contains("/invoicing/") && !path.contains("/employees")
                 }
                 sanitizeHeader { name -> name == HttpHeaders.Authorization || name == API_KEY_HEADER }
             }
@@ -162,7 +162,7 @@ class HttpClientFactory(
     }
 
     private suspend fun storeRefreshed(response: HttpResponse, current: Session): BearerTokens? {
-        val tokens = runCatching { response.body<ParTokensResponseDto>() }.getOrElse {
+        val tokens = runCatching { response.body<TokenPairResponseDto>() }.getOrElse {
             appLogger.warn("Refresh response did not match the contract; session kept")
             return null
         }
@@ -187,9 +187,9 @@ class HttpClientFactory(
 
     private companion object {
         const val API_KEY_HEADER = "x-api-key"
-        const val CODE_ACCESS_EXPIRED = "TOKEN_ACCESO_EXPIRADO"
-        const val CODE_NOT_AUTHENTICATED = "NO_AUTENTICADO"
-        const val CODE_REFRESH_INVALID = "TOKEN_RENOVACION_INVALIDO"
-        const val CODE_EMPLOYEE_INACTIVE = "EMPLEADO_INACTIVO"
+        const val CODE_ACCESS_EXPIRED = "ACCESS_TOKEN_EXPIRED"
+        const val CODE_NOT_AUTHENTICATED = "NOT_AUTHENTICATED"
+        const val CODE_REFRESH_INVALID = "INVALID_REFRESH_TOKEN"
+        const val CODE_EMPLOYEE_INACTIVE = "EMPLOYEE_INACTIVE"
     }
 }

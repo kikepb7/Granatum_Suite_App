@@ -93,14 +93,28 @@ class SecureSessionStorage(
 
         val stored = secureStore.read(SECURE_SESSION_KEY) ?: return
 
-        cached.value = runCatching {
-            json.decodeFromString<StoredSessionDto>(stored).toDomain()
+        val dto = runCatching {
+            json.decodeFromString<StoredSessionDto>(stored)
         }.getOrElse { throwable ->
             // Unparseable means unusable. Drop it rather than keep handing back something
             // broken on every launch.
             logger.warn("Stored session could not be read; discarding it: ${throwable.message}")
             secureStore.delete(SECURE_SESSION_KEY)
-            null
+            return
         }
+
+        if (dto.role in PRE_ENGLISH_ROLE_NAMES) {
+            // Saved before the backend renamed its roles to English: its tokens carry the old
+            // role and the server no longer accepts them, so the person signs in again once.
+            logger.info("Stored session predates the English role names; discarding it")
+            secureStore.delete(SECURE_SESSION_KEY)
+            return
+        }
+
+        cached.value = dto.toDomain()
+    }
+
+    private companion object {
+        val PRE_ENGLISH_ROLE_NAMES = setOf("ENCARGADO", "EMPLEADO", "REPRESENTANTE", "DESCONOCIDO")
     }
 }

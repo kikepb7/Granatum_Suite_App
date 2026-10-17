@@ -20,7 +20,7 @@ class AccountStateTest {
     @Test
     fun a_fresh_state_is_signed_in_nowhere_and_warns_nothing() {
         val state = AccountState()
-        assertEquals(UserRole.DESCONOCIDO, state.role)
+        assertEquals(UserRole.UNKNOWN, state.role)
         assertEquals(0, state.pendingCount)
         assertFalse(state.showPendingWarning)
         assertFalse(state.isSigningOut)

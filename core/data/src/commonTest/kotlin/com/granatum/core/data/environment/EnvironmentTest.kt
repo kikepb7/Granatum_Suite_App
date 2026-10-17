@@ -195,6 +195,6 @@ class EnvironmentTest {
     fun routes_follow_the_active_environment() = runTest {
         ActiveEnvironment.current = DEMO
         assertEquals(ActiveEnvironment.DEMO_BASE_URL, com.granatum.core.data.networking.UrlConstants.BASE_URL_HTTP)
-        assertEquals("${ActiveEnvironment.DEMO_BASE_URL}/materiales", com.granatum.core.data.networking.constructRoute("/materiales"))
+        assertEquals("${ActiveEnvironment.DEMO_BASE_URL}/materials", com.granatum.core.data.networking.constructRoute("/materials"))
     }
 }

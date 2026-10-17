@@ -20,7 +20,7 @@ import kotlinx.coroutines.launch
 
 data class AccountState(
     val email: String = "",
-    val role: UserRole = UserRole.DESCONOCIDO,
+    val role: UserRole = UserRole.UNKNOWN,
     val pendingCount: Int = 0,
     val showPendingWarning: Boolean = false,
     val isSigningOut: Boolean = false,
@@ -55,7 +55,7 @@ class AccountViewModel(
         ui.copy(
             environment = environment,
             email = session?.email.orEmpty(),
-            role = session?.role ?: UserRole.DESCONOCIDO,
+            role = session?.role ?: UserRole.UNKNOWN,
             pendingCount = pending
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), AccountState())

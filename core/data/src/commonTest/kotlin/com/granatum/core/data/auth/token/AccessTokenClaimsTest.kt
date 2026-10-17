@@ -11,9 +11,9 @@ class AccessTokenClaimsTest {
 
     @Test
     fun reads_subject_role_and_pending_change() {
-        val claims = AccessTokenClaims.parse(TestTokens.access(sub = "e-42", role = "ENCARGADO", pwdChange = true))!!
+        val claims = AccessTokenClaims.parse(TestTokens.access(sub = "e-42", role = "MANAGER", pwdChange = true))!!
         assertEquals("e-42", claims.employeeId)
-        assertEquals("ENCARGADO", claims.role)
+        assertEquals("MANAGER", claims.role)
         assertTrue(claims.pwdChange)
     }
 

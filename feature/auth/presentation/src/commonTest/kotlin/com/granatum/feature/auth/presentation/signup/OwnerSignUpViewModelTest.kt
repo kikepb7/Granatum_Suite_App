@@ -52,7 +52,7 @@ class OwnerSignUpViewModelTest {
         vm.fill(password = "corta")
         vm.onAction(OwnerSignUpAction.OnSubmit)
 
-        assertTrue(PasswordRequirement.LONGITUD_MINIMA in vm.state.value.unmetRequirements)
+        assertTrue(PasswordRequirement.MIN_LENGTH in vm.state.value.unmetRequirements)
         assertTrue(repo.registrations.isEmpty())
     }
 
@@ -82,9 +82,9 @@ class OwnerSignUpViewModelTest {
         vm.onAction(OwnerSignUpAction.OnSubmit)
         assertEquals(FieldProblem.INVALID, vm.state.value.problems[SignUpField.DOCUMENT])
 
-        repo.nextResult = Result.Failure(AuthError.WeakPassword(setOf(PasswordRequirement.FALTA_SIMBOLO)))
+        repo.nextResult = Result.Failure(AuthError.WeakPassword(setOf(PasswordRequirement.MISSING_SYMBOL)))
         vm.onAction(OwnerSignUpAction.OnSubmit)
-        assertEquals(setOf(PasswordRequirement.FALTA_SIMBOLO), vm.state.value.serverUnmetRequirements)
+        assertEquals(setOf(PasswordRequirement.MISSING_SYMBOL), vm.state.value.serverUnmetRequirements)
 
         repo.nextResult = Result.Failure(AuthError.InvalidBootstrapCode)
         vm.onAction(OwnerSignUpAction.OnSubmit)

@@ -43,7 +43,7 @@ class ChangePasswordViewModelTest {
     fun requirements_are_recomputed_while_typing() = runTest {
         val vm = viewModel(new = "granatum")
         assertEquals(
-            setOf(PasswordRequirement.FALTA_MAYUSCULA, PasswordRequirement.FALTA_DIGITO, PasswordRequirement.FALTA_SIMBOLO),
+            setOf(PasswordRequirement.MISSING_UPPERCASE, PasswordRequirement.MISSING_DIGIT, PasswordRequirement.MISSING_SYMBOL),
             vm.state.value.unmetRequirements
         )
         vm.newState.setTextAndPlaceCursorAtEnd("Granatum1!")
@@ -72,10 +72,10 @@ class ChangePasswordViewModelTest {
 
     @Test
     fun the_servers_requirements_are_shown_exactly() = runTest {
-        repository.nextResult = Result.Failure(AuthError.WeakPassword(setOf(PasswordRequirement.FALTA_SIMBOLO)))
+        repository.nextResult = Result.Failure(AuthError.WeakPassword(setOf(PasswordRequirement.MISSING_SYMBOL)))
         val vm = viewModel()
         vm.onAction(ChangePasswordAction.OnSubmit)
-        assertEquals(setOf(PasswordRequirement.FALTA_SIMBOLO), vm.state.value.serverUnmetRequirements)
+        assertEquals(setOf(PasswordRequirement.MISSING_SYMBOL), vm.state.value.serverUnmetRequirements)
     }
 
     @Test

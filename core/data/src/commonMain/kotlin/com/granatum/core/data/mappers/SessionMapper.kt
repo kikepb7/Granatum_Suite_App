@@ -1,6 +1,6 @@
 package com.granatum.core.data.mappers
 
-import com.granatum.core.data.auth.dto.ParTokensResponseDto
+import com.granatum.core.data.auth.dto.TokenPairResponseDto
 import com.granatum.core.data.auth.dto.StoredSessionDto
 import com.granatum.core.data.auth.token.AccessTokenClaims
 import com.granatum.core.domain.auth.AuthError
@@ -16,10 +16,10 @@ import com.granatum.core.domain.util.Result
  * The pending-change flag is the stricter of the response field and the claim: if they ever
  * disagreed, assuming "no change needed" would show screens the server will refuse.
  */
-fun ParTokensResponseDto.toSession(email: String, logger: AppLogger): Result<Session, AuthError> {
+fun TokenPairResponseDto.toSession(email: String, logger: AppLogger): Result<Session, AuthError> {
     val claims = AccessTokenClaims.parse(accessToken) ?: return Result.Failure(AuthError.InvalidSession)
     val role = UserRole.fromBackend(claims.role)
-    if (role == UserRole.DESCONOCIDO) {
+    if (role == UserRole.UNKNOWN) {
         // The claim value is not a secret; the token is, and never goes to the log.
         logger.warn("Unknown role '${claims.role}' in the access token; granting least privilege")
     }
@@ -29,7 +29,7 @@ fun ParTokensResponseDto.toSession(email: String, logger: AppLogger): Result<Ses
             refreshToken = refreshToken,
             employeeId = claims.employeeId,
             role = role,
-            mustChangePassword = requiereCambioPassword || claims.pwdChange,
+            mustChangePassword = passwordChangeRequired || claims.pwdChange,
             email = email
         )
     )

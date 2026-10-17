@@ -10,7 +10,7 @@ import kotlin.test.assertEquals
 
 class SessionStateTest {
 
-    private fun session(role: UserRole = UserRole.EMPLEADO, mustChange: Boolean = false) = Session(
+    private fun session(role: UserRole = UserRole.EMPLOYEE, mustChange: Boolean = false) = Session(
         accessToken = "a",
         refreshToken = "r",
         employeeId = "e-1",
@@ -48,15 +48,15 @@ class SessionStateTest {
     @Test
     fun a_valid_session_is_active_with_its_role() {
         assertEquals(
-            SessionState.Active(UserRole.REPRESENTANTE),
-            sessionStateOf(session(role = UserRole.REPRESENTANTE), loaded = true, reason = null)
+            SessionState.Active(UserRole.REPRESENTATIVE),
+            sessionStateOf(session(role = UserRole.REPRESENTATIVE), loaded = true, reason = null)
         )
     }
 
     @Test
     fun a_stale_reason_is_ignored_once_someone_signs_in() {
         assertEquals(
-            SessionState.Active(UserRole.EMPLEADO),
+            SessionState.Active(UserRole.EMPLOYEE),
             sessionStateOf(session(), loaded = true, reason = SignOutReason.SESSION_REJECTED)
         )
     }

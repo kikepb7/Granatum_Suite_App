@@ -8,7 +8,7 @@ package com.granatum.core.domain.auth.model
  * [email] is what the person typed, kept only to show back to them.
  *
  * The access token's expiry is deliberately absent. Whether a session has expired is the
- * server's call (`TOKEN_ACCESO_EXPIRADO`), never the device clock's.
+ * server's call (`ACCESS_TOKEN_EXPIRED`), never the device clock's.
  */
 data class Session(
     val accessToken: String,

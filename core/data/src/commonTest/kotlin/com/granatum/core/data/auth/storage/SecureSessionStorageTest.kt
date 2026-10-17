@@ -16,7 +16,7 @@ class SecureSessionStorageTest {
 
     private val session = Session(
         accessToken = "a", refreshToken = "r", employeeId = "e-1",
-        role = UserRole.REPRESENTANTE, mustChangePassword = false, email = "ana@granatum.es"
+        role = UserRole.REPRESENTATIVE, mustChangePassword = false, email = "ana@granatum.es"
     )
 
     @Test
@@ -37,6 +37,27 @@ class SecureSessionStorageTest {
         assertNull(storage.observeSession().first())
         assertFalse(SECURE_SESSION_KEY in store.values)
         assertTrue(storage.isReady.value)
+    }
+
+    @Test
+    fun `When the stored session carries a role name from before the English contract then it is discarded`() = runTest {
+        val legacy = """{"accessToken":"a","refreshToken":"r","employeeId":"e-1","role":"ENCARGADO",""" +
+            """"mustChangePassword":false,"email":"ana@granatum.es"}"""
+        val store = FakeSecureStore(mapOf(SECURE_SESSION_KEY to legacy))
+        val storage = SecureSessionStorage(store, RecordingLogger())
+        storage.load()
+        assertNull(storage.observeSession().first())
+        assertFalse(SECURE_SESSION_KEY in store.values)
+        assertTrue(storage.isReady.value)
+    }
+
+    @Test
+    fun `When the stored session carries a role this version does not know then it loads as UNKNOWN`() = runTest {
+        val stored = """{"accessToken":"a","refreshToken":"r","employeeId":"e-1","role":"AUDITOR",""" +
+            """"mustChangePassword":false,"email":"ana@granatum.es"}"""
+        val storage = SecureSessionStorage(FakeSecureStore(mapOf(SECURE_SESSION_KEY to stored)), RecordingLogger())
+        storage.load()
+        assertEquals(UserRole.UNKNOWN, storage.observeSession().first()?.role)
     }
 
     @Test

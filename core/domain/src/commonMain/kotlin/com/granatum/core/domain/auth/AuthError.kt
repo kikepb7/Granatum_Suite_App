@@ -5,8 +5,8 @@ import com.granatum.core.domain.validation.PasswordRequirement
 
 /**
  * Failures of the auth routes, told apart the way the backend tells them apart: by the stable
- * `code` in its `{code, message}` body, not by HTTP status. `CREDENCIALES_INVALIDAS` and
- * `TOKEN_ACCESO_EXPIRADO` are both a 401 and mean opposite things.
+ * `code` in its `{code, message}` body, not by HTTP status. `INVALID_CREDENTIALS` and
+ * `ACCESS_TOKEN_EXPIRED` are both a 401 and mean opposite things.
  *
  * A sibling of `DataError` rather than new entries in it: `DataError` stays identical to the
  * reference project's (constitution, principle IV), and it cannot carry `Retry-After` or the

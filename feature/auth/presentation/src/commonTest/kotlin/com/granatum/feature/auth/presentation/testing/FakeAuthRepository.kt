@@ -42,6 +42,6 @@ class FakeAuthRepository : AuthRepository {
     }
 
     companion object {
-        fun session() = Session("a", "r", "e-1", UserRole.EMPLEADO, false, "ana@granatum.es")
+        fun session() = Session("a", "r", "e-1", UserRole.EMPLOYEE, false, "ana@granatum.es")
     }
 }

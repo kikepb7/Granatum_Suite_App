@@ -2,20 +2,19 @@ package com.granatum.core.data.auth.dto
 
 import kotlinx.serialization.Serializable
 
-// Field names match docs/openapi.json letter for letter (constitution principle VI). They are
-// Spanish where the backend's are; renaming them here would only move the mismatch.
+// Field names match docs/openapi.json letter for letter (constitution principle VI).
 
 @Serializable
-data class ParTokensResponseDto(
+data class TokenPairResponseDto(
     val accessToken: String,
     val refreshToken: String,
     /** Seconds. Not stored: expiry is the server's call, not the device clock's. */
     val expiresIn: Long,
-    val requiereCambioPassword: Boolean
+    val passwordChangeRequired: Boolean
 ) {
     override fun toString(): String =
-        "ParTokensResponseDto(accessToken=***, refreshToken=***, expiresIn=$expiresIn, " +
-            "requiereCambioPassword=$requiereCambioPassword)"
+        "TokenPairResponseDto(accessToken=***, refreshToken=***, expiresIn=$expiresIn, " +
+            "passwordChangeRequired=$passwordChangeRequired)"
 }
 
 @Serializable
@@ -33,30 +32,34 @@ data class LogoutRequestDto(val refreshToken: String) {
     override fun toString(): String = "LogoutRequestDto(refreshToken=***)"
 }
 
-/** The owner's sign-up (backend 2ec33d0): every field required, the code included. */
+/** The owner's sign-up (`SignUpRequest`): every field required, the code included. */
 @Serializable
-data class RegistroRequestDto(
+data class SignUpRequestDto(
     val email: String,
     val password: String,
-    val nombre: String,
-    val documentoIdentidad: String,
-    val codigoArranque: String
+    val name: String,
+    val identityDocument: String,
+    val bootstrapCode: String
 ) {
-    override fun toString(): String = "RegistroRequestDto(email=$email, password=***, codigoArranque=***)"
+    override fun toString(): String = "SignUpRequestDto(email=$email, password=***, bootstrapCode=***)"
 }
 
+/** `SignUpResponse`. Not read today: a 2xx is all the app needs before signing in. */
 @Serializable
-data class CambioPasswordRequestDto(val passwordActual: String, val passwordNueva: String) {
-    override fun toString(): String = "CambioPasswordRequestDto(passwordActual=***, passwordNueva=***)"
+data class SignUpResponseDto(val status: String, val message: String)
+
+@Serializable
+data class ChangePasswordRequestDto(val currentPassword: String, val newPassword: String) {
+    override fun toString(): String = "ChangePasswordRequestDto(currentPassword=***, newPassword=***)"
 }
 
 /**
- * The backend's single error shape. `requisitos` only comes with `422 PASSWORD_DEBIL`, the one
+ * The backend's single error shape. `requirements` only comes with `422 WEAK_PASSWORD`, the one
  * declared exception to `{code, message}`.
  */
 @Serializable
 data class ErrorBodyDto(
     val code: String,
     val message: String = "",
-    val requisitos: List<String>? = null
+    val requirements: List<String>? = null
 )
