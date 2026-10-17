@@ -3,6 +3,8 @@ package com.granatum.core.demo
 /** Small helpers the demo backend needs to read uploads and produce files. */
 internal object DemoDocuments {
     class Part(
+        /** The `name` of its Content-Disposition, e.g. `files` or `image`. */
+        val name: String?,
         val contentType: String?,
         val bytes: ByteArray,
     )
@@ -34,7 +36,12 @@ internal object DemoDocuments {
                             )
                         }?.substringAfter(':')
                         ?.trim()
-                parts += Part(type, body.copyOfRange(headersEnd + separator.size, (next - 2).coerceAtLeast(headersEnd + separator.size)))
+                val name =
+                    headers
+                        .lineSequence()
+                        .firstOrNull { it.startsWith("Content-Disposition", ignoreCase = true) }
+                        ?.let { Regex("""\bname="?([^";]*)"?""").find(it)?.groupValues?.get(1) }
+                parts += Part(name, type, body.copyOfRange(headersEnd + separator.size, (next - 2).coerceAtLeast(headersEnd + separator.size)))
             }
             start = next
         }

@@ -77,7 +77,9 @@ class DemoBackendTest {
             val admin = AccessTokenClaims.parse(token(DemoAccountsCatalog.ADMIN))!!
             val employee = AccessTokenClaims.parse(token(DemoAccountsCatalog.EMPLOYEE))!!
             assertEquals("ADMIN", admin.role)
-            assertEquals("EMPLEADO", employee.role)
+            assertEquals("EMPLOYEE", employee.role)
+            val manager = login("encargada@demo.granatum.es", "Demo-Encargada-2026!").json().jsonObject["accessToken"]!!.jsonPrimitive.content
+            assertEquals("MANAGER", AccessTokenClaims.parse(manager)!!.role)
             assertEquals(HttpStatusCode.Unauthorized, login(DemoAccountsCatalog.ADMIN.email, "wrong").status)
         }
 
@@ -85,20 +87,20 @@ class DemoBackendTest {
     fun roles_are_enforced_as_on_the_server() =
         runTest {
             val employee = token(DemoAccountsCatalog.EMPLOYEE)
-            assertEquals(HttpStatusCode.Forbidden, get("/empleados", employee).status)
-            assertEquals(HttpStatusCode.Forbidden, get("/materiales", employee).status)
-            assertEquals(HttpStatusCode.Forbidden, get("/facturacion/facturas", employee).status)
-            assertEquals(HttpStatusCode.Unauthorized, http.get("$base/materiales").status)
+            assertEquals(HttpStatusCode.Forbidden, get("/employees", employee).status)
+            assertEquals(HttpStatusCode.Forbidden, get("/materials", employee).status)
+            assertEquals(HttpStatusCode.Forbidden, get("/invoicing/invoices", employee).status)
+            assertEquals(HttpStatusCode.Unauthorized, http.get("$base/materials").status)
         }
 
     @Test
     fun the_employee_clocks_in_and_out_and_sees_their_history() =
         runTest {
             val employee = token(DemoAccountsCatalog.EMPLOYEE)
-            val history = get("/fichajes/empleado/${DemoState.EMPLOYEE_ID}", employee).json().jsonArray
+            val history = get("/shifts/employee/${DemoState.EMPLOYEE_ID}", employee).json().jsonArray
             assertTrue(history.isNotEmpty(), "seeded shifts")
 
-            val entry = post("/fichajes/entrada", employee, """{"clientEventId":"e1","occurredAt":"2026-10-09T07:00:00Z"}""")
+            val entry = post("/shifts/clock-in", employee, """{"clientEventId":"e1","occurredAt":"2026-10-09T07:00:00Z"}""")
             assertEquals(HttpStatusCode.Created, entry.status)
             val shiftId =
                 entry
@@ -109,44 +111,44 @@ class DemoBackendTest {
             assertEquals(
                 shiftId,
                 post(
-                    "/fichajes/entrada",
+                    "/shifts/clock-in",
                     employee,
                     """{"clientEventId":"e1","occurredAt":"2026-10-09T07:00:00Z"}""",
                 ).json().jsonObject["id"]!!.jsonPrimitive.content,
             )
             post(
-                "/fichajes/$shiftId/pausa/inicio",
+                "/shifts/$shiftId/break/start",
                 employee,
-                """{"clientEventId":"e2","occurredAt":"2026-10-09T09:00:00Z","tipo":"DESCANSO"}""",
+                """{"clientEventId":"e2","occurredAt":"2026-10-09T09:00:00Z","type":"REST"}""",
             )
-            post("/fichajes/$shiftId/pausa/fin", employee, """{"clientEventId":"e3","occurredAt":"2026-10-09T09:15:00Z"}""")
+            post("/shifts/$shiftId/break/end", employee, """{"clientEventId":"e3","occurredAt":"2026-10-09T09:15:00Z"}""")
             val closed =
                 post(
-                    "/fichajes/$shiftId/salida",
+                    "/shifts/$shiftId/clock-out",
                     employee,
                     """{"clientEventId":"e4","occurredAt":"2026-10-09T11:00:00Z"}""",
                 ).json().jsonObject
-            assertEquals("CERRADO", closed["estado"]!!.jsonPrimitive.content)
-            assertEquals(225, closed["minutosTrabajados"]!!.jsonPrimitive.content.toInt())
+            assertEquals("CLOSED", closed["status"]!!.jsonPrimitive.content)
+            assertEquals(225, closed["workedMinutes"]!!.jsonPrimitive.content.toInt())
         }
 
     @Test
     fun the_admin_sees_inventory_invoices_and_staff() =
         runTest {
             val admin = token(DemoAccountsCatalog.ADMIN)
-            assertTrue(get("/materiales", admin).json().jsonArray.size >= 5)
-            assertTrue(get("/categorias", admin).json().jsonArray.size >= 3)
-            val page = get("/facturacion/facturas?pagina=0&tamano=50", admin).json().jsonObject
-            assertTrue((page["elementos"] as JsonArray).size >= 4)
+            assertTrue(get("/materials", admin).json().jsonArray.size >= 5)
+            assertTrue(get("/categories", admin).json().jsonArray.size >= 3)
+            val page = get("/invoicing/invoices?page=0&size=50", admin).json().jsonObject
+            assertTrue((page["items"] as JsonArray).size >= 4)
             assertEquals(
                 "Granatum Flores SL",
-                get("/facturacion/empresa", admin)
+                get("/invoicing/company", admin)
                     .json()
-                    .jsonObject["razonSocial"]!!
+                    .jsonObject["legalName"]!!
                     .jsonPrimitive.content,
             )
-            assertTrue(get("/empleados", admin).json().jsonArray.size >= 4)
-            val report = get("/facturacion/reportes?periodo=ANUAL&anio=2026", admin)
+            assertTrue(get("/employees", admin).json().jsonArray.size >= 4)
+            val report = get("/invoicing/reports?period=YEARLY&year=2026", admin)
             assertEquals(HttpStatusCode.OK, report.status)
         }
 
@@ -159,11 +161,11 @@ class DemoBackendTest {
             suspend fun upload(vararg files: ByteArray) =
                 http
                     .submitFormWithBinaryData(
-                        "$base/facturacion/facturas",
+                        "$base/invoicing/invoices",
                         formData {
                             files.forEach {
                                 append(
-                                    "ficheros",
+                                    "files",
                                     it,
                                     Headers.build {
                                         append(HttpHeaders.ContentType, "application/pdf")
@@ -179,10 +181,10 @@ class DemoBackendTest {
                         )
                     }.json()
                     .jsonArray
-                    .map { (it as JsonObject)["resultado"]!!.jsonPrimitive.content }
+                    .map { (it as JsonObject)["result"]!!.jsonPrimitive.content }
 
-            assertEquals(listOf("ACEPTADA", "FORMATO_NO_ADMITIDO"), upload(pdf, "hola".encodeToByteArray()))
-            assertEquals(listOf("DUPLICADA"), upload(pdf))
+            assertEquals(listOf("ACCEPTED", "UNSUPPORTED_FORMAT"), upload(pdf, "hello".encodeToByteArray()))
+            assertEquals(listOf("DUPLICATE"), upload(pdf))
         }
 
     @Test
@@ -191,22 +193,22 @@ class DemoBackendTest {
             val admin = token(DemoAccountsCatalog.ADMIN)
             val created =
                 post(
-                    "/auth/altas",
+                    "/auth/onboarding",
                     admin,
-                    """{"nombre":"Marta Gil","documentoIdentidad":"12345678Z","puesto":"Florista","tipoContrato":"PARCIAL","fechaAlta":"2026-10-09","email":"marta@demo.granatum.es","rol":"EMPLEADO"}""",
+                    """{"name":"Marta Gil","identityDocument":"12345678Z","position":"Florista","contractType":"PART_TIME","hireDate":"2026-10-09","email":"marta@demo.granatum.es","role":"EMPLOYEE"}""",
                 )
             // That DNI is the admin's own record, which already has an account.
             assertEquals(HttpStatusCode.Conflict, created.status)
 
             val ok =
                 post(
-                    "/auth/altas",
+                    "/auth/onboarding",
                     admin,
-                    """{"nombre":"Marta Gil","documentoIdentidad":"00000001R","puesto":"Florista","tipoContrato":"PARCIAL","fechaAlta":"2026-10-09","email":"marta@demo.granatum.es","rol":"EMPLEADO"}""",
+                    """{"name":"Marta Gil","identityDocument":"00000001R","position":"Florista","contractType":"PART_TIME","hireDate":"2026-10-09","email":"marta@demo.granatum.es","role":"EMPLOYEE"}""",
                 ).json().jsonObject
-            val temporary = ok["passwordTemporal"]!!.jsonPrimitive.content
+            val temporary = ok["temporaryPassword"]!!.jsonPrimitive.content
             val session = login("marta@demo.granatum.es", temporary).json().jsonObject
-            assertEquals("true", session["requiereCambioPassword"]!!.jsonPrimitive.content)
+            assertEquals("true", session["passwordChangeRequired"]!!.jsonPrimitive.content)
         }
 
     @Test
@@ -219,39 +221,39 @@ class DemoBackendTest {
             }.bodyAsText()
         ).jsonObject["accessToken"]!!.jsonPrimitive.content
 
-        assertEquals(HttpStatusCode.OK, get("/empleados", oldToken).status)
-        assertEquals(HttpStatusCode.Unauthorized, get("/empleados", "not-a-demo-token").status)
+        assertEquals(HttpStatusCode.OK, get("/employees", oldToken).status)
+        assertEquals(HttpStatusCode.Unauthorized, get("/employees", "not-a-demo-token").status)
     }
 
     @Test
     fun a_material_image_is_uploaded_to_the_server_and_read_from_its_signed_url() =
         runTest {
             val admin = token(DemoAccountsCatalog.ADMIN)
-            val id = get("/materiales", admin).json().jsonArray.first().jsonObject["id"]!!.jsonPrimitive.content
+            val id = get("/materials", admin).json().jsonArray.first().jsonObject["id"]!!.jsonPrimitive.content
             val png = byteArrayOf(0x89.toByte(), 'P'.code.toByte(), 'N'.code.toByte(), 'G'.code.toByte(), 1, 2)
             fun part(bytes: ByteArray) =
                 formData {
-                    append("imagen", bytes, Headers.build { append(HttpHeaders.ContentDisposition, "filename=\"a.png\"") })
+                    append("image", bytes, Headers.build { append(HttpHeaders.ContentDisposition, "filename=\"a.png\"") })
                 }
             val uploaded =
-                http.put("$base/materiales/$id/imagen") {
+                http.put("$base/materials/$id/image") {
                     header(HttpHeaders.Authorization, "Bearer $admin")
                     setBody(MultiPartFormDataContent(part(png)))
                 }
             assertEquals(HttpStatusCode.OK, uploaded.status)
-            val url = uploaded.json().jsonObject["imagenUrl"]!!.jsonPrimitive.content
+            val url = uploaded.json().jsonObject["imageUrl"]!!.jsonPrimitive.content
             assertTrue("/storage/v1/object/sign/" in url, url)
             assertEquals(png.toList(), http.get(url).readRawBytes().toList())
 
             val notAnImage =
-                http.put("$base/materiales/$id/imagen") {
+                http.put("$base/materials/$id/image") {
                     header(HttpHeaders.Authorization, "Bearer $admin")
-                    setBody(MultiPartFormDataContent(part("hola".encodeToByteArray())))
+                    setBody(MultiPartFormDataContent(part("hello".encodeToByteArray())))
                 }
             assertEquals(HttpStatusCode.UnsupportedMediaType, notAnImage.status)
 
-            val removed = http.delete("$base/materiales/$id/imagen") { header(HttpHeaders.Authorization, "Bearer $admin") }
-            assertEquals(JsonNull, removed.json().jsonObject["imagenUrl"])
+            val removed = http.delete("$base/materials/$id/image") { header(HttpHeaders.Authorization, "Bearer $admin") }
+            assertEquals(JsonNull, removed.json().jsonObject["imageUrl"])
             assertEquals(HttpStatusCode.NotFound, http.get(url).status)
         }
 
@@ -259,17 +261,17 @@ class DemoBackendTest {
     fun materials_follow_the_010_contract() =
         runTest {
             val admin = token(DemoAccountsCatalog.ADMIN)
-            val first = get("/materiales", admin).json().jsonArray.first().jsonObject
-            listOf("descripcion", "dimensiones", "cantidad", "localizacion", "fechaAlta").forEach { assertTrue(it in first, it) }
-            assertEquals(2, get("/materiales?almacen=B", admin).json().jsonArray.size)
-            assertEquals(HttpStatusCode.BadRequest, get("/materiales?seccion=2", admin).status)
-            val category = first["categoria"]!!.jsonObject["id"]!!.jsonPrimitive.content
-            val zeroWidth = """{"categoriaId":"$category","descripcion":"x","dimensiones":{"alto":1,"ancho":0},"cantidad":1,"localizacion":{"almacen":"A","seccion":1}}"""
-            assertEquals(HttpStatusCode.BadRequest, post("/materiales", admin, zeroWidth).status)
-            val noReason = http.patch("$base/materiales/${first["id"]!!.jsonPrimitive.content}/cantidad") {
+            val first = get("/materials", admin).json().jsonArray.first().jsonObject
+            listOf("description", "dimensions", "quantity", "location", "createdAt").forEach { assertTrue(it in first, it) }
+            assertEquals(2, get("/materials?warehouse=B", admin).json().jsonArray.size)
+            assertEquals(HttpStatusCode.BadRequest, get("/materials?section=2", admin).status)
+            val category = first["category"]!!.jsonObject["id"]!!.jsonPrimitive.content
+            val zeroWidth = """{"categoryId":"$category","description":"x","dimensions":{"height":1,"width":0},"quantity":1,"location":{"warehouse":"A","section":1}}"""
+            assertEquals(HttpStatusCode.BadRequest, post("/materials", admin, zeroWidth).status)
+            val noReason = http.patch("$base/materials/${first["id"]!!.jsonPrimitive.content}/quantity") {
                 header(HttpHeaders.Authorization, "Bearer $admin")
                 contentType(ContentType.Application.Json)
-                setBody("""{"cantidad":3,"motivo":" "}""")
+                setBody("""{"quantity":3,"reason":" "}""")
             }
             assertEquals(HttpStatusCode.BadRequest, noReason.status)
         }
@@ -278,7 +280,7 @@ class DemoBackendTest {
     fun seeded_products_come_with_an_illustration() =
         runTest {
             val admin = token(DemoAccountsCatalog.ADMIN)
-            val urls = get("/materiales", admin).json().jsonArray.map { it.jsonObject["imagenUrl"]!!.jsonPrimitive.content }
+            val urls = get("/materials", admin).json().jsonArray.map { it.jsonObject["imageUrl"]!!.jsonPrimitive.content }
             assertEquals(5, urls.toSet().size)
             val image = http.get(urls.first())
             assertEquals(HttpStatusCode.OK, image.status)
@@ -292,48 +294,88 @@ class DemoBackendTest {
         runTest {
             val employee = token(DemoAccountsCatalog.EMPLOYEE)
             val admin = token(DemoAccountsCatalog.ADMIN)
-            val material = get("/eventos/materiales", employee).json().jsonArray.map { it.jsonObject }
-                .first { it["descripcion"]!!.jsonPrimitive.content.startsWith("Lazo") }
+            val material = get("/events/materials", employee).json().jsonArray.map { it.jsonObject }
+                .first { it["description"]!!.jsonPrimitive.content.startsWith("Lazo") }
             val id = material["id"]!!.jsonPrimitive.content
-            val free = material["cantidad"]!!.jsonPrimitive.content.toInt()
+            val free = material["quantity"]!!.jsonPrimitive.content.toInt()
 
-            val created = post("/eventos", employee, """{"nombre":"Evento 9","descripcion":"Prueba","fecha":"2099-01-01"}""")
+            val created = post("/events", employee, """{"name":"Evento 9","description":"Prueba","date":"2099-01-01"}""")
             assertEquals(HttpStatusCode.Created, created.status)
-            val evento = created.json().jsonObject["id"]!!.jsonPrimitive.content
+            val event = created.json().jsonObject["id"]!!.jsonPrimitive.content
 
             val reserved =
-                http.put("$base/eventos/$evento/materiales/$id") {
+                http.put("$base/events/$event/materials/$id") {
                     header(HttpHeaders.Authorization, "Bearer $employee")
                     contentType(ContentType.Application.Json)
-                    setBody("""{"cantidad":2}""")
+                    setBody("""{"quantity":2}""")
                 }
             assertEquals(HttpStatusCode.OK, reserved.status)
-            val after = get("/eventos/materiales", employee).json().jsonArray.map { it.jsonObject }.first { it["id"]!!.jsonPrimitive.content == id }
-            assertEquals(free - 2, after["cantidad"]!!.jsonPrimitive.content.toInt())
+            val after = get("/events/materials", employee).json().jsonArray.map { it.jsonObject }.first { it["id"]!!.jsonPrimitive.content == id }
+            assertEquals(free - 2, after["quantity"]!!.jsonPrimitive.content.toInt())
 
             val tooMany =
-                http.put("$base/eventos/$evento/materiales/$id") {
+                http.put("$base/events/$event/materials/$id") {
                     header(HttpHeaders.Authorization, "Bearer $employee")
                     contentType(ContentType.Application.Json)
-                    setBody("""{"cantidad":${free + 5}}""")
+                    setBody("""{"quantity":${free + 5}}""")
                 }
             assertEquals(HttpStatusCode.Conflict, tooMany.status)
-            assertEquals((free - 2).toString(), tooMany.json().jsonObject["disponible"]!!.jsonPrimitive.content)
+            assertEquals("INSUFFICIENT_STOCK", tooMany.json().jsonObject["code"]!!.jsonPrimitive.content)
+            assertEquals((free - 2).toString(), tooMany.json().jsonObject["available"]!!.jsonPrimitive.content)
 
-            val delete = http.delete("$base/materiales/$id") { header(HttpHeaders.Authorization, "Bearer $admin") }
+            val delete = http.delete("$base/materials/$id") { header(HttpHeaders.Authorization, "Bearer $admin") }
             assertEquals(HttpStatusCode.Conflict, delete.status)
-            assertEquals(HttpStatusCode.Forbidden, get("/materiales", employee).status)
+            assertEquals(HttpStatusCode.Forbidden, get("/materials", employee).status)
 
-            assertEquals(HttpStatusCode.OK, post("/eventos/$evento/finalizar", employee, "{}").status)
-            val back = get("/eventos/materiales", employee).json().jsonArray.map { it.jsonObject }.first { it["id"]!!.jsonPrimitive.content == id }
-            assertEquals(free, back["cantidad"]!!.jsonPrimitive.content.toInt())
+            assertEquals(HttpStatusCode.OK, post("/events/$event/finish", employee, "{}").status)
+            val back = get("/events/materials", employee).json().jsonArray.map { it.jsonObject }.first { it["id"]!!.jsonPrimitive.content == id }
+            assertEquals(free, back["quantity"]!!.jsonPrimitive.content.toInt())
         }
 
     @Test
     fun `When the demo starts then it has upcoming and finished events with reserved material`() =
         runTest {
-            val events = get("/eventos", token(DemoAccountsCatalog.EMPLOYEE)).json().jsonArray.map { it.jsonObject }
-            assertTrue(events.any { it["estado"]!!.jsonPrimitive.content == "PROGRAMADO" && it["materiales"]!!.jsonArray.isNotEmpty() })
-            assertTrue(events.any { it["estado"]!!.jsonPrimitive.content == "FINALIZADO" })
+            val events = get("/events", token(DemoAccountsCatalog.EMPLOYEE)).json().jsonArray.map { it.jsonObject }
+            assertTrue(events.any { it["status"]!!.jsonPrimitive.content == "SCHEDULED" && it["materials"]!!.jsonArray.isNotEmpty() })
+            assertTrue(events.any { it["status"]!!.jsonPrimitive.content == "FINISHED" })
+        }
+
+    @Test
+    fun a_weak_new_password_is_refused_with_its_requirements() =
+        runTest {
+            val employee = token(DemoAccountsCatalog.EMPLOYEE)
+            val weak =
+                post(
+                    "/auth/change-password",
+                    employee,
+                    """{"currentPassword":"${DemoAccountsCatalog.EMPLOYEE.password}","newPassword":"abc"}""",
+                )
+            assertEquals(HttpStatusCode.UnprocessableEntity, weak.status)
+            val body = weak.json().jsonObject
+            assertEquals("WEAK_PASSWORD", body["code"]!!.jsonPrimitive.content)
+            assertTrue("MIN_LENGTH" in body["requirements"]!!.jsonArray.map { it.jsonPrimitive.content })
+            assertEquals(HttpStatusCode.Forbidden, http.post("$base/auth/sign-up") { contentType(ContentType.Application.Json); setBody("{}") }.status)
+        }
+
+    @Test
+    fun a_correction_is_requested_and_approved_by_the_admin() =
+        runTest {
+            val employee = token(DemoAccountsCatalog.EMPLOYEE)
+            val admin = token(DemoAccountsCatalog.ADMIN)
+            val shift = get("/shifts/employee/${DemoState.EMPLOYEE_ID}", employee).json().jsonArray.first().jsonObject
+            val id = shift["id"]!!.jsonPrimitive.content
+            val clockIn = shift["clockIn"]!!.jsonPrimitive.content
+            val clockOut = shift["clockOut"]!!.jsonPrimitive.content
+            val requested =
+                post(
+                    "/shifts/$id/corrections",
+                    employee,
+                    """{"reason":"Olvidé fichar","proposedValues":{"clockIn":"$clockIn","clockOut":"$clockOut","breaks":[]}}""",
+                )
+            assertEquals(HttpStatusCode.Created, requested.status)
+            val correction = requested.json().jsonObject["id"]!!.jsonPrimitive.content
+            assertEquals(1, get("/corrections?status=PENDING", admin).json().jsonArray.size)
+            val approved = post("/corrections/$correction/approve", admin, "{}").json().jsonObject
+            assertEquals("APPROVED", approved["status"]!!.jsonPrimitive.content)
         }
 }

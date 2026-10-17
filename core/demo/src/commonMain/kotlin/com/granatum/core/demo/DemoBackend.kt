@@ -17,7 +17,7 @@ import kotlinx.serialization.json.jsonObject
 /** One request as the demo routes see it. */
 class DemoRequest(
     val method: HttpMethod,
-    /** Path after `/api`, e.g. `/materiales/123`; the whole path for the storage, which has no `/api`. */
+    /** Path after `/api`, e.g. `/materials/123`; the whole path for the storage, which has no `/api`. */
     val path: String,
     val query: Map<String, String>,
     val caller: DemoUser?,
@@ -29,11 +29,11 @@ class DemoRequest(
         runCatching { Json.parseToJsonElement(bytes.decodeToString()).jsonObject }.getOrDefault(JsonObject(emptyMap()))
     }
     val isAdmin: Boolean get() = caller?.role == "ADMIN"
-    val isManager: Boolean get() = caller?.role == "ADMIN" || caller?.role == "ENCARGADO"
+    val isManager: Boolean get() = caller?.role == "ADMIN" || caller?.role == "MANAGER"
 }
 
 /**
- * An in-memory imitation of the Granatum API (backend 2ec33d0) for the demo build: same routes,
+ * An in-memory imitation of the Granatum API (backend 93ef398, English contract) for the demo build: same routes,
  * field names, status codes and error codes as docs/openapi.json and the backend's contracts, so
  * every screen works as it would against the server. Seeded with a small flower shop; changes live
  * until the app closes. The team-attendance screen still calls routes the real backend does not
@@ -78,18 +78,18 @@ class DemoBackend(
         if (inventory.handlesStorage(request.path)) return inventory.routeStorage(request)
         val first = request.segments.firstOrNull()
         if (first == "auth") {
-            return auth.route(request) ?: staff.routeAccounts(request) ?: notFound("RECURSO_NO_ENCONTRADO")
+            return auth.route(request) ?: staff.routeAccounts(request) ?: notFound("RESOURCE_NOT_FOUND")
         }
-        val caller = request.caller ?: return error(HttpStatusCode.Unauthorized, "NO_AUTENTICADO", "Inicia sesión")
-        if (caller.mustChangePassword) return forbidden
+        val caller = request.caller ?: return error(HttpStatusCode.Unauthorized, "NOT_AUTHENTICATED", "Inicia sesión")
+        if (caller.passwordChangeRequired) return forbidden
         return when (first) {
-            "empleados" -> staff.route(request)
-            "fichajes" -> time.route(request)
-            "materiales", "categorias" -> inventory.route(request)
-            "facturacion" -> invoicing.route(request)
-            "eventos" -> events.route(request)
+            "employees" -> staff.route(request)
+            "shifts", "corrections" -> time.route(request)
+            "materials", "categories" -> inventory.route(request)
+            "invoicing" -> invoicing.route(request)
+            "events" -> events.route(request)
             else -> null
-        } ?: notFound("RECURSO_NO_ENCONTRADO")
+        } ?: notFound("RESOURCE_NOT_FOUND")
     }
 
     private companion object {

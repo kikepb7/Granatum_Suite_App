@@ -5,7 +5,7 @@ import io.ktor.http.HttpStatusCode
 
 /**
  * The private image bucket of the Demo environment. The demo backend stores what is uploaded to
- * `PUT /materiales/{id}/imagen` here and hands out addresses in the shape of Supabase Storage's
+ * `PUT /materials/{id}/image` here and hands out addresses in the shape of Supabase Storage's
  * signed URLs, which the app loads like any other (backend 010, research D-005).
  */
 class DemoStorageRoutes {

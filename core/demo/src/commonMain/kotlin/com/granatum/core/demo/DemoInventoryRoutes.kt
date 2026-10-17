@@ -9,7 +9,7 @@ import kotlinx.serialization.json.put
 import kotlin.time.Instant
 
 /**
- * `/api/materiales` and `/api/categorias` (ADMIN and ENCARGADO, as on the server), with the
+ * `/api/materials` and `/api/categories` (ADMIN and MANAGER, as on the server), with the
  * material of backend feature 010: description, dimensions in cm, one quantity, a warehouse/section
  * location and an image the server stores itself and hands out as a temporary signed URL.
  */
@@ -64,7 +64,7 @@ class DemoInventoryRoutes(
         seed(ribbons, "Cinta de raso roja", 1.0, 2.5, 30, "B", 4, DemoArtwork.Kind.RIBBON_SPOOL)
         seed(ribbons, "Lazo de arpillera", 1.0, 5.0, 12, "B", 5, DemoArtwork.Kind.BURLAP_BOW)
         seed(baskets, "Cesta de mimbre mediana", 25.0, 35.0, 5, "C", 1, DemoArtwork.Kind.WICKER_BASKET)
-        history += Change(state.newId(), materials.first().id, "CANTIDAD", "Boda del sábado", t, DemoState.MANAGER_ID, "12", "8")
+        history += Change(state.newId(), materials.first().id, "QUANTITY", "Boda del sábado", t, DemoState.MANAGER_ID, "12", "8")
     }
 
     private fun seed(
@@ -83,13 +83,13 @@ class DemoInventoryRoutes(
         materials += Material(id, category.id, description, height, width, quantity, warehouse, section, image, t, t)
     }
 
-    // The demo's side of backend 011's StockMateriales / UsoMateriales: what the events routes
+    // The demo's side of backend 011's material stock and material usage ports: what the events routes
     // use to take units out of this inventory and put them back.
 
     /** Set by [DemoBackend]: whether a material is out at a scheduled event. */
     var materialInUse: (String) -> Boolean = { false }
 
-    /** Every material as the events picker shows it (`MaterialDisponibleDto`). */
+    /** Every material as the events picker shows it (`AvailableMaterialDto`). */
     fun availableJson(): JsonArray = JsonArray(materials.map { it.stockJson() })
 
     /** Category, description, location and image of a material, or `null` if it is gone. */
@@ -109,23 +109,23 @@ class DemoInventoryRoutes(
         val before = material.quantity
         material.quantity = before + delta
         material.updatedAt = state.now()
-        history += Change(state.newId(), id, "CANTIDAD", reason, state.now(), userId, before.toString(), material.quantity.toString())
+        history += Change(state.newId(), id, "QUANTITY", reason, state.now(), userId, before.toString(), material.quantity.toString())
     }
 
     private fun Material.stockJson() =
         buildJsonObject {
             put("id", id)
-            put("categoria", categories.first { it.id == categoryId }.name)
-            put("descripcion", description)
-            put("cantidad", quantity)
+            put("category", categories.first { it.id == categoryId }.name)
+            put("description", description)
+            put("quantity", quantity)
             put(
-                "localizacion",
+                "location",
                 buildJsonObject {
-                    put("almacen", warehouse)
-                    put("seccion", section)
+                    put("warehouse", warehouse)
+                    put("section", section)
                 },
             )
-            put("imagenUrl", imagePath?.let(images::signedUrl))
+            put("imageUrl", imagePath?.let(images::signedUrl))
         }
 
     /** The storage routes of the demo, which serve the images handed out here. */
@@ -136,7 +136,7 @@ class DemoInventoryRoutes(
     fun route(request: DemoRequest): DemoReply? {
         if (!request.isManager) return forbidden
         val s = request.segments
-        return if (s[0] == "categorias") categories(request, s) else materials(request, s)
+        return if (s[0] == "categories") categories(request, s) else materials(request, s)
     }
 
     private fun categories(
@@ -149,12 +149,12 @@ class DemoInventoryRoutes(
         s: List<String>,
     ): DemoReply? {
         if (s.size == 2) {
-            val category = categories.firstOrNull { it.id == s[1] } ?: return notFound("CATEGORIA_NOT_FOUND")
+            val category = categories.firstOrNull { it.id == s[1] } ?: return notFound("CATEGORY_NOT_FOUND")
             return when (request.method) {
                 HttpMethod.Get -> json(category.toJson())
                 HttpMethod.Put -> {
-                    category.name = request.body.str("nombre") ?: category.name
-                    category.description = request.body.str("descripcion")
+                    category.name = request.body.str("name") ?: category.name
+                    category.description = request.body.str("description")
                     category.updatedAt = state.now()
                     json(category.toJson())
                 }
@@ -163,7 +163,7 @@ class DemoInventoryRoutes(
                     if (materials.any { it.categoryId == category.id }) {
                         return error(
                             HttpStatusCode.InternalServerError,
-                            "ERROR_INTERNO",
+                            "INTERNAL_ERROR",
                             "En uso",
                         )
                     }
@@ -177,7 +177,7 @@ class DemoInventoryRoutes(
             s.size == 1 && request.method == HttpMethod.Get -> json(JsonArray(categories.map { it.toJson() }))
             s.size == 1 && request.method == HttpMethod.Post -> {
                 val t = state.now()
-                val category = Category(state.newId(), request.body.str("nombre").orEmpty(), request.body.str("descripcion"), t, t)
+                val category = Category(state.newId(), request.body.str("name").orEmpty(), request.body.str("description"), t, t)
                 categories += category
                 json(category.toJson(), HttpStatusCode.Created)
             }
@@ -192,9 +192,9 @@ class DemoInventoryRoutes(
         if (s.size == 1) {
             return when (request.method) {
                 HttpMethod.Get -> {
-                    val warehouse = request.query["almacen"]
-                    val section = request.query["seccion"]?.toIntOrNull()
-                    if (section != null && warehouse == null) return error(HttpStatusCode.BadRequest, "VALIDACION", "seccion exige almacen")
+                    val warehouse = request.query["warehouse"]
+                    val section = request.query["section"]?.toIntOrNull()
+                    if (section != null && warehouse == null) return error(HttpStatusCode.BadRequest, "VALIDATION", "La sección exige el almacén")
                     json(
                         JsonArray(
                             materials
@@ -205,20 +205,20 @@ class DemoInventoryRoutes(
                 }
                 HttpMethod.Post -> {
                     invalid(request.body, withQuantity = true)?.let { return it }
-                    val categoryId = request.body.str("categoriaId").orEmpty()
-                    if (categories.none { it.id == categoryId }) return notFound("CATEGORIA_NOT_FOUND")
+                    val categoryId = request.body.str("categoryId").orEmpty()
+                    if (categories.none { it.id == categoryId }) return notFound("CATEGORY_NOT_FOUND")
                     val t = state.now()
                     val body = request.body
                     val material =
                         Material(
                             state.newId(),
                             categoryId,
-                            body.str("descripcion")!!.trim(),
-                            body.dimension("alto")!!,
-                            body.dimension("ancho")!!,
-                            body.int("cantidad")!!,
-                            body.location("almacen")!!,
-                            body.location("seccion")!!.toInt(),
+                            body.str("description")!!.trim(),
+                            body.dimension("height")!!,
+                            body.dimension("width")!!,
+                            body.int("quantity")!!,
+                            body.location("warehouse")!!,
+                            body.location("section")!!.toInt(),
                             null,
                             t,
                             t,
@@ -234,37 +234,37 @@ class DemoInventoryRoutes(
             s.size == 2 && request.method == HttpMethod.Get -> json(material.toJson())
             s.size == 2 && request.method == HttpMethod.Put -> {
                 invalid(request.body, withQuantity = false)?.let { return it }
-                val categoryId = request.body.str("categoriaId").orEmpty()
-                if (categories.none { it.id == categoryId }) return notFound("CATEGORIA_NOT_FOUND")
+                val categoryId = request.body.str("categoryId").orEmpty()
+                if (categories.none { it.id == categoryId }) return notFound("CATEGORY_NOT_FOUND")
                 val body = request.body
                 material.categoryId = categoryId
-                material.description = body.str("descripcion")!!.trim()
-                material.height = body.dimension("alto")!!
-                material.width = body.dimension("ancho")!!
-                material.warehouse = body.location("almacen")!!
-                material.section = body.location("seccion")!!.toInt()
+                material.description = body.str("description")!!.trim()
+                material.height = body.dimension("height")!!
+                material.width = body.dimension("width")!!
+                material.warehouse = body.location("warehouse")!!
+                material.section = body.location("section")!!.toInt()
                 material.updatedAt = state.now()
                 json(material.toJson())
             }
             s.size == 2 && request.method == HttpMethod.Delete -> {
                 if (materialInUse(material.id)) {
-                    return error(HttpStatusCode.Conflict, "MATERIAL_EN_USO", "El material está asignado a un evento programado")
+                    return error(HttpStatusCode.Conflict, "MATERIAL_IN_USE", "El material está asignado a un evento programado")
                 }
                 materials -= material
                 material.imagePath?.let(images::remove)
                 DemoReply.NoContent
             }
-            s.size == 3 && s[2] == "cantidad" -> {
-                val value = request.body.int("cantidad")
-                val reason = request.body.str("motivo")
+            s.size == 3 && s[2] == "quantity" -> {
+                val value = request.body.int("quantity")
+                val reason = request.body.str("reason")
                 if (value == null || value < 0 || reason.isNullOrBlank()) {
-                    return error(HttpStatusCode.BadRequest, "VALIDACION", "cantidad >= 0 y motivo obligatorios")
+                    return error(HttpStatusCode.BadRequest, "VALIDATION", "La cantidad (>= 0) y el motivo son obligatorios")
                 }
                 history +=
                     Change(
                         state.newId(),
                         material.id,
-                        "CANTIDAD",
+                        "QUANTITY",
                         reason,
                         state.now(),
                         request.caller!!.employeeId,
@@ -275,27 +275,27 @@ class DemoInventoryRoutes(
                 material.updatedAt = state.now()
                 json(material.toJson())
             }
-            s.size == 3 && s[2] == "imagen" && request.method == HttpMethod.Put -> {
+            s.size == 3 && s[2] == "image" && request.method == HttpMethod.Put -> {
                 val part =
-                    DemoDocuments.multipart(request.bytes, request.contentType).firstOrNull()
-                        ?: return error(HttpStatusCode.BadRequest, "VALIDACION", "Falta la parte imagen")
+                    DemoDocuments.multipart(request.bytes, request.contentType).firstOrNull { it.name == "image" }
+                        ?: return error(HttpStatusCode.BadRequest, "VALIDATION", "Falta la imagen")
                 if (part.bytes.size > MAX_IMAGE_BYTES) {
-                    return error(HttpStatusCode.PayloadTooLarge, "IMAGEN_DEMASIADO_GRANDE", "La imagen supera el tamano maximo de 10 MB")
+                    return error(HttpStatusCode.PayloadTooLarge, "IMAGE_TOO_LARGE", "La imagen supera el tamano maximo de 10 MB")
                 }
                 val type =
                     DemoDocuments.sniff(part.bytes)?.takeIf { it.startsWith("image/") }
-                        ?: return error(HttpStatusCode.UnsupportedMediaType, "IMAGEN_NO_VALIDA", "La imagen debe ser JPEG, PNG o WebP")
+                        ?: return error(HttpStatusCode.UnsupportedMediaType, "INVALID_IMAGE", "La imagen debe ser JPEG, PNG o WebP")
                 material.imagePath?.let(images::remove)
                 material.imagePath = images.store("materiales/${material.id}/${state.newId()}.${DemoDocuments.extension(type)}", part.bytes, type)
                 material.updatedAt = state.now()
                 json(material.toJson())
             }
-            s.size == 3 && s[2] == "imagen" && request.method == HttpMethod.Delete -> {
+            s.size == 3 && s[2] == "image" && request.method == HttpMethod.Delete -> {
                 material.imagePath?.let(images::remove)
                 material.imagePath = null
                 json(material.toJson())
             }
-            s.size == 3 && s[2] == "historial" ->
+            s.size == 3 && s[2] == "history" ->
                 json(
                     JsonArray(
                         history
@@ -314,26 +314,26 @@ class DemoInventoryRoutes(
         body: JsonObject,
         withQuantity: Boolean,
     ): DemoReply? {
-        val description = body.str("descripcion")
+        val description = body.str("description")
         val ok =
-            body.str("categoriaId") != null &&
+            body.str("categoryId") != null &&
                 !description.isNullOrBlank() && description.length <= 500 &&
-                (body.dimension("alto") ?: 0.0) > 0 && (body.dimension("ancho") ?: 0.0) > 0 &&
-                body.location("almacen") in listOf("A", "B", "C") &&
-                body.location("seccion")?.toIntOrNull() in 1..5 &&
-                (!withQuantity || (body.int("cantidad") ?: -1) >= 0)
-        return if (ok) null else error(HttpStatusCode.BadRequest, "VALIDACION", "Datos del material no validos")
+                (body.dimension("height") ?: 0.0) > 0 && (body.dimension("width") ?: 0.0) > 0 &&
+                body.location("warehouse") in listOf("A", "B", "C") &&
+                body.location("section")?.toIntOrNull() in 1..5 &&
+                (!withQuantity || (body.int("quantity") ?: -1) >= 0)
+        return if (ok) null else error(HttpStatusCode.BadRequest, "VALIDATION", "Datos del material no válidos")
     }
 
-    private fun JsonObject.dimension(key: String) = (this["dimensiones"] as? JsonObject)?.double(key)
+    private fun JsonObject.dimension(key: String) = (this["dimensions"] as? JsonObject)?.double(key)
 
-    private fun JsonObject.location(key: String) = (this["localizacion"] as? JsonObject)?.str(key)
+    private fun JsonObject.location(key: String) = (this["location"] as? JsonObject)?.str(key)
 
     private fun Category.toJson() =
         buildJsonObject {
             put("id", id)
-            put("nombre", name)
-            description?.let { put("descripcion", it) }
+            put("name", name)
+            description?.let { put("description", it) }
             put("createdAt", createdAt.toString())
             put("updatedAt", updatedAt.toString())
         }
@@ -341,38 +341,38 @@ class DemoInventoryRoutes(
     private fun Material.toJson() =
         buildJsonObject {
             put("id", id)
-            put("categoria", categories.first { it.id == categoryId }.toJson())
-            put("descripcion", description)
+            put("category", categories.first { it.id == categoryId }.toJson())
+            put("description", description)
             put(
-                "dimensiones",
+                "dimensions",
                 buildJsonObject {
-                    put("alto", height)
-                    put("ancho", width)
+                    put("height", height)
+                    put("width", width)
                 },
             )
-            put("cantidad", quantity)
+            put("quantity", quantity)
             put(
-                "localizacion",
+                "location",
                 buildJsonObject {
-                    put("almacen", warehouse)
-                    put("seccion", section)
+                    put("warehouse", warehouse)
+                    put("section", section)
                 },
             )
-            put("imagenUrl", imagePath?.let(images::signedUrl))
-            put("fechaAlta", createdAt.toString())
-            put("fechaUltimaModificacion", updatedAt.toString())
+            put("imageUrl", imagePath?.let(images::signedUrl))
+            put("createdAt", createdAt.toString())
+            put("updatedAt", updatedAt.toString())
         }
 
     private fun Change.toJson() =
         buildJsonObject {
             put("id", id)
             put("materialId", materialId)
-            put("tipoCambio", type)
-            put("motivo", reason)
-            put("fecha", at.toString())
-            put("usuarioId", userId)
-            before?.let { put("valorAnterior", it) }
-            after?.let { put("valorNuevo", it) }
+            put("changeType", type)
+            put("reason", reason)
+            put("date", at.toString())
+            put("userId", userId)
+            before?.let { put("previousValue", it) }
+            after?.let { put("newValue", it) }
         }
 
     private companion object {

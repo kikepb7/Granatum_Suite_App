@@ -22,20 +22,20 @@ class DemoUser(
     var email: String,
     var password: String,
     var role: String,
-    var mustChangePassword: Boolean = false,
+    var passwordChangeRequired: Boolean = false,
 )
 
 class DemoEmployee(
     val id: String,
     var name: String,
-    val document: String,
+    val identityDocument: String,
     var position: String,
-    var contract: String,
-    var startDate: LocalDate,
+    var contractType: String,
+    var hireDate: LocalDate,
     var active: Boolean = true,
 )
 
-class DemoPause(
+class DemoBreak(
     val id: String,
     val type: String,
     val start: Instant,
@@ -45,16 +45,16 @@ class DemoPause(
 class DemoShift(
     val id: String,
     val employeeId: String,
-    var entry: Instant,
-    var exit: Instant? = null,
-    val pauses: MutableList<DemoPause> = mutableListOf(),
+    var clockIn: Instant,
+    var clockOut: Instant? = null,
+    val breaks: MutableList<DemoBreak> = mutableListOf(),
     var incomplete: Boolean = false,
 ) {
-    val state: String get() = if (exit == null) "EN_CURSO" else "CERRADO"
+    val status: String get() = if (clockOut == null) "IN_PROGRESS" else "CLOSED"
     val workedMinutes: Int?
         get() =
-            exit?.let { out ->
-                ((out - entry) - pauses.sumOf { ((it.end ?: out) - it.start).inWholeMinutes }.minutes).inWholeMinutes.toInt()
+            clockOut?.let { out ->
+                ((out - clockIn) - breaks.sumOf { ((it.end ?: out) - it.start).inWholeMinutes }.minutes).inWholeMinutes.toInt()
             }
 }
 
@@ -63,8 +63,12 @@ class DemoCorrection(
     val shiftId: String,
     val requesterId: String,
     val reason: String,
-    val proposed: kotlinx.serialization.json.JsonObject,
+    val proposedValues: kotlinx.serialization.json.JsonObject,
     val createdAt: Instant,
+    var status: String = "PENDING",
+    var resolutionReason: String? = null,
+    var resolvedAt: Instant? = null,
+    var resolvedById: String? = null,
 )
 
 /** The demo's data, seeded with a small flower shop. */
@@ -82,17 +86,17 @@ class DemoState(
 
     val employees =
         mutableListOf(
-            DemoEmployee(ADMIN_ID, DemoAccountsCatalog.ADMIN.displayName, "12345678Z", "Dirección", "JORNADA_COMPLETA", LocalDate(2023, 3, 1)),
-            DemoEmployee(EMPLOYEE_ID, DemoAccountsCatalog.EMPLOYEE.displayName, "87654321X", "Florista", "PARCIAL", LocalDate(2024, 9, 16)),
-            DemoEmployee(MANAGER_ID, "Elena Ríos", "11111111H", "Encargada de tienda", "JORNADA_COMPLETA", LocalDate(2024, 1, 8)),
-            DemoEmployee(newId(), "Pablo Soler", "X1234567L", "Repartidor", "POR_HORAS", LocalDate(2025, 5, 5), active = false),
+            DemoEmployee(ADMIN_ID, DemoAccountsCatalog.ADMIN.displayName, "12345678Z", "Dirección", "FULL_TIME", LocalDate(2023, 3, 1)),
+            DemoEmployee(EMPLOYEE_ID, DemoAccountsCatalog.EMPLOYEE.displayName, "87654321X", "Florista", "PART_TIME", LocalDate(2024, 9, 16)),
+            DemoEmployee(MANAGER_ID, "Elena Ríos", "11111111H", "Encargada de tienda", "FULL_TIME", LocalDate(2024, 1, 8)),
+            DemoEmployee(newId(), "Pablo Soler", "X1234567L", "Repartidor", "HOURLY", LocalDate(2025, 5, 5), active = false),
         )
 
     val users =
         mutableListOf(
             DemoUser(ADMIN_ID, DemoAccountsCatalog.ADMIN.email, DemoAccountsCatalog.ADMIN.password, "ADMIN"),
-            DemoUser(EMPLOYEE_ID, DemoAccountsCatalog.EMPLOYEE.email, DemoAccountsCatalog.EMPLOYEE.password, "EMPLEADO"),
-            DemoUser(MANAGER_ID, "encargada@demo.granatum.es", "Demo-Encargada-2026!", "ENCARGADO"),
+            DemoUser(EMPLOYEE_ID, DemoAccountsCatalog.EMPLOYEE.email, DemoAccountsCatalog.EMPLOYEE.password, "EMPLOYEE"),
+            DemoUser(MANAGER_ID, "encargada@demo.granatum.es", "Demo-Encargada-2026!", "MANAGER"),
         )
 
     private val accessTokens = mutableMapOf<String, String>()
@@ -117,7 +121,7 @@ class DemoState(
     fun issueTokens(user: DemoUser): Pair<String, String> {
         val b64 = Base64.UrlSafe.withPadding(Base64.PaddingOption.ABSENT)
         val header = b64.encode("""{"alg":"none","typ":"JWT"}""".encodeToByteArray())
-        val pwd = if (user.mustChangePassword) ""","pwd_change":true""" else ""
+        val pwd = if (user.passwordChangeRequired) ""","pwd_change":true""" else ""
         val payload =
             b64.encode(
                 """{"sub":"${user.employeeId}","role":"${user.role}","type":"access","jti":"${newId()}"$pwd}""".encodeToByteArray(),
@@ -152,11 +156,11 @@ class DemoState(
         end: LocalTime,
         lunch: Boolean,
     ): DemoShift {
-        val entry = day.atTime(start).toInstant(madrid)
-        val exit = day.atTime(end).toInstant(madrid)
-        val pauses = mutableListOf(DemoPause(newId(), "DESCANSO", entry + 150.minutes, entry + 165.minutes))
-        if (lunch) pauses += DemoPause(newId(), "COMIDA", entry + 270.minutes, entry + 300.minutes)
-        return DemoShift(newId(), employeeId, entry, exit, pauses)
+        val clockIn = day.atTime(start).toInstant(madrid)
+        val clockOut = day.atTime(end).toInstant(madrid)
+        val breaks = mutableListOf(DemoBreak(newId(), "REST", clockIn + 150.minutes, clockIn + 165.minutes))
+        if (lunch) breaks += DemoBreak(newId(), "MEAL", clockIn + 270.minutes, clockIn + 300.minutes)
+        return DemoShift(newId(), employeeId, clockIn, clockOut, breaks)
     }
 
     val corrections = mutableListOf<DemoCorrection>()
