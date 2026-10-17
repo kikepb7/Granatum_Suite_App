@@ -7,7 +7,7 @@ import kotlinx.datetime.LocalDate
 
 enum class ContractType { FULL_TIME, PART_TIME, HOURLY }
 
-/** A person on the staff, as `/api/empleados` keeps them (backend 2ec33d0). */
+/** A person on the staff, as `/api/employees` keeps them (backend 93ef398). */
 data class StaffMember(
     val id: String,
     val name: String,
@@ -58,8 +58,8 @@ object StaffLimits {
     const val POSITION = 100
     const val EMAIL = 254
 
-    /** The roles an account can be given; DESCONOCIDO is the app's own, never the server's. */
-    val ASSIGNABLE_ROLES = listOf(UserRole.EMPLEADO, UserRole.ENCARGADO, UserRole.REPRESENTANTE, UserRole.ADMIN)
+    /** The roles an account can be given; UNKNOWN is the app's own, never the server's. */
+    val ASSIGNABLE_ROLES = listOf(UserRole.EMPLOYEE, UserRole.MANAGER, UserRole.REPRESENTATIVE, UserRole.ADMIN)
 }
 
 sealed interface StaffError : Error {

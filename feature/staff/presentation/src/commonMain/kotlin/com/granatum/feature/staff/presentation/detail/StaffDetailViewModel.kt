@@ -44,7 +44,7 @@ data class StaffDetailState(
     val confirmingReset: Boolean = false,
     /** The record has no account: ask for an email and a role to give it one (research D5). */
     val grantingAccess: Boolean = false,
-    val grantRole: UserRole = UserRole.EMPLEADO,
+    val grantRole: UserRole = UserRole.EMPLOYEE,
     val credentials: TemporaryCredentials? = null,
     val message: UiText? = null,
 )

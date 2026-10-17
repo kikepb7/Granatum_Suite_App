@@ -21,8 +21,8 @@ fun ContractType.label() =
 fun UserRole.label() =
     when (this) {
         UserRole.ADMIN -> Res.string.role_admin
-        UserRole.ENCARGADO -> Res.string.role_manager
-        UserRole.REPRESENTANTE -> Res.string.role_representative
+        UserRole.MANAGER -> Res.string.role_manager
+        UserRole.REPRESENTATIVE -> Res.string.role_representative
         else -> Res.string.role_employee
     }
 

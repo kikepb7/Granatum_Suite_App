@@ -55,7 +55,7 @@ class StaffRepositoryTest {
         status: HttpStatusCode = HttpStatusCode.OK,
     ) = respond(body, status, headersOf(HttpHeaders.ContentType, "application/json"))
 
-    private val ana = """{"id":"e1","nombre":"Ana","documentoIdentidad":"12345678Z","puesto":"Florista","tipoContrato":"PARCIAL","fechaAlta":"2026-10-01","activo":true}"""
+    private val ana = """{"id":"e1","name":"Ana","identityDocument":"12345678Z","position":"Florista","contractType":"PART_TIME","hireDate":"2026-10-01","active":true}"""
 
     @Test
     fun the_list_reads_every_field() =
@@ -64,7 +64,7 @@ class StaffRepositoryTest {
             val member = members.single()
             assertEquals(ContractType.PART_TIME, member.contract)
             assertEquals(LocalDate(2026, 10, 1), member.startDate)
-            assertEquals("/empleados", sent.single().second)
+            assertEquals("/employees", sent.single().second)
         }
 
     @Test
@@ -72,9 +72,9 @@ class StaffRepositoryTest {
         runTest {
             repo { json(ana) }.update("e1", StaffEdit(" Ana Martín ", "Encargada de tienda", ContractType.FULL_TIME, LocalDate(2026, 9, 1)))
             val (method, path, body) = sent.single()
-            assertEquals("PUT /empleados/e1", "$method $path")
+            assertEquals("PUT /employees/e1", "$method $path")
             assertEquals(
-                """{"nombre":"Ana Martín","puesto":"Encargada de tienda","tipoContrato":"JORNADA_COMPLETA","fechaAlta":"2026-09-01"}""",
+                """{"name":"Ana Martín","position":"Encargada de tienda","contractType":"FULL_TIME","hireDate":"2026-09-01"}""",
                 body,
             )
         }
@@ -84,19 +84,19 @@ class StaffRepositoryTest {
         runTest {
             val repository =
                 repo { request ->
-                    if (request.url.encodedPath.endsWith("restablecer")) {
+                    if (request.url.encodedPath.endsWith("reset")) {
                         json(
-                            """{"cuentaId":"c1","empleadoId":"e1","email":"ana@granatum.es","rol":"EMPLEADO","passwordTemporal":"Tmp-1234-abcd"}""",
+                            """{"accountId":"c1","employeeId":"e1","email":"ana@granatum.es","role":"EMPLOYEE","temporaryPassword":"Tmp-1234-abcd"}""",
                         )
                     } else {
                         json(ana.replace("true", "false"))
                     }
                 }
             assertFalse((repository.setActive("e1", false) as Result.Success).data.active)
-            assertEquals("PATCH /empleados/e1/activo" to """{"activo":false}""", "${sent[0].first} ${sent[0].second}" to sent[0].third)
+            assertEquals("PATCH /employees/e1/active" to """{"active":false}""", "${sent[0].first} ${sent[0].second}" to sent[0].third)
             val credentials = (repository.resetPassword("e1") as Result.Success).data
             assertEquals("Tmp-1234-abcd", credentials.password)
-            assertEquals("/auth/cuentas/e1/restablecer", sent[1].second)
+            assertEquals("/auth/accounts/e1/reset", sent[1].second)
         }
 
     @Test
@@ -106,7 +106,7 @@ class StaffRepositoryTest {
                 (
                     repo {
                         json(
-                            """{"empleadoId":"e9","cuentaId":"c9","email":"luis@granatum.es","rol":"ENCARGADO","fichaCreada":false,"passwordTemporal":"Tmp-9"}""",
+                            """{"employeeId":"e9","accountId":"c9","email":"luis@granatum.es","role":"MANAGER","staffRecordCreated":false,"temporaryPassword":"Tmp-9"}""",
                             HttpStatusCode.Created,
                         )
                     }.onboard(
@@ -117,18 +117,18 @@ class StaffRepositoryTest {
                             ContractType.HOURLY,
                             LocalDate(2026, 10, 9),
                             " Luis@Granatum.es ",
-                            UserRole.ENCARGADO,
+                            UserRole.MANAGER,
                         ),
                     ) as Result.Success
                 ).data
             assertEquals(
-                """{"nombre":"Luis","documentoIdentidad":"X1234567L","puesto":"Encargado","tipoContrato":"POR_HORAS","fechaAlta":"2026-10-09","email":"luis@granatum.es","rol":"ENCARGADO"}""",
+                """{"name":"Luis","identityDocument":"X1234567L","position":"Encargado","contractType":"HOURLY","hireDate":"2026-10-09","email":"luis@granatum.es","role":"MANAGER"}""",
                 sent.single().third,
             )
-            assertEquals("/auth/altas", sent.single().second)
-            assertEquals(UserRole.ENCARGADO, credentials.role)
+            assertEquals("/auth/onboarding", sent.single().second)
+            assertEquals(UserRole.MANAGER, credentials.role)
             assertFalse(credentials.recordCreated)
-            assertEquals("TemporaryCredentials(email=luis@granatum.es, role=ENCARGADO, password=***)", credentials.toString())
+            assertEquals("TemporaryCredentials(email=luis@granatum.es, role=MANAGER, password=***)", credentials.toString())
         }
 
     @Test
@@ -136,11 +136,11 @@ class StaffRepositoryTest {
         runTest {
             repo {
                 json(
-                    """{"cuentaId":"c1","empleadoId":"e1","email":"a@b.es","rol":"EMPLEADO","passwordTemporal":"x"}""",
+                    """{"accountId":"c1","employeeId":"e1","email":"a@b.es","role":"EMPLOYEE","temporaryPassword":"x"}""",
                     HttpStatusCode.Created,
                 )
-            }.grantAccess("e1", "A@b.es", UserRole.EMPLEADO)
-            assertEquals("""{"empleadoId":"e1","email":"a@b.es","rol":"EMPLEADO"}""", sent.single().third)
+            }.grantAccess("e1", "A@b.es", UserRole.EMPLOYEE)
+            assertEquals("""{"employeeId":"e1","email":"a@b.es","role":"EMPLOYEE"}""", sent.single().third)
         }
 
     @Test
@@ -150,11 +150,13 @@ class StaffRepositoryTest {
                 code: String,
                 status: HttpStatusCode,
             ) = (repo { json("""{"code":"$code","message":"m"}""", status) }.resetPassword("e1") as Result.Failure).error
-            assertEquals(StaffError.NoAccount, errorFor("CUENTA_NO_ENCONTRADA", HttpStatusCode.NotFound))
-            assertEquals(StaffError.InvalidDocument, errorFor("DOCUMENTO_INVALIDO", HttpStatusCode.UnprocessableEntity))
-            assertEquals(StaffError.EmailTaken, errorFor("EMAIL_YA_REGISTRADO", HttpStatusCode.Conflict))
-            assertEquals(StaffError.AccountExists, errorFor("CUENTA_YA_EXISTE", HttpStatusCode.Conflict))
-            assertEquals(StaffError.NotFound, errorFor("EMPLEADO_NOT_FOUND", HttpStatusCode.NotFound))
+            assertEquals(StaffError.NoAccount, errorFor("ACCOUNT_NOT_FOUND", HttpStatusCode.NotFound))
+            assertEquals(StaffError.InvalidDocument, errorFor("INVALID_DOCUMENT", HttpStatusCode.UnprocessableEntity))
+            assertEquals(StaffError.EmailTaken, errorFor("EMAIL_ALREADY_REGISTERED", HttpStatusCode.Conflict))
+            assertEquals(StaffError.AccountExists, errorFor("ACCOUNT_ALREADY_EXISTS", HttpStatusCode.Conflict))
+            assertEquals(StaffError.NotFound, errorFor("EMPLOYEE_NOT_FOUND", HttpStatusCode.NotFound))
+            assertEquals(StaffError.DuplicateDocument, errorFor("DUPLICATE_DOCUMENT", HttpStatusCode.Conflict))
+            assertEquals(StaffError.Invalid, errorFor("VALIDATION", HttpStatusCode.BadRequest))
             assertEquals(StaffError.Forbidden, errorFor("FORBIDDEN", HttpStatusCode.Forbidden))
         }
 }

@@ -2,78 +2,78 @@ package com.granatum.feature.staff.data
 
 import kotlinx.serialization.Serializable
 
-// Field for field with docs/openapi.json (backend 2ec33d0). Personal data: no toString leaks.
+// Field for field with docs/openapi.json (backend 93ef398). Personal data: no toString leaks.
 
 @Serializable
-data class EmpleadoDto(
+data class EmployeeDto(
     val id: String,
-    val nombre: String,
-    val documentoIdentidad: String,
-    val puesto: String,
-    val tipoContrato: String,
-    val fechaAlta: String,
-    val activo: Boolean,
+    val name: String,
+    val identityDocument: String,
+    val position: String,
+    val contractType: String,
+    val hireDate: String,
+    val active: Boolean,
 ) {
-    override fun toString(): String = "EmpleadoDto(id=$id)"
+    override fun toString(): String = "EmployeeDto(id=$id)"
 }
 
 /** The identity document cannot change: it is not sent (the server refuses a non-null one). */
 @Serializable
-data class ActualizarEmpleadoRequestDto(
-    val nombre: String,
-    val puesto: String,
-    val tipoContrato: String,
-    val fechaAlta: String,
+data class UpdateEmployeeRequestDto(
+    val name: String,
+    val position: String,
+    val contractType: String,
+    val hireDate: String,
 ) {
-    override fun toString(): String = "ActualizarEmpleadoRequestDto(tipoContrato=$tipoContrato)"
+    override fun toString(): String = "UpdateEmployeeRequestDto(contractType=$contractType)"
 }
 
 @Serializable
-data class CambiarActivoRequestDto(
-    val activo: Boolean,
+data class SetEmployeeActiveRequestDto(
+    val active: Boolean,
 )
 
 @Serializable
-data class AltaPersonaRequestDto(
-    val nombre: String,
-    val documentoIdentidad: String,
-    val puesto: String,
-    val tipoContrato: String,
-    val fechaAlta: String,
+data class OnboardingRequestDto(
+    val name: String,
+    val identityDocument: String,
+    val position: String,
+    val contractType: String,
+    val hireDate: String,
     val email: String,
-    val rol: String,
+    val role: String,
 ) {
-    override fun toString(): String = "AltaPersonaRequestDto(tipoContrato=$tipoContrato, rol=$rol)"
+    override fun toString(): String = "OnboardingRequestDto(contractType=$contractType, role=$role)"
 }
 
 @Serializable
-data class AltaPersonaResponseDto(
-    val empleadoId: String,
-    val cuentaId: String,
+data class OnboardingResponseDto(
+    val employeeId: String,
+    val accountId: String,
     val email: String,
-    val rol: String,
-    val fichaCreada: Boolean,
-    val passwordTemporal: String,
+    val role: String,
+    val staffRecordCreated: Boolean,
+    val temporaryPassword: String,
 ) {
-    override fun toString(): String = "AltaPersonaResponseDto(empleadoId=$empleadoId, passwordTemporal=***)"
+    override fun toString(): String = "OnboardingResponseDto(employeeId=$employeeId, temporaryPassword=***)"
 }
 
 @Serializable
-data class AltaCuentaRequestDto(
-    val empleadoId: String,
+data class AccountGrantRequestDto(
+    val employeeId: String,
     val email: String,
-    val rol: String,
+    val role: String,
 ) {
-    override fun toString(): String = "AltaCuentaRequestDto(empleadoId=$empleadoId, rol=$rol)"
+    override fun toString(): String = "AccountGrantRequestDto(employeeId=$employeeId, role=$role)"
 }
 
 @Serializable
-data class AltaCuentaResponseDto(
-    val cuentaId: String,
-    val empleadoId: String,
+data class AccountGrantResponseDto(
+    val accountId: String,
+    val employeeId: String,
     val email: String,
-    val rol: String,
-    val passwordTemporal: String,
+    val role: String,
+    val temporaryPassword: String,
 ) {
-    override fun toString(): String = "AltaCuentaResponseDto(empleadoId=$empleadoId, passwordTemporal=***)"
+    override fun toString(): String = "AccountGrantResponseDto(employeeId=$employeeId, temporaryPassword=***)"
 }
