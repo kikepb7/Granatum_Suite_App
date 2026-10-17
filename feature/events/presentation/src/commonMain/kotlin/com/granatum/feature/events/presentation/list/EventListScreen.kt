@@ -32,6 +32,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.granatum.core.designsystem.components.buttons.AppFloatingActionButton
 import com.granatum.core.designsystem.components.cards.AppHeroCard
@@ -78,6 +80,8 @@ internal fun EventListScreen(
     viewModel: EventListViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    // Back from an event or another tab: the list shows the server's current figures.
+    LifecycleEventEffect(Lifecycle.Event.ON_START) { viewModel.onAction(EventListUiAction.Refresh) }
     val snackbar = remember { SnackbarHostState() }
     LaunchedEffect(viewModel) {
         viewModel.uiEvents.collect { event ->

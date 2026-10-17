@@ -11,6 +11,7 @@ import com.granatum.feature.events.domain.model.EventsError
 import com.granatum.feature.events.domain.model.MaterialLocation
 import com.granatum.feature.events.domain.provider.TodayProvider
 import com.granatum.feature.events.domain.repository.EventsRepository
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
@@ -47,6 +48,9 @@ internal class FakeEventsRepository(events: List<Event> = emptyList()) : EventsR
     val saved = mutableListOf<Pair<String?, EventDraft>>()
     val setCalls = mutableListOf<Triple<String, String, Int>>()
 
+    /** When set, holds every quantity change until it completes, like a slow connection. */
+    var setGate: CompletableDeferred<Unit>? = null
+
     private fun <T> answer(value: () -> T): Result<T, EventsError> = failure?.let { Result.Failure(it) } ?: Result.Success(value())
 
     override fun observeEvents(): Flow<List<Event>> = events
@@ -75,6 +79,7 @@ internal class FakeEventsRepository(events: List<Event> = emptyList()) : EventsR
     override suspend fun setMaterial(eventId: String, materialId: String, quantity: Int): Result<Event, EventsError> {
         failure?.let { return Result.Failure(it) }
         setCalls += Triple(eventId, materialId, quantity)
+        setGate?.await()
         val event = events.value.first { it.id == eventId }
         val current = event.materials.firstOrNull { it.materialId == materialId }?.quantity ?: 0
         val free = stock[materialId] ?: 0

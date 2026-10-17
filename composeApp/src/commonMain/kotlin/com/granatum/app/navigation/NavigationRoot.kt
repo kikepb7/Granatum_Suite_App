@@ -51,6 +51,7 @@ import com.granatum.feature.clockin.presentation.navigation.clockInGraph
 import com.granatum.feature.events.presentation.navigation.EventsGraphRoutes
 import com.granatum.feature.events.presentation.navigation.EventsGraphRoutes.EventListRoute
 import com.granatum.feature.events.presentation.navigation.eventsGraph
+import com.granatum.feature.inventory.presentation.navigation.InventoryGraphRoutes
 import com.granatum.feature.inventory.presentation.navigation.InventoryGraphRoutes.ProductListRoute
 import com.granatum.feature.inventory.presentation.navigation.inventoryGraph
 import com.granatum.feature.invoicing.presentation.navigation.InvoicingGraphRoutes
@@ -144,7 +145,12 @@ private fun SignedInRoot(role: UserRole) {
     val startTab = if (RootTab.ClockIn in tabs) RootTab.ClockIn else RootTab.History
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
-    val selectedIndex = tabs.indexOfFirst { it.matches(currentRoute) }.coerceAtLeast(0)
+    // A screen that belongs to no tab (the account, a shift opened from the history) keeps the
+    // tab it was opened from selected, instead of falling back to the first one.
+    var lastSelectedIndex by rememberSaveable { mutableStateOf(tabs.indexOf(startTab).coerceAtLeast(0)) }
+    val matchedIndex = tabs.indexOfFirst { it.matches(currentRoute) }
+    if (matchedIndex >= 0 && matchedIndex != lastSelectedIndex) lastSelectedIndex = matchedIndex
+    val selectedIndex = lastSelectedIndex.coerceIn(0, tabs.lastIndex)
 
     // The account is reached from the top bar of the main screens, so the bottom bar keeps at
     // most six destinations (specs/008-facturacion D11, widened by specs/012-eventos D4).
@@ -219,7 +225,8 @@ private fun SignedInRoot(role: UserRole) {
 
 private enum class RootTab(val label: StringResource, val route: Any, val qualifiedName: String?) {
     ClockIn(Res.string.tab_clock_in, ClockInRoute, ClockInRoute::class.qualifiedName),
-    Inventory(Res.string.tab_inventory, ProductListRoute, ProductListRoute::class.qualifiedName),
+    /** Every inventory screen (product detail, form, categories) keeps the tab selected. */
+    Inventory(Res.string.tab_inventory, ProductListRoute, InventoryGraphRoutes::class.qualifiedName),
 
     /** Every events screen keeps the tab selected: their routes share the graph's prefix. */
     Events(Res.string.tab_events, EventListRoute, EventsGraphRoutes::class.qualifiedName),

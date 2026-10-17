@@ -33,6 +33,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.granatum.core.designsystem.components.brand.AppGradientText
 import com.granatum.core.designsystem.components.brand.rememberCountUp
@@ -72,6 +74,9 @@ fun ProductListRoot(
     viewModel: ProductListViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    // The tab is kept alive while another one is shown, so the list refreshes every time it comes
+    // back: events take and return stock elsewhere, and the figures must be current at once.
+    LifecycleEventEffect(Lifecycle.Event.ON_START) { viewModel.onAction(ProductListAction.OnRefresh) }
     ProductListScreen(
         state = state,
         query = viewModel.query,

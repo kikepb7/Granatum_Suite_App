@@ -23,8 +23,6 @@ import com.granatum.feature.events.presentation.common.toUiText
 import granatumsuite.feature.events.presentation.generated.resources.Res
 import granatumsuite.feature.events.presentation.generated.resources.event_finished_message
 import granatumsuite.feature.events.presentation.generated.resources.material_added
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -35,6 +33,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
@@ -73,7 +73,7 @@ internal class EventDetailViewModel(
     private val internalState = MutableStateFlow(EventDetailInternalState())
     private val _uiEvents = MutableSharedFlow<EventDetailUiEvent>()
     val uiEvents: SharedFlow<EventDetailUiEvent> = _uiEvents.asSharedFlow()
-    private val quantityJobs = mutableMapOf<String, Job>()
+    private val quantityLocks = mutableMapOf<String, Mutex>()
 
     val uiState: StateFlow<EventDetailScreenUiState> =
         combine(observeEventUseCase.observe(eventId), internalState, snapshotFlow { pickerQuery.text.toString() }) { event, internal, query ->
@@ -92,7 +92,7 @@ internal class EventDetailViewModel(
         when (action) {
             EventDetailUiAction.Refresh -> refresh()
             is EventDetailUiAction.ChangeQuantity -> changeQuantity(action.materialId, action.quantity)
-            is EventDetailUiAction.RemoveMaterial -> changeQuantity(action.materialId, 0, immediately = true)
+            is EventDetailUiAction.RemoveMaterial -> changeQuantity(action.materialId, 0)
             EventDetailUiAction.OpenPicker -> openPicker()
             EventDetailUiAction.ClosePicker -> closePicker()
             EventDetailUiAction.RetryPicker -> loadAvailable()
@@ -127,19 +127,25 @@ internal class EventDetailViewModel(
     }
 
     /**
-     * − and + change the number shown at once; the server hears the final figure a moment after
-     * the last tap, so five taps are one request (research D3). A failure puts the stored figure
-     * back and says why - for lack of stock, how many units are left.
+     * − and + change the number shown and reach the server at once, without waiting. Requests for
+     * one material go one after another, and each sends the latest figure chosen, so fast taps
+     * neither overtake each other nor pile up: the server ends with the last number shown. A
+     * failure puts the stored figure back and says why - for lack of stock, how many units are left.
      */
-    private fun changeQuantity(materialId: String, quantity: Int, immediately: Boolean = false) {
+    private fun changeQuantity(materialId: String, quantity: Int) {
         val target = quantity.coerceAtLeast(0)
         internalState.update { it.copy(pendingQuantities = it.pendingQuantities + (materialId to target)) }
-        quantityJobs.remove(materialId)?.cancel()
-        quantityJobs[materialId] = viewModelScope.launch {
-            if (!immediately) delay(QUANTITY_DEBOUNCE_MILLIS)
-            val result = setEventMaterialUseCase.set(eventId, materialId, target)
-            internalState.update { it.copy(pendingQuantities = it.pendingQuantities - materialId) }
-            if (result is Result.Failure) _uiEvents.emit(EventDetailUiEvent.ShowMessage(result.error.toUiText()))
+        viewModelScope.launch {
+            quantityLocks.getOrPut(materialId) { Mutex() }.withLock {
+                // Already sent by an earlier request in the queue.
+                val latest = internalState.value.pendingQuantities[materialId] ?: return@withLock
+                val result = setEventMaterialUseCase.set(eventId, materialId, latest)
+                internalState.update { state ->
+                    val stillLatest = state.pendingQuantities[materialId] == latest
+                    if (stillLatest || result is Result.Failure) state.copy(pendingQuantities = state.pendingQuantities - materialId) else state
+                }
+                if (result is Result.Failure) _uiEvents.emit(EventDetailUiEvent.ShowMessage(result.error.toUiText()))
+            }
         }
     }
 
@@ -270,7 +276,4 @@ internal class EventDetailViewModel(
         )
     }
 
-    private companion object {
-        const val QUANTITY_DEBOUNCE_MILLIS = 600L
-    }
 }

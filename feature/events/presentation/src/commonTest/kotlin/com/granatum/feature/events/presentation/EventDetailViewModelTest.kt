@@ -28,7 +28,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -44,7 +43,7 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class EventDetailViewModelTest {
 
-    /** Shared by Main and runTest, so the quantity debounce runs on virtual time. */
+    /** Shared by Main and runTest, so the ViewModel's coroutines run within the test. */
     private val dispatcher = UnconfinedTestDispatcher()
 
     @BeforeTest fun setUp() = Dispatchers.setMain(dispatcher)
@@ -129,20 +128,36 @@ class EventDetailViewModelTest {
     }
 
     @Test
-    fun `When the quantity is tapped several times then only the final figure is sent`() = runTest(dispatcher) {
+    fun `When the quantity changes then it reaches the server at once`() = runTest(dispatcher) {
         repository.stock["m1"] = 10
+        val sut = sut()
+        keepCollecting(sut)
+
+        sut.onAction(EventDetailUiAction.ChangeQuantity("m1", 6))
+
+        assertEquals(expected = listOf(Triple("e1", "m1", 6)), actual = repository.setCalls)
+        assertEquals(expected = 9, actual = repository.stock["m1"])
+        assertEquals(expected = 6 to false, actual = sut.loaded().materials.single().let { it.quantity to it.isSaving })
+    }
+
+    @Test
+    fun `When taps come while a request is on its way then the last figure is sent next and nothing piles up`() = runTest(dispatcher) {
+        repository.stock["m1"] = 10
+        val gate = kotlinx.coroutines.CompletableDeferred<Unit>()
+        repository.setGate = gate
         val sut = sut()
         keepCollecting(sut)
 
         sut.onAction(EventDetailUiAction.ChangeQuantity("m1", 6))
         sut.onAction(EventDetailUiAction.ChangeQuantity("m1", 7))
         sut.onAction(EventDetailUiAction.ChangeQuantity("m1", 8))
-        val whilePending = sut.loaded().materials.single()
-        advanceTimeBy(1_000)
+        val whileWaiting = sut.loaded().materials.single()
+        repository.setGate = null
+        gate.complete(Unit)
 
-        assertEquals(expected = 8 to true, actual = whilePending.quantity to whilePending.isSaving)
-        assertEquals(expected = listOf(Triple("e1", "m1", 8)), actual = repository.setCalls)
-        assertFalse(sut.loaded().materials.single().isSaving)
+        assertEquals(expected = 8 to true, actual = whileWaiting.quantity to whileWaiting.isSaving)
+        assertEquals(expected = listOf(6, 8), actual = repository.setCalls.map { it.third })
+        assertEquals(expected = 8 to false, actual = sut.loaded().materials.single().let { it.quantity to it.isSaving })
     }
 
     @Test
