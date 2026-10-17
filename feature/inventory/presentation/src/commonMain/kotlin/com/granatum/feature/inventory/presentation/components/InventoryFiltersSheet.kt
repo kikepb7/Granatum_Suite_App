@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -24,7 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.granatum.core.designsystem.components.buttons.AppPrimaryButton
 import com.granatum.core.designsystem.components.chips.AppFilterChip
 import com.granatum.core.designsystem.components.controls.AppSegmentedControl
-import com.granatum.core.designsystem.components.dialogs.AppBottomSheet
+import com.granatum.core.designsystem.components.dialogs.AppSheetPanel
 import com.granatum.core.designsystem.theme.AppTheme
 import com.granatum.core.designsystem.theme.chipLabel
 import com.granatum.feature.inventory.domain.model.CategoryModel
@@ -63,11 +62,13 @@ fun InventoryFiltersSheet(
     onApply: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    AppBottomSheet(onDismiss = onDismiss) {
-        Column(Modifier.fillMaxWidth().navigationBarsPadding()) {
+    // A panel rather than Material's sheet, which on iOS opens tall content half way: the groups
+    // scroll and the apply button stays pinned at the bottom.
+    AppSheetPanel(onDismiss = onDismiss) {
+        Column(Modifier.fillMaxWidth()) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth().padding(start = 24.dp, end = 12.dp, top = 20.dp, bottom = 4.dp)
+                modifier = Modifier.fillMaxWidth().padding(start = 24.dp, end = 12.dp, top = 12.dp, bottom = 4.dp)
             ) {
                 Text(
                     stringResource(Res.string.filters_title),
@@ -142,7 +143,7 @@ fun InventoryFiltersSheet(
             AppPrimaryButton(
                 text = stringResource(Res.string.filters_show, matching),
                 onClick = onApply,
-                modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(horizontal = 24.dp, vertical = 16.dp)
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp)
             )
         }
     }
@@ -160,3 +161,4 @@ private fun Group(title: StringResource, content: @Composable () -> Unit) {
         content()
     }
 }
+

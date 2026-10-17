@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.granatum.core.designsystem.components.icons.AppIcons
 import com.granatum.core.designsystem.theme.AppTheme
@@ -42,7 +43,9 @@ fun AppFilterButton(
     onClick: () -> Unit,
     contentDescription: String,
     modifier: Modifier = Modifier,
-    icon: ImageVector = AppIcons.Filters
+    icon: ImageVector = AppIcons.Filters,
+    /** Matches [com.granatum.core.designsystem.components.inputs.AppSearchField], which it sits beside. */
+    size: Dp = 48.dp
 ) {
     val colors = AppTheme.colors
     val active = activeCount > 0
@@ -51,18 +54,19 @@ fun AppFilterButton(
     Box(modifier = modifier) {
         Surface(
             onClick = onClick,
-            shape = AppTheme.shapes.medium,
+            shape = AppTheme.shapes.pill,
             color = container,
             border = BorderStroke(1.dp, if (active) colors.brand else colors.border),
-            modifier = Modifier.size(52.dp).semantics { this.contentDescription = contentDescription }
+            modifier = Modifier.size(size).semantics { this.contentDescription = contentDescription }
         ) {
-            Box(contentAlignment = Alignment.Center) { Icon(icon, contentDescription = null, tint = content, modifier = Modifier.size(22.dp)) }
+            Box(contentAlignment = Alignment.Center) { Icon(icon, contentDescription = null, tint = content, modifier = Modifier.size(20.dp)) }
         }
         AnimatedVisibility(
             visible = active,
             enter = scaleIn(),
             exit = scaleOut(),
-            modifier = Modifier.align(Alignment.TopEnd).offset(x = 6.dp, y = (-6).dp)
+            // Over the corner but inside the button's box: never clipped by the screen edge.
+            modifier = Modifier.align(Alignment.TopEnd).offset(x = 2.dp, y = (-2).dp)
         ) {
             Surface(shape = CircleShape, color = colors.brand, modifier = Modifier.defaultMinSize(minWidth = 20.dp, minHeight = 20.dp)) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 5.dp)) {

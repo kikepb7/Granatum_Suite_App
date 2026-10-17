@@ -59,11 +59,11 @@ class DemoInventoryRoutes(
         val vases = Category(state.newId(), "Jarrones", "Cristal y cerámica", t, t).also { categories += it }
         val ribbons = Category(state.newId(), "Cintas y lazos", null, t, t).also { categories += it }
         val baskets = Category(state.newId(), "Cestas", "Mimbre y fibra", t, t).also { categories += it }
-        seed(vases, "Jarrón cilíndrico alto de cristal", 40.0, 12.0, 8, "A", 2)
-        seed(vases, "Jarrón de cerámica blanca", 25.0, 18.0, 0, "A", 5)
-        seed(ribbons, "Cinta de raso roja", 1.0, 2.5, 30, "B", 4)
-        seed(ribbons, "Lazo de arpillera", 1.0, 5.0, 12, "B", 5)
-        seed(baskets, "Cesta de mimbre mediana", 25.0, 35.0, 5, "C", 1)
+        seed(vases, "Jarrón cilíndrico alto de cristal", 40.0, 12.0, 8, "A", 2, DemoArtwork.Kind.TALL_GLASS_VASE)
+        seed(vases, "Jarrón de cerámica blanca", 25.0, 18.0, 0, "A", 5, DemoArtwork.Kind.CERAMIC_VASE)
+        seed(ribbons, "Cinta de raso roja", 1.0, 2.5, 30, "B", 4, DemoArtwork.Kind.RIBBON_SPOOL)
+        seed(ribbons, "Lazo de arpillera", 1.0, 5.0, 12, "B", 5, DemoArtwork.Kind.BURLAP_BOW)
+        seed(baskets, "Cesta de mimbre mediana", 25.0, 35.0, 5, "C", 1, DemoArtwork.Kind.WICKER_BASKET)
         history += Change(state.newId(), materials.first().id, "CANTIDAD", "Boda del sábado", t, DemoState.MANAGER_ID, "12", "8")
     }
 
@@ -75,9 +75,12 @@ class DemoInventoryRoutes(
         quantity: Int,
         warehouse: String,
         section: Int,
+        artwork: DemoArtwork.Kind,
     ) {
         val t = state.now()
-        materials += Material(state.newId(), category.id, description, height, width, quantity, warehouse, section, null, t, t)
+        val id = state.newId()
+        val image = images.storeLazily("materiales/$id/seed.png", "image/png") { DemoArtwork.png(artwork) }
+        materials += Material(id, category.id, description, height, width, quantity, warehouse, section, image, t, t)
     }
 
     /** The storage routes of the demo, which serve the images handed out here. */

@@ -9,10 +9,13 @@ import io.ktor.http.HttpStatusCode
  * signed URLs, which the app loads like any other (backend 010, research D-005).
  */
 class DemoStorageRoutes {
+    /** [bytes] is lazy so the seeded illustrations are only drawn when first shown. */
     private class StoredObject(
-        val bytes: ByteArray,
+        bytes: () -> ByteArray,
         val contentType: String,
-    )
+    ) {
+        val bytes: ByteArray by lazy(bytes)
+    }
 
     private val objects = mutableMapOf<String, StoredObject>()
 
@@ -20,6 +23,16 @@ class DemoStorageRoutes {
         path: String,
         bytes: ByteArray,
         contentType: String,
+    ): String {
+        objects[path] = StoredObject({ bytes }, contentType)
+        return path
+    }
+
+    /** An object whose bytes are produced on the first read (the seeded product images). */
+    fun storeLazily(
+        path: String,
+        contentType: String,
+        bytes: () -> ByteArray,
     ): String {
         objects[path] = StoredObject(bytes, contentType)
         return path

@@ -5,6 +5,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
@@ -55,12 +57,13 @@ fun <T> AppSegmentedControl(
                 shape = AppTheme.shapes.pill,
                 color = container,
                 shadowElevation = if (isSelected) 2.dp else 0.dp,
+                // Each segment fills the track's height: a Row does not stretch its children.
                 modifier = Modifier
                     .weight(1f)
-                    .fillMaxWidth()
+                    .fillMaxHeight()
                     .selectable(selected = isSelected, enabled = enabled, role = Role.Tab, onClick = { onSelect(option) })
             ) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 8.dp)) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp)) {
                     Text(
                         text = label(option),
                         style = MaterialTheme.typography.chipLabel,

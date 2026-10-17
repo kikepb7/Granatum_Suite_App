@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.lazy.LazyColumn
@@ -135,7 +136,7 @@ private fun ProductListScreen(
                 selected = state.filter.warehouse,
                 onSelect = { onAction(ProductListAction.OnWarehouse(it)) },
                 label = { it?.name ?: stringResource(Res.string.filter_all) },
-                modifier = Modifier.padding(horizontal = horizontal)
+                modifier = Modifier.padding(horizontal = horizontal).padding(bottom = 4.dp)
             )
             ActivePills(state, onAction)
             when {
@@ -205,7 +206,12 @@ private fun ActivePills(state: ProductListState, onAction: (ProductListAction) -
                     leadingIcon = AppIcons.Box
                 )
             }
-            TextButton(onClick = { onAction(ProductListAction.OnClearFilters) }) {
+            // Compact, so it lines up with the pills instead of standing taller than them.
+            TextButton(
+                onClick = { onAction(ProductListAction.OnClearFilters) },
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                modifier = Modifier.heightIn(min = 32.dp)
+            ) {
                 Text(stringResource(Res.string.filters_clear), style = MaterialTheme.typography.chipLabel, color = AppTheme.colors.brand)
             }
         }

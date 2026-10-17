@@ -273,4 +273,17 @@ class DemoBackendTest {
             }
             assertEquals(HttpStatusCode.BadRequest, noReason.status)
         }
+
+    @Test
+    fun seeded_products_come_with_an_illustration() =
+        runTest {
+            val admin = token(DemoAccountsCatalog.ADMIN)
+            val urls = get("/materiales", admin).json().jsonArray.map { it.jsonObject["imagenUrl"]!!.jsonPrimitive.content }
+            assertEquals(5, urls.toSet().size)
+            val image = http.get(urls.first())
+            assertEquals(HttpStatusCode.OK, image.status)
+            val bytes = image.readRawBytes()
+            assertEquals(listOf(0x89.toByte(), 'P'.code.toByte(), 'N'.code.toByte(), 'G'.code.toByte()), bytes.take(4))
+            assertEquals("image/png", image.headers[HttpHeaders.ContentType])
+        }
 }
