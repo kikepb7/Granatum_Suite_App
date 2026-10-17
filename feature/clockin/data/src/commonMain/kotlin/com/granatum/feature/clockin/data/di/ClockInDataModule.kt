@@ -7,10 +7,11 @@ import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import com.granatum.feature.clockin.data.datasource.local.OfflineFirstClockInRepositoryImpl
 import com.granatum.feature.clockin.data.datasource.remote.KtorTeamAttendanceRepositoryImpl
 import com.granatum.feature.clockin.data.sync.ShiftSyncEngine
-import com.granatum.feature.clockin.data.remote.FichajeRemoteDataSource
+import com.granatum.feature.clockin.data.remote.ShiftRemoteDataSource
 import com.granatum.feature.clockin.database.dao.ShiftDao
 import com.granatum.feature.clockin.database.dao.ServerShiftDao
 import com.granatum.feature.clockin.database.migration.Migration2To3
+import com.granatum.feature.clockin.database.migration.Migration3To4
 import com.granatum.feature.clockin.database.AppClockInDatabase
 import com.granatum.feature.clockin.database.DatabaseFactory
 import com.granatum.feature.clockin.database.dao.ClockEventDao
@@ -30,14 +31,14 @@ val clockInDataModule = module {
         get<DatabaseFactory>()
             .create()
             .setDriver(BundledSQLiteDriver())
-            .addMigrations(Migration2To3)
+            .addMigrations(Migration2To3, Migration3To4)
             .build()
     }
     single<ClockEventDao> { get<AppClockInDatabase>().clockEventDao }
     single<ShiftDao> { get<AppClockInDatabase>().shiftDao }
     single<ServerShiftDao> { get<AppClockInDatabase>().serverShiftDao }
     single { ClockInEnvironmentData(get<AppClockInDatabase>().maintenanceDao) } bind EnvironmentScopedData::class
-    single { FichajeRemoteDataSource(httpClient = get()) }
+    single { ShiftRemoteDataSource(httpClient = get()) }
 
     single {
         ShiftSyncEngine(

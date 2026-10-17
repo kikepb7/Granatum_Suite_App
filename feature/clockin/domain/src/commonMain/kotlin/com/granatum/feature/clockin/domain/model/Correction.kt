@@ -3,7 +3,7 @@ package com.granatum.feature.clockin.domain.model
 import com.granatum.core.domain.util.Error
 import kotlin.time.Instant
 
-enum class CorrectionState { PENDIENTE, APROBADA, RECHAZADA }
+enum class CorrectionState { PENDING, APPROVED, REJECTED }
 
 data class ProposedBreak(val type: BreakType, val start: Instant, val end: Instant)
 
@@ -22,7 +22,7 @@ data class CorrectionModel(
 
 data class CorrectionDraft(val reason: String, val values: CorrectionValues)
 
-/** What the server would call VALORES_INCOHERENTES, caught before sending (FR-020). */
+/** What the server would call INCONSISTENT_VALUES, caught before sending (FR-020). */
 enum class CorrectionIssue {
     MISSING_REASON,
     EXIT_BEFORE_ENTRY,

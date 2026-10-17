@@ -46,8 +46,8 @@ class CorrectionViewModelTest {
                 key = "srv", serverId = "srv", start = t("08:00"), end = t("16:00"),
                 items = listOf(
                     TimelineItem(ClockEventType.CLOCK_IN, t("08:00"), SyncState.SYNCED),
-                    TimelineItem(ClockEventType.BREAK_START, t("12:00"), SyncState.SYNCED, BreakType.COMIDA),
-                    TimelineItem(ClockEventType.BREAK_END, t("12:30"), SyncState.SYNCED, BreakType.COMIDA),
+                    TimelineItem(ClockEventType.BREAK_START, t("12:00"), SyncState.SYNCED, BreakType.MEAL),
+                    TimelineItem(ClockEventType.BREAK_END, t("12:30"), SyncState.SYNCED, BreakType.MEAL),
                     TimelineItem(ClockEventType.CLOCK_OUT, t("16:00"), SyncState.SYNCED)
                 ),
                 state = ShiftState.CLOSED, workedMinutes = 450, isWorkedMinutesProvisional = false
@@ -64,7 +64,7 @@ class CorrectionViewModelTest {
         assertEquals("08:00", vm.entry.text.toString())
         assertEquals("16:00", vm.exit.text.toString())
         val b = vm.state.value.breaks.single()
-        assertEquals(BreakType.COMIDA to ("12:00" to "12:30"), b.type to (b.start.text.toString() to b.end.text.toString()))
+        assertEquals(BreakType.MEAL to ("12:00" to "12:30"), b.type to (b.start.text.toString() to b.end.text.toString()))
     }
 
     @Test
@@ -89,7 +89,7 @@ class CorrectionViewModelTest {
     @Test
     fun a_valid_request_is_sent_with_the_shifts_day() = runTest {
         repo.correctionResult = Result.Success(
-            CorrectionModel("c", "srv", CorrectionState.PENDIENTE, "m", CorrectionValues(t("08:00"), t("17:00"), emptyList()), null, t("18:00"), null)
+            CorrectionModel("c", "srv", CorrectionState.PENDING, "m", CorrectionValues(t("08:00"), t("17:00"), emptyList()), null, t("18:00"), null)
         )
         val vm = vm()
         vm.exit.setTextAndPlaceCursorAtEnd("17:00")

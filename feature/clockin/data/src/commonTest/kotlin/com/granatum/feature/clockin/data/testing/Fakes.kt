@@ -66,7 +66,7 @@ class InMemoryServerShiftDao : ServerShiftDao {
     override suspend fun upsertAll(shifts: List<ServerShiftEntity>) = shifts.forEach { upsert(it) }
     override fun observeAll(employeeId: String) = rows.map { all -> all.filter { it.employeeId == employeeId } }
     override suspend fun deleteRange(employeeId: String, fromEpochMillis: Long, toEpochMillis: Long) {
-        rows.value = rows.value.filterNot { it.employeeId == employeeId && it.entradaEpochMillis in fromEpochMillis..toEpochMillis }
+        rows.value = rows.value.filterNot { it.employeeId == employeeId && it.clockInEpochMillis in fromEpochMillis..toEpochMillis }
     }
     override suspend fun replaceRange(employeeId: String, fromEpochMillis: Long, toEpochMillis: Long, shifts: List<ServerShiftEntity>) {
         deleteRange(employeeId, fromEpochMillis, toEpochMillis); upsertAll(shifts)
@@ -77,7 +77,7 @@ class FakeSessions : SessionStorage {
     val session = MutableStateFlow<Session?>(null)
     override fun observeSession(): Flow<Session?> = session
     override suspend fun set(session: Session?) { this.session.value = session }
-    fun signIn(employeeId: String) { session.value = Session("a", "r", employeeId, UserRole.EMPLEADO, false, "$employeeId@granatum.es") }
+    fun signIn(employeeId: String) { session.value = Session("a", "r", employeeId, UserRole.EMPLOYEE, false, "$employeeId@granatum.es") }
 }
 
 object SilentLogger : AppLogger {
@@ -100,7 +100,7 @@ fun mockClient(handler: suspend MockRequestHandleScope.(HttpRequestData) -> Http
 fun MockRequestHandleScope.json(status: HttpStatusCode, body: String) =
     respond(body, status, headersOf(HttpHeaders.ContentType, "application/json"))
 
-fun fichajeJson(id: String, employeeId: String = "ana", estado: String = "EN_CURSO", entrada: String = "2026-10-08T08:00:00Z", pausas: String = "[]", salida: String? = null) =
-    """{"id":"$id","empleadoId":"$employeeId","entrada":"$entrada","estado":"$estado","fueIncompleto":false,"pausas":$pausas${salida?.let { ",\"salida\":\"$it\"" } ?: ""}}"""
+fun shiftJson(id: String, employeeId: String = "ana", status: String = "IN_PROGRESS", clockIn: String = "2026-10-08T08:00:00Z", breaks: String = "[]", clockOut: String? = null) =
+    """{"id":"$id","employeeId":"$employeeId","clockIn":"$clockIn","status":"$status","wasIncomplete":false,"breaks":$breaks${clockOut?.let { ",\"clockOut\":\"$it\"" } ?: ""}}"""
 
 fun error(code: String) = """{"code":"$code","message":"m"}"""

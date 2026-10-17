@@ -61,7 +61,7 @@ class ClockErrorMappersTest {
     fun break_types_and_correction_states_have_distinct_labels() {
         assertAllDistinct(BreakType.entries.map { it.label().key })
         assertAllDistinct(CorrectionState.entries.map { it.label().key })
-        assertEquals("break_comida", BreakType.COMIDA.label().key)
-        assertEquals("correction_state_pendiente", CorrectionState.PENDIENTE.label().key)
+        assertEquals("break_meal", BreakType.MEAL.label().key)
+        assertEquals("correction_state_pending", CorrectionState.PENDING.label().key)
     }
 }

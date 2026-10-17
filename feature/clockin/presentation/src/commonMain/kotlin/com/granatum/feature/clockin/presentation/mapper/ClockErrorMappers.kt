@@ -34,9 +34,9 @@ fun ClockRejection.toUiText(): UiText = UiText.Resource(
 )
 
 fun BreakType.label() = when (this) {
-    BreakType.COMIDA -> Res.string.break_comida
-    BreakType.DESCANSO -> Res.string.break_descanso
-    BreakType.OTRO -> Res.string.break_otro
+    BreakType.MEAL -> Res.string.break_meal
+    BreakType.REST -> Res.string.break_rest
+    BreakType.OTHER -> Res.string.break_other
 }
 
 fun CorrectionIssue.toUiText(): UiText = UiText.Resource(
@@ -58,7 +58,7 @@ fun CorrectionError.toUiText(): UiText = when (this) {
 }
 
 fun CorrectionState.label() = when (this) {
-    CorrectionState.PENDIENTE -> Res.string.correction_state_pendiente
-    CorrectionState.APROBADA -> Res.string.correction_state_aprobada
-    CorrectionState.RECHAZADA -> Res.string.correction_state_rechazada
+    CorrectionState.PENDING -> Res.string.correction_state_pending
+    CorrectionState.APPROVED -> Res.string.correction_state_approved
+    CorrectionState.REJECTED -> Res.string.correction_state_rejected
 }

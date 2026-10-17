@@ -3,12 +3,12 @@ package com.granatum.feature.clockin.data.datasource.local
 import com.granatum.core.domain.auth.repository.SessionStorage
 import com.granatum.core.domain.util.DataError
 import com.granatum.core.domain.util.Result
-import com.granatum.feature.clockin.data.dto.CrearCorreccionRequestDto
+import com.granatum.feature.clockin.data.dto.CreateShiftCorrectionRequestDto
 import com.granatum.feature.clockin.data.mappers.toDomain
 import com.granatum.feature.clockin.data.mappers.toDto
 import com.granatum.feature.clockin.data.mappers.toEntity
 import com.granatum.feature.clockin.data.merge.ShiftMerger
-import com.granatum.feature.clockin.data.remote.FichajeRemoteDataSource
+import com.granatum.feature.clockin.data.remote.ShiftRemoteDataSource
 import com.granatum.feature.clockin.data.remote.RemoteFailure
 import com.granatum.feature.clockin.data.sync.ShiftSyncEngine
 import com.granatum.feature.clockin.database.dao.ClockEventDao
@@ -62,7 +62,7 @@ class OfflineFirstClockInRepositoryImpl(
     private val eventDao: ClockEventDao,
     private val shiftDao: ShiftDao,
     private val serverShiftDao: ServerShiftDao,
-    private val remote: FichajeRemoteDataSource,
+    private val remote: ShiftRemoteDataSource,
     private val sessionStorage: SessionStorage,
     private val syncEngine: ShiftSyncEngine,
     private val appScope: CoroutineScope,
@@ -116,8 +116,8 @@ class OfflineFirstClockInRepositoryImpl(
         val first = LocalDate(year, month, 1)
         val last = first.plus(DatePeriod(months = 1)).plus(DatePeriod(days = -1))
         val shifts = (remote.fetchShifts(employeeId, first, last) as? Result.Success)?.data ?: return
-        val flags = (remote.fetchMonthSummary(employeeId, year, month) as? Result.Success)?.data?.dias
-            ?.associate { it.fecha to (it.corregido to it.reconstruido) }
+        val flags = (remote.fetchMonthSummary(employeeId, year, month) as? Result.Success)?.data?.days
+            ?.associate { it.date to (it.corrected to it.reconstructed) }
             .orEmpty()
         val fetchedAt = clock.now().toEpochMilliseconds()
         val madrid = ShiftSyncEngine.MADRID
@@ -126,7 +126,7 @@ class OfflineFirstClockInRepositoryImpl(
             fromEpochMillis = first.atStartOfDayIn(madrid).toEpochMilliseconds(),
             toEpochMillis = last.plus(DatePeriod(days = 1)).atStartOfDayIn(madrid).toEpochMilliseconds() - 1,
             shifts = shifts.map { dto ->
-                val date = kotlin.time.Instant.parse(dto.entrada).toLocalDateTime(madrid).date.toString()
+                val date = kotlin.time.Instant.parse(dto.clockIn).toLocalDateTime(madrid).date.toString()
                 val (corrected, reconstructed) = flags[date] ?: (false to false)
                 dto.toEntity(fetchedAt, corrected, reconstructed)
             }
@@ -166,7 +166,7 @@ class OfflineFirstClockInRepositoryImpl(
         }
 
     override suspend fun requestCorrection(shiftServerId: String, draft: CorrectionDraft): Result<CorrectionModel, CorrectionError> {
-        val request = CrearCorreccionRequestDto(motivo = draft.reason, valoresPropuestos = draft.values.toDto())
+        val request = CreateShiftCorrectionRequestDto(reason = draft.reason, proposedValues = draft.values.toDto())
         return when (val result = remote.createCorrection(shiftServerId, request)) {
             is Result.Success -> Result.Success(result.data.toDomain())
             is Result.Failure -> Result.Failure(result.error.toCorrectionError())
@@ -227,9 +227,9 @@ class OfflineFirstClockInRepositoryImpl(
 
     private fun RemoteFailure.toCorrectionError(): CorrectionError = when {
         transport == DataError.Remote.NO_INTERNET || transport == DataError.Remote.REQUEST_TIMEOUT -> CorrectionError.NoInternet
-        code == "FICHAJE_NO_FINALIZADO" -> CorrectionError.ShiftNotFinished
-        code == "EMPLEADO_INACTIVO" -> CorrectionError.Inactive
-        code == "VALORES_INCOHERENTES" -> CorrectionError.Invalid(emptySet())
+        code == "SHIFT_NOT_FINISHED" -> CorrectionError.ShiftNotFinished
+        code == "EMPLOYEE_INACTIVE" -> CorrectionError.Inactive
+        code == "INCONSISTENT_VALUES" -> CorrectionError.Invalid(emptySet())
         else -> CorrectionError.Unknown
     }
 

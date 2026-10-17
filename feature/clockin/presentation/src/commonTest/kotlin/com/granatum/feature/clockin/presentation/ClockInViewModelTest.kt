@@ -60,8 +60,8 @@ class ClockInViewModelTest {
         assertTrue(vm.state.value.isChoosingBreak)
         assertTrue(repo.calls.isEmpty())
 
-        vm.onAction(ClockInAction.OnBreakTypeChosen(BreakType.COMIDA))
-        assertEquals(listOf("startBreak:COMIDA"), repo.calls)
+        vm.onAction(ClockInAction.OnBreakTypeChosen(BreakType.MEAL))
+        assertEquals(listOf("startBreak:MEAL"), repo.calls)
         assertFalse(vm.state.value.isChoosingBreak)
     }
 

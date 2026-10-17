@@ -3,7 +3,7 @@ package com.granatum.feature.clockin.data.dto
 import kotlinx.serialization.Serializable
 
 // What remains here backs the team screen, which moves to the real contract in the team
-// phase. The punch DTOs moved to FichajeDtos.kt (spec 005, FR-025).
+// phase. The punch DTOs moved to ShiftDtos.kt (spec 005, FR-025).
 
 @Serializable
 data class CorrectionRequestDto(
