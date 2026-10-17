@@ -66,13 +66,13 @@ class EventsRepositoryTest {
     private fun MockRequestHandleScope.ok(body: String, status: HttpStatusCode = HttpStatusCode.OK) =
         respond(body, status, headersOf(HttpHeaders.ContentType, "application/json"))
 
-    private fun evento(id: String = "e1", estado: String = "PROGRAMADO", materiales: String = MATERIALES) =
-        """{"id":"$id","nombre":"Evento 1","descripcion":"Boda de Juan y María","fecha":"2027-06-13","estado":"$estado",""" +
-            """"materiales":$materiales,"creadoPor":"u1","finalizadoEn":null,"fechaAlta":"2026-10-17T09:00:00Z","fechaUltimaModificacion":"2026-10-17T09:05:00Z"}"""
+    private fun event(id: String = "e1", status: String = "SCHEDULED", materials: String = MATERIALS) =
+        """{"id":"$id","name":"Evento 1","description":"Boda de Juan y María","date":"2027-06-13","status":"$status",""" +
+            """"materials":$materials,"createdBy":"u1","finishedAt":null,"createdAt":"2026-10-17T09:00:00Z","updatedAt":"2026-10-17T09:05:00Z"}"""
 
     @Test
     fun `When events are refreshed then the cache holds them with their materials`() = runTest {
-        val sut = sut { ok("[${evento()}]") }
+        val sut = sut { ok("[${event()}]") }
         val expected = listOf(
             EventMaterial("m2", "Cestas", "Cesta de mimbre", 1, null, null),
             EventMaterial("m1", "Jarrones", "Jarrón cilíndrico", 5, MaterialLocation("A", 2), "https://img?token=t")
@@ -88,9 +88,20 @@ class EventsRepositoryTest {
     }
 
     @Test
+    fun `When an event is finished then it is cached as finished`() = runTest {
+        val sut = sut { ok(event(status = "FINISHED")) }
+        val expected = EventStatus.FINISHED
+
+        val actual = (sut.finish("e1") as Result.Success).data.status
+
+        assertEquals(expected = expected, actual = actual)
+        assertEquals(expected = "POST /events/e1/finish", actual = requests.single().first)
+    }
+
+    @Test
     fun `When an event is created then the contract body is sent and the answer cached`() = runTest {
-        val sut = sut { ok(evento(materiales = "[]"), HttpStatusCode.Created) }
-        val expected = "POST /eventos" to """{"nombre":"Evento 1","descripcion":"Boda de Juan y María","fecha":"2027-06-13"}"""
+        val sut = sut { ok(event(materials = "[]"), HttpStatusCode.Created) }
+        val expected = "POST /events" to """{"name":"Evento 1","description":"Boda de Juan y María","date":"2027-06-13"}"""
 
         sut.create(EventDraft("  Evento 1 ", " Boda de Juan y María ", LocalDate(2027, 6, 13)))
 
@@ -100,8 +111,8 @@ class EventsRepositoryTest {
 
     @Test
     fun `When a quantity is set then it travels as the final amount`() = runTest {
-        val sut = sut { ok(evento()) }
-        val expected = "PUT /eventos/e1/materiales/m1" to """{"cantidad":5}"""
+        val sut = sut { ok(event()) }
+        val expected = "PUT /events/e1/materials/m1" to """{"quantity":5}"""
 
         sut.setMaterial("e1", "m1", 5)
 
@@ -110,7 +121,7 @@ class EventsRepositoryTest {
 
     @Test
     fun `When there is not enough stock then the available units are reported`() = runTest {
-        val sut = sut { ok("""{"code":"STOCK_INSUFICIENTE","message":"m","disponible":3}""", HttpStatusCode.Conflict) }
+        val sut = sut { ok("""{"code":"INSUFFICIENT_STOCK","message":"m","available":3}""", HttpStatusCode.Conflict) }
         val expected = Result.Failure(EventsError.InsufficientStock(available = 3))
 
         val actual = sut.setMaterial("e1", "m1", 4)
@@ -122,16 +133,17 @@ class EventsRepositoryTest {
     fun `When the server answers with other codes then each becomes its error`() = runTest {
         suspend fun answer(status: HttpStatusCode, code: String) = sut { ok("""{"code":"$code","message":"m"}""", status) }.finish("e1")
 
-        assertEquals(expected = Result.Failure(EventsError.EventFinished), actual = answer(HttpStatusCode.Conflict, "EVENTO_FINALIZADO"))
-        assertEquals(expected = Result.Failure(EventsError.DateInPast), actual = answer(HttpStatusCode.BadRequest, "FECHA_PASADA"))
+        assertEquals(expected = Result.Failure(EventsError.EventFinished), actual = answer(HttpStatusCode.Conflict, "EVENT_FINISHED"))
+        assertEquals(expected = Result.Failure(EventsError.DateInPast), actual = answer(HttpStatusCode.BadRequest, "DATE_IN_PAST"))
         assertEquals(expected = Result.Failure(EventsError.MaterialNotFound), actual = answer(HttpStatusCode.NotFound, "MATERIAL_NOT_FOUND"))
         assertEquals(expected = Result.Failure(EventsError.Forbidden), actual = answer(HttpStatusCode.Forbidden, "FORBIDDEN"))
+        assertEquals(expected = Result.Failure(EventsError.Invalid), actual = answer(HttpStatusCode.BadRequest, "VALIDATION"))
     }
 
     @Test
     fun `When an event was deleted elsewhere then it leaves the cache`() = runTest {
-        sut { ok(evento()) }.refreshEvent("e1")
-        val sut = sut { ok("""{"code":"EVENTO_NOT_FOUND","message":"m"}""", HttpStatusCode.NotFound) }
+        sut { ok(event()) }.refreshEvent("e1")
+        val sut = sut { ok("""{"code":"EVENT_NOT_FOUND","message":"m"}""", HttpStatusCode.NotFound) }
 
         val actual = sut.setMaterial("e1", "m1", 1)
 
@@ -141,7 +153,7 @@ class EventsRepositoryTest {
 
     @Test
     fun `When there is no coverage then nothing is written`() = runTest {
-        sut { ok(evento()) }.refreshEvent("e1")
+        sut { ok(event()) }.refreshEvent("e1")
         val before = dao.rows.value
         val sut = sut { throw kotlinx.io.IOException("offline") }
 
@@ -153,7 +165,7 @@ class EventsRepositoryTest {
 
     @Test
     fun `When the picker loads then materials come with their free units and location`() = runTest {
-        val sut = sut { ok("""[{"id":"m1","categoria":"Jarrones","descripcion":"Jarrón","cantidad":3,"localizacion":{"almacen":"B","seccion":4},"imagenUrl":null}]""") }
+        val sut = sut { ok("""[{"id":"m1","category":"Jarrones","description":"Jarrón","quantity":3,"location":{"warehouse":"B","section":4},"imageUrl":null}]""") }
 
         val actual = (sut.fetchAvailableMaterials() as Result.Success).data.single()
 
@@ -162,8 +174,8 @@ class EventsRepositoryTest {
     }
 
     private companion object {
-        const val MATERIALES =
-            """[{"materialId":"m1","categoria":"Jarrones","descripcion":"Jarrón cilíndrico","cantidad":5,"localizacion":{"almacen":"A","seccion":2},"imagenUrl":"https://img?token=t"},""" +
-                """{"materialId":"m2","categoria":"Cestas","descripcion":"Cesta de mimbre","cantidad":1,"localizacion":null,"imagenUrl":null}]"""
+        const val MATERIALS =
+            """[{"materialId":"m1","category":"Jarrones","description":"Jarrón cilíndrico","quantity":5,"location":{"warehouse":"A","section":2},"imageUrl":"https://img?token=t"},""" +
+                """{"materialId":"m2","category":"Cestas","description":"Cesta de mimbre","quantity":1,"location":null,"imageUrl":null}]"""
     }
 }

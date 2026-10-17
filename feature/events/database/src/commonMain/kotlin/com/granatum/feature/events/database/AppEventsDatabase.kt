@@ -6,7 +6,7 @@ import androidx.room.RoomDatabase
 import com.granatum.feature.events.database.dao.EventsDao
 import com.granatum.feature.events.database.entity.EventEntity
 
-@Database(entities = [EventEntity::class], version = 1)
+@Database(entities = [EventEntity::class], version = 2)
 @ConstructedBy(AppEventsDatabaseConstructor::class)
 abstract class AppEventsDatabase : RoomDatabase() {
     abstract val eventsDao: EventsDao

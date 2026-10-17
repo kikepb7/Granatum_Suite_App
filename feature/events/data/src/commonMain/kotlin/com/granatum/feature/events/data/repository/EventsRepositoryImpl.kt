@@ -2,7 +2,7 @@ package com.granatum.feature.events.data.repository
 
 import com.granatum.core.domain.util.EmptyResult
 import com.granatum.core.domain.util.Result
-import com.granatum.feature.events.data.dto.EventoDto
+import com.granatum.feature.events.data.dto.EventDto
 import com.granatum.feature.events.data.mapper.EventMapper
 import com.granatum.feature.events.data.remote.EventsRemoteDataSource
 import com.granatum.feature.events.database.dao.EventsDao
@@ -63,7 +63,7 @@ internal class EventsRepositoryImpl(
             is Result.Failure -> r
         }
 
-    private suspend fun saved(result: Result<EventoDto, EventsError>, id: String? = null): Result<Event, EventsError> =
+    private suspend fun saved(result: Result<EventDto, EventsError>, id: String? = null): Result<Event, EventsError> =
         when (result) {
             is Result.Success -> {
                 val entity = mapper.toEntity(result.data)

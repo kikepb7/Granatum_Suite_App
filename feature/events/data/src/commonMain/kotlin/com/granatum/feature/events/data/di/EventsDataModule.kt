@@ -8,6 +8,7 @@ import com.granatum.feature.events.data.remote.EventsRemoteDataSource
 import com.granatum.feature.events.data.repository.EventsRepositoryImpl
 import com.granatum.feature.events.database.AppEventsDatabase
 import com.granatum.feature.events.database.DatabaseFactory
+import com.granatum.feature.events.database.migration.EventsMigrations
 import com.granatum.feature.events.domain.repository.EventsRepository
 import org.koin.core.module.Module
 import org.koin.dsl.bind
@@ -22,6 +23,7 @@ val eventsDataModule = module {
         get<DatabaseFactory>()
             .create()
             .setDriver(BundledSQLiteDriver())
+            .addMigrations(*EventsMigrations.ALL)
             .build()
     }
     single { get<AppEventsDatabase>().eventsDao }
