@@ -25,7 +25,11 @@
     <string name="role_representative">Representante</string>
 
     <!-- Campos -->
-    <string name="field_name">Nombre y apellidos</string>
+    <string name="field_name">Nombre</string>
+    <string name="field_last_name">Apellidos</string>
+    <string name="last_name_required">Escribe los apellidos</string>
+    <string name="last_name_pending">Faltan los apellidos</string>
+    <string name="last_name_pending_description">Se dio de alta antes de pedir los apellidos: complétalos y guarda los cambios.</string>
     <string name="field_document">DNI o NIE</string>
     <string name="field_position">Puesto</string>
     <string name="field_contract">Contrato</string>

@@ -59,6 +59,7 @@ class KtorAuthRepositoryImpl(
                         email = email,
                         password = registration.password,
                         name = registration.name.trim(),
+                        lastName = registration.lastName.trim(),
                         identityDocument = registration.identityDocument.trim(),
                         bootstrapCode = registration.bootstrapCode.trim()
                     )

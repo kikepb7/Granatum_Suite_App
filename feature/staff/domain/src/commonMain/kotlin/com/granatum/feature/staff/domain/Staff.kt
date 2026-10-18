@@ -7,20 +7,29 @@ import kotlinx.datetime.LocalDate
 
 enum class ContractType { FULL_TIME, PART_TIME, HOURLY }
 
-/** A person on the staff, as `/api/employees` keeps them (backend 93ef398). */
+/** A person on the staff, as `/api/employees` keeps them (backend 93ef398, last names from spec 012). */
 data class StaffMember(
     val id: String,
     val name: String,
+    /** Null for people onboarded before last names existed, until an `ADMIN` completes them. */
+    val lastName: String?,
+    /** The server says the last names are still missing: the screens warn about it. */
+    val lastNamePending: Boolean,
     val identityDocument: String,
     val position: String,
     val contract: ContractType,
     val startDate: LocalDate,
     val active: Boolean,
-)
+) {
+    /** «Nombre Apellidos», or the name alone while the last names are missing. */
+    val fullName: String
+        get() = lastName?.trim()?.takeIf { it.isNotEmpty() }?.let { "${name.trim()} $it" } ?: name.trim()
+}
 
 /** What can change on a staff record: everything but the identity document. */
 data class StaffEdit(
     val name: String,
+    val lastName: String,
     val position: String,
     val contract: ContractType,
     val startDate: LocalDate,
@@ -29,6 +38,7 @@ data class StaffEdit(
 /** Onboarding in one step (backend feature 009): staff record and account. */
 data class Onboarding(
     val name: String,
+    val lastName: String,
     val identityDocument: String,
     val position: String,
     val contract: ContractType,
@@ -54,6 +64,7 @@ class TemporaryCredentials(
 
 object StaffLimits {
     const val NAME = 150
+    const val LAST_NAME = 150
     const val DOCUMENT = 20
     const val POSITION = 100
     const val EMAIL = 254
@@ -129,8 +140,8 @@ fun List<StaffMember>.search(
     val needle = text.trim().fold()
     return filter { member ->
         (active == null || member.active == active) &&
-            (needle.isEmpty() || listOf(member.name, member.identityDocument, member.position).any { it.fold().contains(needle) })
-    }.sortedBy { it.name.fold() }
+            (needle.isEmpty() || listOf(member.fullName, member.identityDocument, member.position).any { it.fold().contains(needle) })
+    }.sortedBy { it.fullName.fold() }
 }
 
 private fun String.fold(): String =

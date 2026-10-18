@@ -21,8 +21,13 @@ class DemoAuthRoutes(
                     ?.let { tokens(it) } ?: error(HttpStatusCode.Unauthorized, "INVALID_REFRESH_TOKEN", "Sesión caducada")
             "logout" -> DemoReply.NoContent
             "change-password" -> changePassword(request)
-            // The demo installation already has its owner: exactly what the server says then.
-            "sign-up" -> error(HttpStatusCode.Forbidden, "INVALID_BOOTSTRAP_CODE", "Código de arranque no válido")
+            // Validated first, as on the server; then the demo installation already has its owner.
+            "sign-up" ->
+                if (request.body.lastName() == null) {
+                    missingLastName()
+                } else {
+                    error(HttpStatusCode.Forbidden, "INVALID_BOOTSTRAP_CODE", "Código de arranque no válido")
+                }
             else -> null
         }
     }

@@ -195,7 +195,7 @@ class DemoBackendTest {
                 post(
                     "/auth/onboarding",
                     admin,
-                    """{"name":"Marta Gil","identityDocument":"12345678Z","position":"Florista","contractType":"PART_TIME","hireDate":"2026-10-09","email":"marta@demo.granatum.es","role":"EMPLOYEE"}""",
+                    """{"name":"Marta","lastName":"Gil Navarro","identityDocument":"12345678Z","position":"Florista","contractType":"PART_TIME","hireDate":"2026-10-09","email":"marta@demo.granatum.es","role":"EMPLOYEE"}""",
                 )
             // That DNI is the admin's own record, which already has an account.
             assertEquals(HttpStatusCode.Conflict, created.status)
@@ -204,11 +204,92 @@ class DemoBackendTest {
                 post(
                     "/auth/onboarding",
                     admin,
-                    """{"name":"Marta Gil","identityDocument":"00000001R","position":"Florista","contractType":"PART_TIME","hireDate":"2026-10-09","email":"marta@demo.granatum.es","role":"EMPLOYEE"}""",
+                    """{"name":"Marta","lastName":"Gil Navarro","identityDocument":"00000001R","position":"Florista","contractType":"PART_TIME","hireDate":"2026-10-09","email":"marta@demo.granatum.es","role":"EMPLOYEE"}""",
                 ).json().jsonObject
             val temporary = ok["temporaryPassword"]!!.jsonPrimitive.content
             val session = login("marta@demo.granatum.es", temporary).json().jsonObject
             assertEquals("true", session["passwordChangeRequired"]!!.jsonPrimitive.content)
+            val marta = get("/employees/${ok["employeeId"]!!.jsonPrimitive.content}", admin).json().jsonObject
+            assertEquals("Gil Navarro", marta["lastName"]!!.jsonPrimitive.content)
+            assertEquals("false", marta["lastNamePending"]!!.jsonPrimitive.content)
+        }
+
+    @Test
+    fun onboarding_without_last_names_is_refused_like_the_server() =
+        runTest {
+            val admin = token(DemoAccountsCatalog.ADMIN)
+            listOf("", ""","lastName":"   """", ""","lastName":null""").forEach { lastName ->
+                val refused =
+                    post(
+                        "/auth/onboarding",
+                        admin,
+                        """{"name":"Marta"$lastName,"identityDocument":"00000001R","position":"Florista","contractType":"PART_TIME","hireDate":"2026-10-09","email":"marta@demo.granatum.es","role":"EMPLOYEE"}""",
+                    )
+                assertEquals(HttpStatusCode.BadRequest, refused.status)
+                assertEquals("VALIDATION", refused.json().jsonObject["code"]!!.jsonPrimitive.content)
+            }
+        }
+
+    @Test
+    fun seeded_people_have_last_names_but_one_is_still_pending() =
+        runTest {
+            val admin = token(DemoAccountsCatalog.ADMIN)
+            val people = get("/employees", admin).json().jsonArray.map { it.jsonObject }
+            val pending = people.filter { it["lastNamePending"]!!.jsonPrimitive.content == "true" }
+            assertEquals(1, pending.size)
+            assertEquals(JsonNull, pending.single()["lastName"])
+            val withLastNames = people - pending.toSet()
+            assertTrue(withLastNames.all { it["lastName"]!!.jsonPrimitive.content.isNotBlank() })
+            assertEquals(
+                "Ferrer Montes",
+                people.single { it["id"]!!.jsonPrimitive.content == DemoState.ADMIN_ID }["lastName"]!!.jsonPrimitive.content,
+            )
+        }
+
+    @Test
+    fun editing_a_pending_person_requires_and_saves_the_last_names() =
+        runTest {
+            val admin = token(DemoAccountsCatalog.ADMIN)
+            val pending =
+                get("/employees", admin).json().jsonArray.map { it.jsonObject }.single {
+                    it["lastNamePending"]!!.jsonPrimitive.content == "true"
+                }
+            val id = pending["id"]!!.jsonPrimitive.content
+
+            suspend fun edit(lastName: String) =
+                http.put("$base/employees/$id") {
+                    header(HttpHeaders.Authorization, "Bearer $admin")
+                    contentType(ContentType.Application.Json)
+                    setBody("""{"name":"Elena","position":"Encargada de tienda","contractType":"FULL_TIME","hireDate":"2024-01-08"$lastName}""")
+                }
+
+            val refused = edit("")
+            assertEquals(HttpStatusCode.BadRequest, refused.status)
+            assertEquals("VALIDATION", refused.json().jsonObject["code"]!!.jsonPrimitive.content)
+
+            val saved = edit(""","lastName":" Ríos Campos """").json().jsonObject
+            assertEquals("Ríos Campos", saved["lastName"]!!.jsonPrimitive.content)
+            assertEquals("false", saved["lastNamePending"]!!.jsonPrimitive.content)
+        }
+
+    @Test
+    fun the_owner_sign_up_asks_for_last_names_too() =
+        runTest {
+            suspend fun signUp(body: String) =
+                http.post("$base/auth/sign-up") {
+                    contentType(ContentType.Application.Json)
+                    setBody(body)
+                }
+            val withoutLastName =
+                signUp("""{"email":"a@b.es","password":"Clave-2026!","name":"Ana","identityDocument":"00000001R","bootstrapCode":"x"}""")
+            assertEquals(HttpStatusCode.BadRequest, withoutLastName.status)
+            assertEquals("VALIDATION", withoutLastName.json().jsonObject["code"]!!.jsonPrimitive.content)
+            // The demo installation already has its owner.
+            val complete =
+                signUp(
+                    """{"email":"a@b.es","password":"Clave-2026!","name":"Ana","lastName":"Martín","identityDocument":"00000001R","bootstrapCode":"x"}""",
+                )
+            assertEquals(HttpStatusCode.Forbidden, complete.status)
         }
 
     @Test
@@ -354,7 +435,7 @@ class DemoBackendTest {
             val body = weak.json().jsonObject
             assertEquals("WEAK_PASSWORD", body["code"]!!.jsonPrimitive.content)
             assertTrue("MIN_LENGTH" in body["requirements"]!!.jsonArray.map { it.jsonPrimitive.content })
-            assertEquals(HttpStatusCode.Forbidden, http.post("$base/auth/sign-up") { contentType(ContentType.Application.Json); setBody("{}") }.status)
+            assertEquals(HttpStatusCode.BadRequest, http.post("$base/auth/sign-up") { contentType(ContentType.Application.Json); setBody("{}") }.status)
         }
 
     @Test

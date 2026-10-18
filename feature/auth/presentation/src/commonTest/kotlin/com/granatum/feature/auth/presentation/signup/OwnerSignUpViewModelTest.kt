@@ -2,6 +2,7 @@ package com.granatum.feature.auth.presentation.signup
 
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import com.granatum.core.domain.auth.AuthError
+import com.granatum.core.domain.auth.model.OwnerRegistration
 import com.granatum.core.domain.util.Result
 import com.granatum.core.domain.validation.PasswordRequirement
 import com.granatum.feature.auth.presentation.login.EmailFieldError
@@ -28,7 +29,8 @@ class OwnerSignUpViewModelTest {
     private val repo = FakeAuthRepository()
 
     private fun OwnerSignUpViewModel.fill(password: String = "Clave-2026!") {
-        name.setTextAndPlaceCursorAtEnd("Ana Martín")
+        name.setTextAndPlaceCursorAtEnd("Ana")
+        lastName.setTextAndPlaceCursorAtEnd(" Martín Soler ")
         document.setTextAndPlaceCursorAtEnd("12345678Z")
         email.setTextAndPlaceCursorAtEnd(" ana@granatum.es ")
         this.password.setTextAndPlaceCursorAtEnd(password)
@@ -41,8 +43,22 @@ class OwnerSignUpViewModelTest {
         vm.onAction(OwnerSignUpAction.OnSubmit)
 
         val state = vm.state.value
-        assertEquals(setOf(SignUpField.NAME, SignUpField.DOCUMENT, SignUpField.CODE, SignUpField.PASSWORD), state.problems.keys)
+        assertEquals(setOf(SignUpField.NAME, SignUpField.LAST_NAME, SignUpField.DOCUMENT, SignUpField.CODE, SignUpField.PASSWORD), state.problems.keys)
         assertEquals(EmailFieldError.REQUIRED, state.emailError)
+        assertTrue(repo.registrations.isEmpty())
+    }
+
+    @Test
+    fun blank_or_too_long_last_names_are_not_sent() = runTest {
+        val vm = OwnerSignUpViewModel(repo)
+        vm.fill()
+        vm.lastName.setTextAndPlaceCursorAtEnd("   ")
+        vm.onAction(OwnerSignUpAction.OnSubmit)
+        assertEquals(mapOf(SignUpField.LAST_NAME to FieldProblem.REQUIRED), vm.state.value.problems)
+
+        vm.lastName.setTextAndPlaceCursorAtEnd("G".repeat(OwnerRegistration.MAX_LAST_NAME + 1))
+        vm.onAction(OwnerSignUpAction.OnSubmit)
+        assertEquals(mapOf(SignUpField.LAST_NAME to FieldProblem.TOO_LONG), vm.state.value.problems)
         assertTrue(repo.registrations.isEmpty())
     }
 
@@ -64,6 +80,8 @@ class OwnerSignUpViewModelTest {
 
         val sent = repo.registrations.single()
         assertEquals("ana@granatum.es", sent.email)
+        assertEquals("Ana", sent.name)
+        assertEquals("Martín Soler", sent.lastName)
         assertEquals("codigo-de-arranque-de-prueba", sent.bootstrapCode)
         assertEquals("Clave-2026!", sent.password)
         assertFalse(vm.state.value.isLoading)

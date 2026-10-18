@@ -28,6 +28,8 @@ class DemoUser(
 class DemoEmployee(
     val id: String,
     var name: String,
+    /** Null for a person onboarded before last names existed (backend spec 012): pending. */
+    var lastName: String?,
     val identityDocument: String,
     var position: String,
     var contractType: String,
@@ -86,10 +88,11 @@ class DemoState(
 
     val employees =
         mutableListOf(
-            DemoEmployee(ADMIN_ID, DemoAccountsCatalog.ADMIN.displayName, "12345678Z", "Dirección", "FULL_TIME", LocalDate(2023, 3, 1)),
-            DemoEmployee(EMPLOYEE_ID, DemoAccountsCatalog.EMPLOYEE.displayName, "87654321X", "Florista", "PART_TIME", LocalDate(2024, 9, 16)),
-            DemoEmployee(MANAGER_ID, "Elena Ríos", "11111111H", "Encargada de tienda", "FULL_TIME", LocalDate(2024, 1, 8)),
-            DemoEmployee(newId(), "Pablo Soler", "X1234567L", "Repartidor", "HOURLY", LocalDate(2025, 5, 5), active = false),
+            DemoEmployee(ADMIN_ID, "Lucía", "Ferrer Montes", "12345678Z", "Dirección", "FULL_TIME", LocalDate(2023, 3, 1)),
+            DemoEmployee(EMPLOYEE_ID, "Marcos", "Vidal Serrano", "87654321X", "Florista", "PART_TIME", LocalDate(2024, 9, 16)),
+            // Onboarded before last names: the whole name typed in one field, last names pending.
+            DemoEmployee(MANAGER_ID, "Elena Ríos", null, "11111111H", "Encargada de tienda", "FULL_TIME", LocalDate(2024, 1, 8)),
+            DemoEmployee(newId(), "Pablo", "Soler Martí", "X1234567L", "Repartidor", "HOURLY", LocalDate(2025, 5, 5), active = false),
         )
 
     val users =

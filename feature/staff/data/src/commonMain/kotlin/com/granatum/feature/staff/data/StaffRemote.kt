@@ -42,7 +42,15 @@ class KtorStaffRepository(
         edit: StaffEdit,
     ) = call<EmployeeDto> {
         http.put(constructRoute("/employees/$id")) {
-            setBody(UpdateEmployeeRequestDto(edit.name.trim(), edit.position.trim(), edit.contract.toApi(), edit.startDate.toString()))
+            setBody(
+                UpdateEmployeeRequestDto(
+                    name = edit.name.trim(),
+                    lastName = edit.lastName.trim(),
+                    position = edit.position.trim(),
+                    contractType = edit.contract.toApi(),
+                    hireDate = edit.startDate.toString(),
+                ),
+            )
         }
     }.map { it.toDomain() }
 
@@ -61,6 +69,7 @@ class KtorStaffRepository(
                 setBody(
                     OnboardingRequestDto(
                         name = onboarding.name.trim(),
+                        lastName = onboarding.lastName.trim(),
                         identityDocument = onboarding.identityDocument.trim(),
                         position = onboarding.position.trim(),
                         contractType = onboarding.contract.toApi(),
@@ -97,6 +106,8 @@ class KtorStaffRepository(
         StaffMember(
             id = id,
             name = name,
+            lastName = lastName,
+            lastNamePending = lastNamePending,
             identityDocument = identityDocument,
             position = position,
             contract = ContractType.entries.firstOrNull { it.name == contractType } ?: ContractType.FULL_TIME,

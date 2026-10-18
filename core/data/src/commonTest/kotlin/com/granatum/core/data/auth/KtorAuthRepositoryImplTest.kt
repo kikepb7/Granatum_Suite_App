@@ -149,12 +149,12 @@ class KtorAuthRepositoryImplTest {
         }
 
         val result = h.repository.registerOwner(
-            OwnerRegistration(name = " Ana Martín ", identityDocument = "12345678Z", email = " Ana@Granatum.es", password = "Clave-2026!", bootstrapCode = " code ")
+            OwnerRegistration(name = " Ana ", lastName = " Martín Soler ", identityDocument = "12345678Z", email = " Ana@Granatum.es", password = "Clave-2026!", bootstrapCode = " code ")
         )
 
         val sent = h.requestsTo("/auth/sign-up").single()
         assertEquals(
-            """{"email":"ana@granatum.es","password":"Clave-2026!","name":"Ana Martín","identityDocument":"12345678Z","bootstrapCode":"code"}""",
+            """{"email":"ana@granatum.es","password":"Clave-2026!","name":"Ana","lastName":"Martín Soler","identityDocument":"12345678Z","bootstrapCode":"code"}""",
             sent.body.text()
         )
         assertTrue(!sent.headers.contains("Authorization"), "a public route")
@@ -165,7 +165,7 @@ class KtorAuthRepositoryImplTest {
     @Test
     fun a_rejected_sign_up_does_not_try_to_sign_in() = runTest {
         val h = AuthTestHarness { json(HttpStatusCode.Forbidden, errorJson("INVALID_BOOTSTRAP_CODE")) }
-        val result = h.repository.registerOwner(OwnerRegistration("Ana", "12345678Z", "a@b.es", "Clave-2026!", "mal"))
+        val result = h.repository.registerOwner(OwnerRegistration("Ana", "Martín", "12345678Z", "a@b.es", "Clave-2026!", "mal"))
         assertEquals(Result.Failure(AuthError.InvalidBootstrapCode), result)
         assertTrue(h.requestsTo("/auth/login").isEmpty())
         assertNull(h.storage.observeSession().first())

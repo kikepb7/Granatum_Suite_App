@@ -28,6 +28,7 @@ import com.granatum.feature.staff.presentation.common.RoleChips
 import com.granatum.feature.staff.presentation.common.StaffField
 import com.granatum.feature.staff.presentation.common.StaffTextField
 import com.granatum.feature.staff.presentation.common.StartDateField
+import com.granatum.feature.staff.presentation.common.requiredText
 import granatumsuite.feature.staff.presentation.generated.resources.*
 import granatumsuite.feature.staff.presentation.generated.resources.Res
 import org.jetbrains.compose.resources.stringResource
@@ -61,6 +62,14 @@ fun OnboardingRoot(
             )
             state.error?.let { Text(it.asString(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium) }
             StaffTextField(viewModel.name, Res.string.field_name, state.issues[StaffField.NAME], StaffLimits.NAME, enabled)
+            StaffTextField(
+                viewModel.lastName,
+                Res.string.field_last_name,
+                state.issues[StaffField.LAST_NAME],
+                StaffLimits.LAST_NAME,
+                enabled,
+                requiredText = StaffField.LAST_NAME.requiredText(),
+            )
             StaffTextField(
                 viewModel.document,
                 Res.string.field_document,

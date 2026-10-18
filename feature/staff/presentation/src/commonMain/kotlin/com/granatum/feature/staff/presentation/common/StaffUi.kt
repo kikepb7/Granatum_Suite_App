@@ -10,6 +10,7 @@ import granatumsuite.feature.staff.presentation.generated.resources.*
 import granatumsuite.feature.staff.presentation.generated.resources.Res
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.number
+import org.jetbrains.compose.resources.StringResource
 
 fun ContractType.label() =
     when (this) {
@@ -45,7 +46,14 @@ fun StaffError.toUiText(): UiText =
 
 fun LocalDate.label(): String = "${day.toString().padStart(2, '0')}/${month.number.toString().padStart(2, '0')}/$year"
 
-enum class StaffField { NAME, DOCUMENT, POSITION, EMAIL, START_DATE }
+enum class StaffField { NAME, LAST_NAME, DOCUMENT, POSITION, EMAIL, START_DATE }
+
+/** What an empty required field says: «Escribe los apellidos» for the last names, «Obligatorio» otherwise. */
+fun StaffField.requiredText(): StringResource =
+    when (this) {
+        StaffField.LAST_NAME -> Res.string.last_name_required
+        else -> Res.string.required
+    }
 
 enum class FieldIssue { REQUIRED, TOO_LONG, INVALID }
 

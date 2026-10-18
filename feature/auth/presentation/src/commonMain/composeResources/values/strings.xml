@@ -58,7 +58,9 @@
     <string name="login_staff_hint">Si trabajas en la empresa, el propietario te da de alta y te entrega tus credenciales.</string>
     <string name="signup_header">Cuenta del propietario</string>
     <string name="signup_intro">Solo el propietario del negocio se registra, una vez, al poner en marcha Granatum. Al resto del personal lo das de alta tú después.</string>
-    <string name="signup_name">Nombre y apellidos</string>
+    <string name="signup_name">Nombre</string>
+    <string name="signup_last_name">Apellidos</string>
+    <string name="signup_last_name_required">Escribe los apellidos</string>
     <string name="signup_document">DNI o NIE</string>
     <string name="signup_code">Código de arranque</string>
     <string name="signup_code_hint">Te lo da quien instaló el servidor. Solo sirve mientras no haya ningún administrador.</string>

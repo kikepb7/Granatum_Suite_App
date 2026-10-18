@@ -47,6 +47,7 @@ fun OwnerSignUpRoot(onBackToLogin: () -> Unit, viewModel: OwnerSignUpViewModel =
         )
         Spacer(Modifier.height(16.dp))
         Field(viewModel.name, Res.string.signup_name, problem(state, SignUpField.NAME, OwnerRegistration.MAX_NAME), enabled)
+        Field(viewModel.lastName, Res.string.signup_last_name, problem(state, SignUpField.LAST_NAME, OwnerRegistration.MAX_LAST_NAME), enabled)
         Field(viewModel.document, Res.string.signup_document, problem(state, SignUpField.DOCUMENT, OwnerRegistration.MAX_DOCUMENT), enabled)
         Field(
             viewModel.email, Res.string.login_email,
@@ -110,7 +111,7 @@ private fun Field(
 
 @Composable
 private fun problem(state: OwnerSignUpState, field: SignUpField, max: Int): String? = when (state.problems[field]) {
-    FieldProblem.REQUIRED -> stringResource(Res.string.signup_required)
+    FieldProblem.REQUIRED -> stringResource(if (field == SignUpField.LAST_NAME) Res.string.signup_last_name_required else Res.string.signup_required)
     FieldProblem.TOO_LONG -> stringResource(Res.string.signup_too_long, max)
     FieldProblem.INVALID -> stringResource(Res.string.signup_document_invalid)
     FieldProblem.TAKEN -> stringResource(if (field == SignUpField.EMAIL) Res.string.signup_email_taken else Res.string.signup_document_taken)

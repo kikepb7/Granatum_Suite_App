@@ -89,6 +89,9 @@ class StaffDetailViewModel(
     private val sessionStorage: SessionStorage,
 ) : ViewModel() {
     val name = TextFieldState()
+
+    /** Starts empty for a person whose last names are pending: saving asks for them. */
+    val lastName = TextFieldState()
     val position = TextFieldState()
     val grantEmail = TextFieldState()
     private val _state = MutableStateFlow(StaffDetailState())
@@ -146,6 +149,7 @@ class StaffDetailViewModel(
 
     private fun show(member: StaffMember) {
         name.setTextAndPlaceCursorAtEnd(member.name)
+        lastName.setTextAndPlaceCursorAtEnd(member.lastName.orEmpty())
         position.setTextAndPlaceCursorAtEnd(member.position)
         _state.update {
             it.copy(
@@ -174,6 +178,7 @@ class StaffDetailViewModel(
         val issues =
             buildMap {
                 StaffValidation.text(name, StaffLimits.NAME)?.let { put(StaffField.NAME, it) }
+                StaffValidation.text(lastName, StaffLimits.LAST_NAME)?.let { put(StaffField.LAST_NAME, it) }
                 StaffValidation.text(position, StaffLimits.POSITION)?.let { put(StaffField.POSITION, it) }
             }
         val date = _state.value.startDate
@@ -182,7 +187,14 @@ class StaffDetailViewModel(
             return
         }
         busy {
-            val edit = StaffEdit(name.text.toString(), position.text.toString(), _state.value.contract, date)
+            val edit =
+                StaffEdit(
+                    name = name.text.toString(),
+                    lastName = lastName.text.toString(),
+                    position = position.text.toString(),
+                    contract = _state.value.contract,
+                    startDate = date,
+                )
             when (val result = staff.repository.update(memberId, edit)) {
                 is Result.Success -> {
                     show(result.data)

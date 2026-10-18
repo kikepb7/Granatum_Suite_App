@@ -92,3 +92,10 @@ internal fun JsonElement?.textOrNull(): String? =
             it.toString() == "null"
         }?.jsonPrimitive
         ?.contentOrNull
+
+/** `lastName`, required (not blank, at most 150) since backend spec 012; null when it is not valid. */
+internal fun JsonObject.lastName(): String? =
+    str("lastName")?.trim()?.takeIf { it.isNotEmpty() && it.length <= 150 }
+
+/** The server's answer to a missing or invalid `lastName`. */
+internal fun missingLastName() = error(HttpStatusCode.BadRequest, "VALIDATION", "lastName: escribe los apellidos (máximo 150 caracteres)")

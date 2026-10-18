@@ -21,26 +21,26 @@ description: "Tareas de la feature 013: Google Drive y apellidos (app)"
 
 ## Phase 2: User Story 1 - Nombre y apellidos (P1) 🎯 MVP
 
-- [ ] T003 [P] [US1] Tests de `feature/staff`:
+- [X] T003 [P] [US1] Tests de `feature/staff`:
   - data: MockEngine con `lastName` y `lastNamePending` en la lista, el detalle, la edición y el
     onboarding (cuerpo enviado con `lastName`);
   - presentation: validación «Escribe los apellidos», nombre completo y aviso de pendientes.
-- [ ] T004 [P] [US1] Tests del registro de la propietaria (`feature/auth/presentation`, y
+- [X] T004 [P] [US1] Tests del registro de la propietaria (`feature/auth/presentation`, y
   `core/data` `KtorAuthRepositoryImpl`): pide y envía `lastName`.
-- [ ] T005 [US1] Dominio de staff:
+- [X] T005 [US1] Dominio de staff:
   - `StaffMember(lastName: String?, lastNamePending: Boolean)`, más un `fullName`;
   - `StaffEdit.lastName` y `Onboarding.lastName`;
   - `StaffLimits` con un máximo de 150.
-- [ ] T006 [US1] Data de staff: DTOs y mappers según `docs/openapi.json` (`EmployeeDto`,
+- [X] T006 [US1] Data de staff: DTOs y mappers según `docs/openapi.json` (`EmployeeDto`,
   `UpdateEmployeeRequestDto`, `OnboardingRequestDto`).
-- [ ] T007 [US1] Presentación de staff:
+- [X] T007 [US1] Presentación de staff:
   - campo «Apellidos» en el onboarding y la edición;
   - nombre completo en la lista y la ficha;
   - chip «Faltan los apellidos»;
   - strings en composeResources.
-- [ ] T008 [US1] Registro de la propietaria: `SignUpRequestDto.lastName` en `core/data`, y el campo
+- [X] T008 [US1] Registro de la propietaria: `SignUpRequestDto.lastName` en `core/data`, y el campo
   y la validación en `feature/auth/presentation/signup`.
-- [ ] T009 [US1] `core/demo`: `lastName` en `DemoState` (personas sembradas con apellidos, y una
+- [X] T009 [US1] `core/demo`: `lastName` en `DemoState` (personas sembradas con apellidos, y una
   antigua sin ellos), en `DemoStaffRoutes` (GET, POST, PUT, onboarding, con validación `400`
   sin `lastName`) y en `DemoAuthRoutes` (sign-up). Actualizar sus tests.
 

@@ -18,7 +18,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-enum class SignUpField { NAME, DOCUMENT, EMAIL, PASSWORD, CODE }
+enum class SignUpField { NAME, LAST_NAME, DOCUMENT, EMAIL, PASSWORD, CODE }
 
 enum class FieldProblem { REQUIRED, TOO_LONG, INVALID, TAKEN }
 
@@ -45,6 +45,7 @@ sealed interface OwnerSignUpAction {
 class OwnerSignUpViewModel(private val authRepository: AuthRepository) : ViewModel() {
 
     val name = TextFieldState()
+    val lastName = TextFieldState()
     val document = TextFieldState()
     val email = TextFieldState()
     val password = TextFieldState()
@@ -72,6 +73,7 @@ class OwnerSignUpViewModel(private val authRepository: AuthRepository) : ViewMod
         if (_state.value.isLoading) return
         val registration = OwnerRegistration(
             name = name.text.toString().trim(),
+            lastName = lastName.text.toString().trim(),
             identityDocument = document.text.toString().trim(),
             email = email.text.toString().trim(),
             password = password.text.toString(),
@@ -79,6 +81,7 @@ class OwnerSignUpViewModel(private val authRepository: AuthRepository) : ViewMod
         )
         val problems = buildMap {
             text(registration.name, OwnerRegistration.MAX_NAME)?.let { put(SignUpField.NAME, it) }
+            text(registration.lastName, OwnerRegistration.MAX_LAST_NAME)?.let { put(SignUpField.LAST_NAME, it) }
             text(registration.identityDocument, OwnerRegistration.MAX_DOCUMENT)?.let { put(SignUpField.DOCUMENT, it) }
             text(registration.bootstrapCode, OwnerRegistration.MAX_CODE)?.let { put(SignUpField.CODE, it) }
             if (registration.password.isEmpty()) put(SignUpField.PASSWORD, FieldProblem.REQUIRED)

@@ -37,6 +37,7 @@ import com.granatum.core.designsystem.components.topbar.AppTopBar
 import com.granatum.core.designsystem.components.topbar.TopBarIconButton
 import com.granatum.core.designsystem.theme.AppTheme
 import com.granatum.feature.staff.domain.StaffMember
+import com.granatum.feature.staff.presentation.common.LastNamePendingChip
 import com.granatum.feature.staff.presentation.common.label
 import granatumsuite.feature.staff.presentation.generated.resources.*
 import granatumsuite.feature.staff.presentation.generated.resources.Res
@@ -140,7 +141,7 @@ private fun MemberRow(
     onClick: () -> Unit,
 ) {
     AppListItem(
-        title = member.name,
+        title = member.fullName,
         subtitle = "${member.position} · ${stringResource(member.contract.label())}",
         onClick = onClick,
         modifier = modifier,
@@ -149,6 +150,8 @@ private fun MemberRow(
         trailing = {
             if (!member.active) {
                 AppStatusChip(text = stringResource(Res.string.staff_inactive), tone = AppTone.DANGER)
+            } else if (member.lastNamePending) {
+                LastNamePendingChip()
             }
         },
     )
