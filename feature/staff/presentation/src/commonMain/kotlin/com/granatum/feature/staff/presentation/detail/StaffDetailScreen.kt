@@ -34,6 +34,8 @@ import com.granatum.core.designsystem.components.topbar.AppTopBar
 import com.granatum.core.designsystem.theme.extended
 import com.granatum.feature.staff.domain.StaffLimits
 import com.granatum.feature.staff.presentation.common.ContractChips
+import com.granatum.feature.staff.presentation.common.LastNamePendingChip
+import com.granatum.feature.staff.presentation.common.requiredText
 import com.granatum.feature.staff.presentation.common.CredentialsSheet
 import com.granatum.feature.staff.presentation.common.RoleChips
 import com.granatum.feature.staff.presentation.common.StaffField
@@ -65,7 +67,7 @@ fun StaffDetailRoot(
         containerColor = MaterialTheme.colorScheme.extended.surfaceLower,
         contentWindowInsets = WindowInsets.safeDrawing,
         snackbarHost = { SnackbarHost(snackbar) },
-        topBar = { AppTopBar(title = member?.name ?: stringResource(Res.string.detail_title), onBackClick = onNavigateBack) },
+        topBar = { AppTopBar(title = member?.fullName ?: stringResource(Res.string.detail_title), onBackClick = onNavigateBack) },
     ) { padding ->
         when {
             state.isLoading ->
@@ -99,7 +101,23 @@ fun StaffDetailRoot(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.extended.textSecondary,
                     )
+                    if (member.lastNamePending) {
+                        LastNamePendingChip()
+                        Text(
+                            stringResource(Res.string.last_name_pending_description),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.extended.textSecondary,
+                        )
+                    }
                     StaffTextField(viewModel.name, Res.string.field_name, state.issues[StaffField.NAME], StaffLimits.NAME, enabled)
+                    StaffTextField(
+                        viewModel.lastName,
+                        Res.string.field_last_name,
+                        state.issues[StaffField.LAST_NAME],
+                        StaffLimits.LAST_NAME,
+                        enabled,
+                        requiredText = StaffField.LAST_NAME.requiredText(),
+                    )
                     StaffTextField(
                         viewModel.position,
                         Res.string.field_position,
@@ -141,7 +159,7 @@ fun StaffDetailRoot(
 
     if (state.confirmingDeactivate && member != null) {
         AppDestructiveConfirmationDialog(
-            title = stringResource(Res.string.detail_deactivate_title, member.name),
+            title = stringResource(Res.string.detail_deactivate_title, member.fullName),
             description = stringResource(Res.string.detail_deactivate_description),
             confirmButtonText = stringResource(Res.string.detail_deactivate),
             cancelButtonText = stringResource(Res.string.cancel),
@@ -152,7 +170,7 @@ fun StaffDetailRoot(
     }
     if (state.confirmingReset && member != null) {
         AppDestructiveConfirmationDialog(
-            title = stringResource(Res.string.detail_reset_title, member.name),
+            title = stringResource(Res.string.detail_reset_title, member.fullName),
             description = stringResource(Res.string.detail_reset_description),
             confirmButtonText = stringResource(Res.string.detail_reset_confirm),
             cancelButtonText = stringResource(Res.string.cancel),
@@ -165,7 +183,7 @@ fun StaffDetailRoot(
         AppBottomSheet(onDismiss = { viewModel.onAction(StaffDetailAction.OnDismiss) }) {
             Column(Modifier.fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
-                    stringResource(Res.string.detail_no_account_title, member.name),
+                    stringResource(Res.string.detail_no_account_title, member.fullName),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                 )
@@ -185,6 +203,6 @@ fun StaffDetailRoot(
         }
     }
     state.credentials?.let { credentials ->
-        CredentialsSheet(credentials, member?.name.orEmpty()) { viewModel.onAction(StaffDetailAction.OnCredentialsDismissed) }
+        CredentialsSheet(credentials, member?.fullName.orEmpty()) { viewModel.onAction(StaffDetailAction.OnCredentialsDismissed) }
     }
 }

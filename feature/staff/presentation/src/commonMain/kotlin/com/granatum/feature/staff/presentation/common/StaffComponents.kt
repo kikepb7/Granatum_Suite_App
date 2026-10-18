@@ -32,6 +32,8 @@ import androidx.compose.ui.unit.sp
 import com.granatum.core.designsystem.components.buttons.AppButton
 import com.granatum.core.designsystem.components.buttons.AppButtonStyle
 import com.granatum.core.designsystem.components.cards.AppInsetCard
+import com.granatum.core.designsystem.components.chips.AppStatusChip
+import com.granatum.core.designsystem.components.chips.AppTone
 import com.granatum.core.designsystem.components.dialogs.AppBottomSheet
 import com.granatum.core.designsystem.components.textfields.AppTextField
 import com.granatum.core.designsystem.theme.extended
@@ -58,10 +60,11 @@ fun StaffTextField(
     enabled: Boolean = true,
     keyboard: KeyboardType = KeyboardType.Text,
     invalidText: StringResource = Res.string.email_invalid,
+    requiredText: StringResource = Res.string.required,
 ) {
     val error =
         when (issue) {
-            FieldIssue.REQUIRED -> stringResource(Res.string.required)
+            FieldIssue.REQUIRED -> stringResource(requiredText)
             FieldIssue.TOO_LONG -> stringResource(Res.string.too_long, max)
             FieldIssue.INVALID -> stringResource(invalidText)
             null -> null
@@ -76,6 +79,12 @@ fun StaffTextField(
         supportingText = error,
         modifier = Modifier.fillMaxWidth(),
     )
+}
+
+/** The warning for people onboarded before last names existed. */
+@Composable
+fun LastNamePendingChip() {
+    AppStatusChip(text = stringResource(Res.string.last_name_pending), tone = AppTone.WARNING)
 }
 
 @Composable

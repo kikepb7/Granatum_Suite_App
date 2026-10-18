@@ -38,6 +38,7 @@ data class SignUpRequestDto(
     val email: String,
     val password: String,
     val name: String,
+    val lastName: String,
     val identityDocument: String,
     val bootstrapCode: String
 ) {

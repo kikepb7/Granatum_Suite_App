@@ -28,7 +28,9 @@ class DemoStaffRoutes(
                 if (request.body.str("identityDocument") != null) {
                     return error(HttpStatusCode.UnprocessableEntity, "INCONSISTENT_VALUES", "El documento no se puede cambiar")
                 }
+                val lastName = request.body.lastName() ?: return missingLastName()
                 employee.name = request.body.str("name") ?: employee.name
+                employee.lastName = lastName
                 employee.position = request.body.str("position") ?: employee.position
                 employee.contractType = request.body.str("contractType") ?: employee.contractType
                 employee.hireDate = request.body.str("hireDate")?.let { LocalDate.parse(it) } ?: employee.hireDate
@@ -72,6 +74,7 @@ class DemoStaffRoutes(
     }
 
     private fun onboard(body: JsonObject): DemoReply {
+        val lastName = body.lastName() ?: return missingLastName()
         val document =
             body
                 .str("identityDocument")
@@ -94,11 +97,13 @@ class DemoStaffRoutes(
             existing ?: DemoEmployee(
                 id = state.newId(),
                 name = body.str("name").orEmpty(),
+                lastName = lastName,
                 identityDocument = document,
                 position = body.str("position").orEmpty(),
                 contractType = body.str("contractType") ?: "FULL_TIME",
                 hireDate = body.str("hireDate")?.let { LocalDate.parse(it) } ?: state.today(),
             ).also { state.employees += it }
+        if (employee.lastName == null) employee.lastName = lastName
         val user = DemoUser(employee.id, email, temporaryPassword(), body.str("role") ?: "EMPLOYEE", passwordChangeRequired = true)
         state.users += user
         return json(
@@ -143,6 +148,8 @@ class DemoStaffRoutes(
         buildJsonObject {
             put("id", id)
             put("name", name)
+            put("lastName", lastName)
+            put("lastNamePending", lastName == null)
             put("identityDocument", identityDocument)
             put("position", position)
             put("contractType", contractType)

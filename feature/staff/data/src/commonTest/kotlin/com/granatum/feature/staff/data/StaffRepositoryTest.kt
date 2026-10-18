@@ -27,6 +27,8 @@ import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 /** specs/009-personal, contracts/personal-api.md. */
 class StaffRepositoryTest {
@@ -55,7 +57,7 @@ class StaffRepositoryTest {
         status: HttpStatusCode = HttpStatusCode.OK,
     ) = respond(body, status, headersOf(HttpHeaders.ContentType, "application/json"))
 
-    private val ana = """{"id":"e1","name":"Ana","identityDocument":"12345678Z","position":"Florista","contractType":"PART_TIME","hireDate":"2026-10-01","active":true}"""
+    private val ana = """{"id":"e1","name":"Ana","lastName":"García López","lastNamePending":false,"identityDocument":"12345678Z","position":"Florista","contractType":"PART_TIME","hireDate":"2026-10-01","active":true}"""
 
     @Test
     fun the_list_reads_every_field() =
@@ -64,17 +66,33 @@ class StaffRepositoryTest {
             val member = members.single()
             assertEquals(ContractType.PART_TIME, member.contract)
             assertEquals(LocalDate(2026, 10, 1), member.startDate)
+            assertEquals("García López", member.lastName)
+            assertFalse(member.lastNamePending)
+            assertEquals("Ana García López", member.fullName)
             assertEquals("/employees", sent.single().second)
+        }
+
+    @Test
+    fun a_person_from_before_last_names_comes_without_them_and_pending() =
+        runTest {
+            val legacy = ana.replace(""""lastName":"García López","lastNamePending":false""", """"lastName":null,"lastNamePending":true""")
+            val member = (repo { json(legacy) }.member("e1") as Result.Success).data
+            assertNull(member.lastName)
+            assertTrue(member.lastNamePending)
+            assertEquals("Ana", member.fullName)
         }
 
     @Test
     fun an_edit_never_sends_the_identity_document() =
         runTest {
-            repo { json(ana) }.update("e1", StaffEdit(" Ana Martín ", "Encargada de tienda", ContractType.FULL_TIME, LocalDate(2026, 9, 1)))
+            repo { json(ana) }.update(
+                "e1",
+                StaffEdit(" Ana ", " Martín Soler ", "Encargada de tienda", ContractType.FULL_TIME, LocalDate(2026, 9, 1)),
+            )
             val (method, path, body) = sent.single()
             assertEquals("PUT /employees/e1", "$method $path")
             assertEquals(
-                """{"name":"Ana Martín","position":"Encargada de tienda","contractType":"FULL_TIME","hireDate":"2026-09-01"}""",
+                """{"name":"Ana","lastName":"Martín Soler","position":"Encargada de tienda","contractType":"FULL_TIME","hireDate":"2026-09-01"}""",
                 body,
             )
         }
@@ -112,6 +130,7 @@ class StaffRepositoryTest {
                     }.onboard(
                         Onboarding(
                             "Luis",
+                            " Pérez Sanz ",
                             "X1234567L",
                             "Encargado",
                             ContractType.HOURLY,
@@ -122,7 +141,7 @@ class StaffRepositoryTest {
                     ) as Result.Success
                 ).data
             assertEquals(
-                """{"name":"Luis","identityDocument":"X1234567L","position":"Encargado","contractType":"HOURLY","hireDate":"2026-10-09","email":"luis@granatum.es","role":"MANAGER"}""",
+                """{"name":"Luis","lastName":"Pérez Sanz","identityDocument":"X1234567L","position":"Encargado","contractType":"HOURLY","hireDate":"2026-10-09","email":"luis@granatum.es","role":"MANAGER"}""",
                 sent.single().third,
             )
             assertEquals("/auth/onboarding", sent.single().second)

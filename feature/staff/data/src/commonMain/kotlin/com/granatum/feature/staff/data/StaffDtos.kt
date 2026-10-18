@@ -2,12 +2,16 @@ package com.granatum.feature.staff.data
 
 import kotlinx.serialization.Serializable
 
-// Field for field with docs/openapi.json (backend 93ef398). Personal data: no toString leaks.
+// Field for field with docs/openapi.json (backend 93ef398); last names from the backend spec 012
+// contract, not pinned yet. Personal data: no toString leaks.
 
 @Serializable
 data class EmployeeDto(
     val id: String,
     val name: String,
+    /** Null for people created before last names existed. */
+    val lastName: String? = null,
+    val lastNamePending: Boolean = false,
     val identityDocument: String,
     val position: String,
     val contractType: String,
@@ -21,6 +25,7 @@ data class EmployeeDto(
 @Serializable
 data class UpdateEmployeeRequestDto(
     val name: String,
+    val lastName: String,
     val position: String,
     val contractType: String,
     val hireDate: String,
@@ -36,6 +41,7 @@ data class SetEmployeeActiveRequestDto(
 @Serializable
 data class OnboardingRequestDto(
     val name: String,
+    val lastName: String,
     val identityDocument: String,
     val position: String,
     val contractType: String,

@@ -15,10 +15,14 @@ import com.granatum.feature.staff.domain.StaffUseCases
 import com.granatum.feature.staff.domain.TemporaryCredentials
 import com.granatum.feature.staff.presentation.common.FieldIssue
 import com.granatum.feature.staff.presentation.common.StaffField
+import com.granatum.feature.staff.presentation.common.requiredText
 import com.granatum.feature.staff.presentation.detail.StaffDetailAction
 import com.granatum.feature.staff.presentation.detail.StaffDetailViewModel
 import com.granatum.feature.staff.presentation.list.StaffListViewModel
 import com.granatum.feature.staff.presentation.onboarding.OnboardingViewModel
+import granatumsuite.feature.staff.presentation.generated.resources.Res
+import granatumsuite.feature.staff.presentation.generated.resources.last_name_required
+import granatumsuite.feature.staff.presentation.generated.resources.required
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -41,7 +45,8 @@ private fun member(
     id: String,
     name: String,
     active: Boolean = true,
-) = StaffMember(id, name, "12345678Z", "Florista", ContractType.FULL_TIME, LocalDate(2026, 1, 1), active)
+    lastName: String? = "García",
+) = StaffMember(id, name, lastName, lastName == null, "12345678Z", "Florista", ContractType.FULL_TIME, LocalDate(2026, 1, 1), active)
 
 private class FakeStaffRepository : StaffRepository {
     val members =
@@ -49,6 +54,7 @@ private class FakeStaffRepository : StaffRepository {
             "e1" to member("e1", "Ana"),
             "e2" to member("e2", "Luis", active = false),
             "me" to member("me", "Propietaria"),
+            "old" to member("old", "Rosa", lastName = null),
         )
     var failNext: StaffError? = null
     var hasAccount = true
@@ -74,7 +80,14 @@ private class FakeStaffRepository : StaffRepository {
         members
             .getValue(
                 id,
-            ).copy(name = edit.name.trim(), position = edit.position.trim(), contract = edit.contract, startDate = edit.startDate)
+            ).copy(
+                name = edit.name.trim(),
+                lastName = edit.lastName.trim(),
+                lastNamePending = false,
+                position = edit.position.trim(),
+                contract = edit.contract,
+                startDate = edit.startDate,
+            )
             .also {
                 members[id] =
                     it
@@ -140,10 +153,10 @@ class StaffViewModelsTest {
             val vm = StaffListViewModel(StaffUseCases(repo))
             vm.refresh()
             assertEquals(
-                listOf("Ana", "Propietaria"),
+                listOf("Ana García", "Propietaria García", "Rosa"),
                 vm.state.value
                     .visible("")
-                    .map { it.name },
+                    .map { it.fullName },
             )
             vm.filter(false)
             assertEquals(
@@ -175,9 +188,13 @@ class StaffViewModelsTest {
         runTest {
             val vm = OnboardingViewModel(StaffUseCases(repo), today = LocalDate(2026, 10, 9))
             vm.submit()
-            assertEquals(setOf(StaffField.NAME, StaffField.DOCUMENT, StaffField.POSITION, StaffField.EMAIL), vm.state.value.issues.keys)
+            assertEquals(
+                setOf(StaffField.NAME, StaffField.LAST_NAME, StaffField.DOCUMENT, StaffField.POSITION, StaffField.EMAIL),
+                vm.state.value.issues.keys,
+            )
 
-            vm.name.setTextAndPlaceCursorAtEnd("Marta Gil")
+            vm.name.setTextAndPlaceCursorAtEnd("Marta")
+            vm.lastName.setTextAndPlaceCursorAtEnd(" Gil Navarro ")
             vm.document.setTextAndPlaceCursorAtEnd("12345678Z")
             vm.position.setTextAndPlaceCursorAtEnd("Florista")
             vm.email.setTextAndPlaceCursorAtEnd("marta@")
@@ -189,6 +206,8 @@ class StaffViewModelsTest {
             vm.setContract(ContractType.PART_TIME)
             vm.submit()
             val sent = repo.onboarded.single()
+            assertEquals("Gil Navarro", sent.lastName)
+            assertEquals("Marta Gil Navarro", vm.state.value.onboardedName)
             assertEquals(UserRole.MANAGER, sent.role)
             assertEquals(ContractType.PART_TIME, sent.contract)
             assertEquals(LocalDate(2026, 10, 9), sent.startDate)
@@ -206,6 +225,7 @@ class StaffViewModelsTest {
         runTest {
             val vm = OnboardingViewModel(StaffUseCases(repo), today = LocalDate(2026, 10, 9))
             vm.name.setTextAndPlaceCursorAtEnd("Marta")
+            vm.lastName.setTextAndPlaceCursorAtEnd("Gil")
             vm.document.setTextAndPlaceCursorAtEnd("12345678A")
             vm.position.setTextAndPlaceCursorAtEnd("Florista")
             vm.email.setTextAndPlaceCursorAtEnd("marta@granatum.es")
@@ -213,6 +233,79 @@ class StaffViewModelsTest {
             vm.submit()
             assertEquals(FieldIssue.INVALID, vm.state.value.issues[StaffField.DOCUMENT])
             assertNull(vm.state.value.credentials)
+        }
+
+    @Test
+    fun onboarding_without_last_names_is_not_sent() =
+        runTest {
+            val vm = OnboardingViewModel(StaffUseCases(repo), today = LocalDate(2026, 10, 9))
+            vm.name.setTextAndPlaceCursorAtEnd("Marta")
+            vm.lastName.setTextAndPlaceCursorAtEnd("   ")
+            vm.document.setTextAndPlaceCursorAtEnd("12345678Z")
+            vm.position.setTextAndPlaceCursorAtEnd("Florista")
+            vm.email.setTextAndPlaceCursorAtEnd("marta@granatum.es")
+            vm.submit()
+            assertEquals(mapOf(StaffField.LAST_NAME to FieldIssue.REQUIRED), vm.state.value.issues)
+            assertTrue(repo.onboarded.isEmpty())
+
+            vm.lastName.setTextAndPlaceCursorAtEnd("G".repeat(151))
+            vm.submit()
+            assertEquals(mapOf(StaffField.LAST_NAME to FieldIssue.TOO_LONG), vm.state.value.issues)
+        }
+
+    @Test
+    fun a_missing_last_name_reads_write_the_last_names() {
+        assertEquals(Res.string.last_name_required, StaffField.LAST_NAME.requiredText())
+        assertEquals(Res.string.required, StaffField.NAME.requiredText())
+    }
+
+    @Test
+    fun the_list_flags_people_whose_last_names_are_missing() =
+        runTest {
+            val vm = StaffListViewModel(StaffUseCases(repo))
+            vm.refresh()
+            val pending = vm.state.value.members.filter { it.lastNamePending }
+            assertEquals(listOf("Rosa"), pending.map { it.fullName })
+        }
+
+    @Test
+    fun a_record_with_last_names_starts_with_them_filled_in() =
+        runTest {
+            val vm = StaffDetailViewModel("e1", StaffUseCases(repo), FakeSessionStorage())
+            assertEquals("García", vm.lastName.text.toString())
+            assertEquals(
+                "Ana García",
+                vm.state.value.member
+                    ?.fullName,
+            )
+        }
+
+    @Test
+    fun a_pending_record_asks_for_its_last_names_before_saving() =
+        runTest {
+            val vm = StaffDetailViewModel("old", StaffUseCases(repo), FakeSessionStorage())
+            assertEquals("", vm.lastName.text.toString())
+            assertTrue(
+                vm.state.value.member!!
+                    .lastNamePending,
+            )
+
+            vm.onAction(StaffDetailAction.OnSave)
+            assertEquals(mapOf(StaffField.LAST_NAME to FieldIssue.REQUIRED), vm.state.value.issues)
+            assertTrue(repo.updates.isEmpty())
+
+            vm.lastName.setTextAndPlaceCursorAtEnd("Ortega Ruiz")
+            vm.onAction(StaffDetailAction.OnSave)
+            assertEquals("Ortega Ruiz", repo.updates.single().second.lastName)
+            assertFalse(
+                vm.state.value.member!!
+                    .lastNamePending,
+            )
+            assertEquals(
+                "Rosa Ortega Ruiz",
+                vm.state.value.member
+                    ?.fullName,
+            )
         }
 
     @Test
@@ -227,6 +320,7 @@ class StaffViewModelsTest {
             val (id, edit) = repo.updates.single()
             assertEquals("e1", id)
             assertEquals("Encargada", edit.position)
+            assertEquals("García", edit.lastName)
             assertEquals(ContractType.HOURLY, edit.contract)
             assertNotNull(vm.state.value.message)
         }

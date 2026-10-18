@@ -39,6 +39,7 @@ class OnboardingViewModel(
     today: LocalDate,
 ) : ViewModel() {
     val name = TextFieldState()
+    val lastName = TextFieldState()
     val document = TextFieldState()
     val position = TextFieldState()
     val email = TextFieldState()
@@ -59,6 +60,7 @@ class OnboardingViewModel(
         val issues =
             buildMap {
                 StaffValidation.text(name, StaffLimits.NAME)?.let { put(StaffField.NAME, it) }
+                StaffValidation.text(lastName, StaffLimits.LAST_NAME)?.let { put(StaffField.LAST_NAME, it) }
                 StaffValidation.text(document, StaffLimits.DOCUMENT)?.let { put(StaffField.DOCUMENT, it) }
                 StaffValidation.text(position, StaffLimits.POSITION)?.let { put(StaffField.POSITION, it) }
                 StaffValidation.email(email)?.let { put(StaffField.EMAIL, it) }
@@ -71,6 +73,7 @@ class OnboardingViewModel(
         val onboarding =
             Onboarding(
                 name = name.text.toString().trim(),
+                lastName = lastName.text.toString().trim(),
                 identityDocument = document.text.toString().trim(),
                 position = position.text.toString().trim(),
                 contract = current.contract,
@@ -81,7 +84,7 @@ class OnboardingViewModel(
         _state.update { it.copy(isSaving = true, issues = emptyMap(), error = null) }
         viewModelScope.launch {
             when (val result = staff.repository.onboard(onboarding)) {
-                is Result.Success -> _state.update { it.copy(isSaving = false, credentials = result.data, onboardedName = onboarding.name) }
+                is Result.Success -> _state.update { it.copy(isSaving = false, credentials = result.data, onboardedName = "${onboarding.name} ${onboarding.lastName}") }
                 is Result.Failure ->
                     _state.update {
                         when (result.error) {
