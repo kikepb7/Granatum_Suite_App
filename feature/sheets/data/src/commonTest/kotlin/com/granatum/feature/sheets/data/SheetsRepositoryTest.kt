@@ -72,8 +72,10 @@ class SheetsRepositoryTest {
     private fun task(
         status: String = "DONE",
         error: String? = null,
+        errorReason: String? = null,
     ) = """{"id":"t1","kind":"SHIFT_MONTH","reference":"2026-10","status":"$status","attempts":1,"rowCount":92,""" +
-        """"lastNamesPending":1,"lastError":${error?.let { "\"$it\"" } ?: "null"},"createdAt":"2026-10-18T10:00:00Z",""" +
+        """"lastNamesPending":1,"lastError":${error?.let { "\"$it\"" } ?: "null"},""" +
+        """"errorReason":${errorReason?.let { "\"$it\"" } ?: "null"},"createdAt":"2026-10-18T10:00:00Z",""" +
         """"updatedAt":"2026-10-18T10:00:05Z","completedAt":"2026-10-18T10:00:05Z"}"""
 
     @Test
@@ -237,6 +239,19 @@ class SheetsRepositoryTest {
                 actual.failedTasks
                     .single()
                     .failureReason,
+            )
+        }
+
+    @Test
+    fun `When a task fails because the Sheets API is disabled then the code says so whatever the text`() =
+        runTest {
+            val body = """{"lastSuccessAt":null,"pending":0,"failed":1,"recent":[${task("FAILED", "Texto cualquiera", "API_DISABLED")}]}"""
+
+            val actual = (sut { ok(body) }.status() as Result.Success).data
+
+            assertEquals(
+                com.granatum.feature.sheets.domain.model.SheetFailureReason.API_DISABLED,
+                actual.failedTasks.single().failureReason,
             )
         }
 

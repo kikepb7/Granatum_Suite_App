@@ -35,6 +35,7 @@ class DemoSheetsRoutes(
         var rowCount: Int? = null
         var lastNamesPending: Int? = null
         var lastError: String? = null
+        var errorReason: String? = null
         var updatedAt: Instant = createdAt
         var completedAt: Instant? = null
     }
@@ -53,6 +54,7 @@ class DemoSheetsRoutes(
                 status = "FAILED"
                 attempts = 8
                 lastError = READ_ONLY_MESSAGE
+                errorReason = "READ_ONLY"
                 updatedAt = failedAt
             }
     }
@@ -197,6 +199,7 @@ class DemoSheetsRoutes(
             task.attempts += 1
             task.status = "DONE"
             task.lastError = null
+            task.errorReason = null
             task.updatedAt = now
             task.completedAt = now
             when (task.kind) {
@@ -225,6 +228,7 @@ class DemoSheetsRoutes(
         task.status = "PENDING"
         task.attempts = 0
         task.lastError = null
+        task.errorReason = null
         task.updatedAt = state.now()
     }
 
@@ -272,6 +276,7 @@ class DemoSheetsRoutes(
             put("rowCount", rowCount)
             put("lastNamesPending", lastNamesPending)
             put("lastError", lastError)
+            put("errorReason", errorReason)
             put("createdAt", createdAt.toString())
             put("updatedAt", updatedAt.toString())
             put("completedAt", completedAt?.toString())

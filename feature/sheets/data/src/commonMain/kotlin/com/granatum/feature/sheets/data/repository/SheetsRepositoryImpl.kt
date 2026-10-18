@@ -68,6 +68,7 @@ internal class SheetsRepositoryImpl(
             rowCount = rowCount,
             lastNamesPending = lastNamesPending,
             lastError = lastError,
+            errorReason = errorReason,
             createdAt = createdAt.toInstant(),
             updatedAt = updatedAt.toInstant(),
             completedAt = completedAt.toInstant(),

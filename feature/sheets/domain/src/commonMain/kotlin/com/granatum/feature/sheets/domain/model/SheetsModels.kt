@@ -27,20 +27,29 @@ data class SheetsSettings(
 enum class SpreadsheetField { SHIFTS, INVOICES }
 
 /** Why the technical account cannot write to a spreadsheet (`reason` in the API). */
-enum class SheetAccessProblem { NOT_FOUND, NOT_SHARED, READ_ONLY }
+enum class SheetAccessProblem { NOT_FOUND, NOT_SHARED, READ_ONLY, API_DISABLED }
 
 enum class SheetTaskKind { SHIFT_MONTH, INVOICE, INVOICE_MONTH, UNKNOWN }
 
 enum class SheetTaskStatus { PENDING, RUNNING, DONE, FAILED, UNKNOWN }
 
 /**
- * Why a task failed, read from its `lastError`. The server only sends a Spanish sentence, so the
- * app recognises the ones it knows and translates them into its own texts.
+ * Why a task failed: the server's `errorReason` code (backend 16b76cb). Tasks from an older server
+ * carry only the Spanish `lastError`, which [from] still recognises.
  */
 enum class SheetFailureReason {
     NOT_SHARED,
     READ_ONLY,
     NOT_FOUND,
+
+    /** Google refused the request itself. */
+    BAD_REQUEST,
+
+    /** The Google Sheets API is not enabled in the service account's project. */
+    API_DISABLED,
+
+    /** The writer gave up, e.g. the spreadsheet is no longer configured. */
+    ABORTED,
 
     /** Google did not answer; the server keeps retrying. */
     TRANSIENT,
@@ -54,6 +63,15 @@ enum class SheetFailureReason {
     ;
 
     companion object {
+        /** The server's `errorReason`; unknown codes become [OTHER]. */
+        fun fromCode(code: String?): SheetFailureReason? =
+            code?.takeIf { it.isNotBlank() }?.let { value ->
+                when (value) {
+                    "NO_HANDLER" -> NO_HANDLER
+                    else -> entries.firstOrNull { it.name == value } ?: OTHER
+                }
+            }
+
         /** Matches the messages of the backend's `SheetsFailureReason` and `SheetTaskWorker`. */
         fun from(lastError: String?): SheetFailureReason? {
             val text = lastError?.lowercase()?.takeIf { it.isNotBlank() } ?: return null
@@ -84,10 +102,12 @@ data class SheetTask(
     val createdAt: Instant?,
     val updatedAt: Instant?,
     val completedAt: Instant?,
+    /** The server's `errorReason` code, when it sends one. */
+    val errorReason: String? = null,
 ) {
     val isFinished: Boolean get() = status == SheetTaskStatus.DONE || status == SheetTaskStatus.FAILED
 
-    val failureReason: SheetFailureReason? get() = SheetFailureReason.from(lastError)
+    val failureReason: SheetFailureReason? get() = SheetFailureReason.fromCode(errorReason) ?: SheetFailureReason.from(lastError)
 
     /** The month a month task is about, from its `AAAA-MM` reference. */
     val month: SheetMonth? get() = SheetMonth.parse(reference)

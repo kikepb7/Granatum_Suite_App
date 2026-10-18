@@ -19,6 +19,7 @@ import granatumsuite.feature.sheets.presentation.generated.resources.error_task_
 import granatumsuite.feature.sheets.presentation.generated.resources.error_unavailable
 import granatumsuite.feature.sheets.presentation.generated.resources.error_unknown
 import granatumsuite.feature.sheets.presentation.generated.resources.error_unreachable
+import granatumsuite.feature.sheets.presentation.generated.resources.field_api_disabled
 import granatumsuite.feature.sheets.presentation.generated.resources.field_not_found
 import granatumsuite.feature.sheets.presentation.generated.resources.field_not_shared
 import granatumsuite.feature.sheets.presentation.generated.resources.field_read_only
@@ -30,6 +31,7 @@ import granatumsuite.feature.sheets.presentation.generated.resources.reason_not_
 import granatumsuite.feature.sheets.presentation.generated.resources.reason_other
 import granatumsuite.feature.sheets.presentation.generated.resources.reason_read_only_invoices
 import granatumsuite.feature.sheets.presentation.generated.resources.reason_read_only_shifts
+import granatumsuite.feature.sheets.presentation.generated.resources.reason_api_disabled
 import granatumsuite.feature.sheets.presentation.generated.resources.reason_transient
 import granatumsuite.feature.sheets.presentation.generated.resources.reason_unavailable
 import granatumsuite.feature.sheets.presentation.generated.resources.task_invoice
@@ -66,6 +68,7 @@ internal fun SheetAccessProblem.fieldText() =
         SheetAccessProblem.NOT_SHARED -> Res.string.field_not_shared
         SheetAccessProblem.READ_ONLY -> Res.string.field_read_only
         SheetAccessProblem.NOT_FOUND -> Res.string.field_not_found
+        SheetAccessProblem.API_DISABLED -> Res.string.field_api_disabled
     }
 
 /** «Hoja de recibos sin permiso de edición», «Google no responde»… */
@@ -76,10 +79,11 @@ internal fun SheetTask.reasonText(): UiText {
             SheetFailureReason.NOT_SHARED -> if (invoices) Res.string.reason_not_shared_invoices else Res.string.reason_not_shared_shifts
             SheetFailureReason.READ_ONLY -> if (invoices) Res.string.reason_read_only_invoices else Res.string.reason_read_only_shifts
             SheetFailureReason.NOT_FOUND -> if (invoices) Res.string.reason_not_found_invoices else Res.string.reason_not_found_shifts
+            SheetFailureReason.API_DISABLED -> Res.string.reason_api_disabled
             SheetFailureReason.TRANSIENT -> Res.string.reason_transient
             SheetFailureReason.NO_HANDLER -> Res.string.reason_no_handler
             SheetFailureReason.UNAVAILABLE -> Res.string.reason_unavailable
-            SheetFailureReason.OTHER, null -> Res.string.reason_other
+            SheetFailureReason.BAD_REQUEST, SheetFailureReason.ABORTED, SheetFailureReason.OTHER, null -> Res.string.reason_other
         },
     )
 }

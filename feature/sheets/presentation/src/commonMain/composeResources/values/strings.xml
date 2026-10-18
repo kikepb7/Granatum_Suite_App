@@ -30,6 +30,7 @@
     <!-- Errores por campo -->
     <string name="field_not_shared">La hoja no está compartida con la cuenta técnica. Compártela con ella como Editor.</string>
     <string name="field_read_only">La cuenta técnica solo puede leer esta hoja. Compártela con ella como Editor.</string>
+    <string name="field_api_disabled">La API de Google Sheets no está activada en el proyecto de Google Cloud de la cuenta técnica. Actívala y vuelve a guardar.</string>
     <string name="field_not_found">No se encuentra la hoja. Revisa el enlace y compártela con la cuenta técnica como Editor.</string>
 
     <!-- Exportar -->
@@ -84,6 +85,7 @@
     <string name="reason_read_only_invoices">Hoja de recibos sin permiso de edición</string>
     <string name="reason_not_found_shifts">Hoja de fichajes no encontrada</string>
     <string name="reason_not_found_invoices">Hoja de recibos no encontrada</string>
+    <string name="reason_api_disabled">API de Google Sheets sin activar en el proyecto de Google</string>
     <string name="reason_transient">Google no responde</string>
     <string name="reason_no_handler">El servidor no sabe escribir este tipo de tarea</string>
     <string name="reason_unavailable">La copia no está disponible en este servidor</string>

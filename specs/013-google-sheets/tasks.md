@@ -11,7 +11,7 @@ description: "Tareas de la feature 013: Google Drive y apellidos (app)"
 
 ## Phase 1: Setup
 
-- [ ] T001 Fijar el contrato: `scripts/sync-openapi.sh <sha completo>` con el commit del backend
+- [X] T001 Fijar el contrato: `scripts/sync-openapi.sh <sha completo>` con el commit del backend
   publicado en `invoice-ml-feature` que incluye la spec 012, para actualizar `docs/openapi.json`
   y `docs/openapi.pin`. Copiar `docs/english-naming.md` del backend si cambió.
 - [X] T002 Crear `feature/sheets/{domain,data,presentation}`:
@@ -99,9 +99,9 @@ description: "Tareas de la feature 013: Google Drive y apellidos (app)"
 
 ## Phase 5: Polish
 
-- [ ] T019 `./gradlew ktlintCheck testDebugUnitTest :koverXmlReport :koverVerify :composeApp:assembleDebug`
+- [X] T019 `./gradlew ktlintCheck testDebugUnitTest :koverXmlReport :koverVerify :composeApp:assembleDebug`
   en verde.
-- [ ] T020 Comprobación PRO: `:composeApp:assembleRelease -Pgranatum.build=pro
+- [X] T020 Comprobación PRO: `:composeApp:assembleRelease -Pgranatum.build=pro
   -PBASE_URL_HTTP_PRO=https://pro.ci.invalid/api`, sin `com/granatum/core/demo/` en el dex.
 - [ ] T021 iOS: `iosSimulatorArm64Test` y `:composeApp:linkDebugFrameworkIosSimulatorArm64`.
   Recorrer el quickstart en Demo en el simulador propio (iPhone 17 Pro) y apagarlo después.

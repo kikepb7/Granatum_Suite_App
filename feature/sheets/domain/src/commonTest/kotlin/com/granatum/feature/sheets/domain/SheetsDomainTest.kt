@@ -132,4 +132,12 @@ class SheetsDomainTest {
         assertEquals(SheetFailureReason.OTHER, SheetFailureReason.from("Algo raro"))
         assertNull(SheetFailureReason.from(null))
     }
+
+    @Test
+    fun `When the server sends an error code then it is used and unknown codes are other`() {
+        assertEquals(SheetFailureReason.API_DISABLED, SheetFailureReason.fromCode("API_DISABLED"))
+        assertEquals(SheetFailureReason.NO_HANDLER, SheetFailureReason.fromCode("NO_HANDLER"))
+        assertEquals(SheetFailureReason.OTHER, SheetFailureReason.fromCode("SOMETHING_NEW"))
+        assertEquals(null, SheetFailureReason.fromCode(null))
+    }
 }

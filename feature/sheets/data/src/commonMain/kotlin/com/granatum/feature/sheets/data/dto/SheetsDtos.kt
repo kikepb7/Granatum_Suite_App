@@ -42,6 +42,7 @@ internal data class SheetTaskDto(
     val rowCount: Int? = null,
     val lastNamesPending: Int? = null,
     val lastError: String? = null,
+    val errorReason: String? = null,
     val createdAt: String? = null,
     val updatedAt: String? = null,
     val completedAt: String? = null,
