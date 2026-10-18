@@ -65,6 +65,12 @@ class DemoInvoicingRoutes(
     private val quarters = mutableMapOf<Pair<Int, Int>, Boolean>()
     private val quarterEvents = mutableMapOf<Pair<Int, Int>, MutableList<JsonObject>>()
 
+    /** Confirmed invoices issued in a month: the rows of its receipts tab (backend spec 012). */
+    internal fun confirmedIn(
+        year: Int,
+        month: Int,
+    ): Int = invoices.count { it.status == "CONFIRMED" && it.date?.year == year && it.date?.month?.number == month }
+
     init {
         val today = state.today()
         val lastQuarter = quarterOf(today.minus(DatePeriod(months = 3)))

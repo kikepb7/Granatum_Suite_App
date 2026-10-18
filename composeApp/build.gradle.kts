@@ -66,6 +66,10 @@ kotlin {
             implementation(projects.feature.events.domain)
             implementation(projects.feature.events.presentation)
 
+            implementation(projects.feature.sheets.data)
+            implementation(projects.feature.sheets.domain)
+            implementation(projects.feature.sheets.presentation)
+
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material3)

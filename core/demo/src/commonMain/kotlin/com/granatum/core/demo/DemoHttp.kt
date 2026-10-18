@@ -31,6 +31,8 @@ sealed interface DemoReply {
         val status: HttpStatusCode,
         val code: String,
         val message: String,
+        /** Fields some codes add to `{code, message}`, like `spreadsheet` and `reason`. */
+        val extra: Map<String, String> = emptyMap(),
     ) : DemoReply
 
     data object NoContent : DemoReply
@@ -61,6 +63,7 @@ internal fun MockRequestHandleScope.toResponse(reply: DemoReply): HttpResponseDa
                 buildJsonObject {
                     put("code", reply.code)
                     put("message", reply.message)
+                    reply.extra.forEach { (key, value) -> put(key, value) }
                 }.toString(),
                 reply.status,
                 headersOf(HttpHeaders.ContentType, "application/json"),
