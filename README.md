@@ -155,6 +155,25 @@ Solo para la administración: registra las facturas emitidas y recibidas del neg
 - La cuenta se abre ahora desde el botón con la inicial de la barra superior, para que la barra
   inferior no pase de cinco pestañas.
 
+## Google Drive
+
+Solo para la administración, desde «Tu cuenta → Google Drive» ([spec 013](specs/013-google-sheets/spec.md);
+servidor: spec 012 del backend, rutas `/api/sheets`). El servidor copia los datos en dos hojas de
+cálculo de Google Workspace, con una pestaña por mes (`AAAA-MM`). La app nunca tiene credenciales
+de Google.
+
+- **Configurar**: la pantalla muestra el correo de la cuenta técnica del entorno (PRE y PRO tienen
+  cuentas distintas). Se comparten las dos hojas, fichajes y recibos, con ese correo como
+  **Editor** y se pegan sus enlaces. El servidor comprueba que puede editarlas y dice qué falla en
+  cada campo: no compartida, solo lectora, no existe o la API de Sheets sin activar en el proyecto.
+- **Fichajes**: se elige un mes (hasta el actual) y «Exportar a Google Drive» reescribe su pestaña
+  con nombre, apellidos, DNI, fecha, entrada y salida. Avisa si hay personas sin apellidos.
+- **Recibos**: las facturas confirmadas se copian solas; desde aquí se puede reescribir la pestaña
+  de un mes. Las imágenes no se envían.
+- **Estado**: última copia, escrituras pendientes y fallidas con su motivo, y reintentos.
+- Las personas tienen nombre y apellidos por separado; las dadas de alta antes salen con
+  «Faltan los apellidos» hasta completarlos.
+
 ## Entornos: app PRE y app PRO
 
 Hay **dos apps**, elegidas al compilar ([spec 010](specs/010-entornos/spec.md)):

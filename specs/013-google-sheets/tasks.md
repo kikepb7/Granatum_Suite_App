@@ -103,9 +103,9 @@ description: "Tareas de la feature 013: Google Drive y apellidos (app)"
   en verde.
 - [X] T020 Comprobación PRO: `:composeApp:assembleRelease -Pgranatum.build=pro
   -PBASE_URL_HTTP_PRO=https://pro.ci.invalid/api`, sin `com/granatum/core/demo/` en el dex.
-- [ ] T021 iOS: `iosSimulatorArm64Test` y `:composeApp:linkDebugFrameworkIosSimulatorArm64`.
+- [X] T021 iOS: `iosSimulatorArm64Test` y `:composeApp:linkDebugFrameworkIosSimulatorArm64`.
   Recorrer el quickstart en Demo en el simulador propio (iPhone 17 Pro) y apagarlo después.
-- [ ] T022 README de la app (sección Google Drive) y CHANGELOG si existe; marcar las tareas.
+- [X] T022 README de la app (sección Google Drive) y CHANGELOG si existe; marcar las tareas.
 
 ## Dependencies
 
