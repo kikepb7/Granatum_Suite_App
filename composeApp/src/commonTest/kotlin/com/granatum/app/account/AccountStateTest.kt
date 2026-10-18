@@ -4,6 +4,7 @@ import com.granatum.core.domain.auth.model.UserRole
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class AccountStateTest {
 
@@ -24,5 +25,13 @@ class AccountStateTest {
         assertEquals(0, state.pendingCount)
         assertFalse(state.showPendingWarning)
         assertFalse(state.isSigningOut)
+    }
+
+    @Test
+    fun only_an_admin_sees_the_google_drive_entry() {
+        assertTrue(AccountState(role = UserRole.ADMIN).showGoogleDrive)
+        UserRole.entries.filter { it != UserRole.ADMIN }.forEach { role ->
+            assertFalse(AccountState(role = role).showGoogleDrive, "$role must not see Google Drive")
+        }
     }
 }

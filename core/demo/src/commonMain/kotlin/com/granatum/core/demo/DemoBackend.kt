@@ -49,6 +49,7 @@ class DemoBackend(
     private val inventory = DemoInventoryRoutes(state)
     private val invoicing = DemoInvoicingRoutes(state)
     private val events = DemoEventsRoutes(state, inventory)
+    private val sheets = DemoSheetsRoutes(state, invoicing)
 
     suspend fun handle(
         scope: MockRequestHandleScope,
@@ -88,6 +89,7 @@ class DemoBackend(
             "materials", "categories" -> inventory.route(request)
             "invoicing" -> invoicing.route(request)
             "events" -> events.route(request)
+            "sheets" -> sheets.route(request)
             else -> null
         } ?: notFound("RESOURCE_NOT_FOUND")
     }

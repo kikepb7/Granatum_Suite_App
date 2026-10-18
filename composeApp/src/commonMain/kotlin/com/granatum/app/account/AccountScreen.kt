@@ -33,6 +33,7 @@ import com.granatum.core.designsystem.theme.extended
 import com.granatum.core.domain.auth.model.UserRole
 import granatumsuite.composeapp.generated.resources.Res
 import granatumsuite.composeapp.generated.resources.account_change_password
+import granatumsuite.composeapp.generated.resources.account_google_drive
 import granatumsuite.composeapp.generated.resources.account_role
 import granatumsuite.composeapp.generated.resources.account_sign_out
 import granatumsuite.composeapp.generated.resources.account_signed_in_as
@@ -53,6 +54,7 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun AccountScreenRoot(
     onChangePasswordClick: () -> Unit,
+    onGoogleDriveClick: () -> Unit,
     onNavigateBack: () -> Unit,
     viewModel: AccountViewModel = koinViewModel()
 ) {
@@ -101,6 +103,15 @@ fun AccountScreenRoot(
                 )
             }
             Spacer(modifier = Modifier.height(24.dp))
+            if (state.showGoogleDrive) {
+                AppButton(
+                    text = stringResource(Res.string.account_google_drive),
+                    onClick = onGoogleDriveClick,
+                    style = AppButtonStyle.SECONDARY,
+                    enabled = !state.isSigningOut,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
             AppButton(
                 text = stringResource(Res.string.account_change_password),
                 onClick = onChangePasswordClick,

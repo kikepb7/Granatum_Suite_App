@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Pantalla -->
+    <string name="drive_title">Google Drive</string>
+    <string name="drive_subtitle">Copia de fichajes y recibos en hojas de cálculo</string>
+    <string name="back">Volver</string>
+    <string name="retry">Reintentar</string>
+    <string name="drive_unavailable">La copia en Google Drive no está disponible en este servidor</string>
+    <string name="drive_unavailable_hint">Pide a quien administra el servidor que active la integración con Google.</string>
+
+    <!-- Configuración -->
+    <string name="config_title">Hojas de Google</string>
+    <string name="config_account_label">Cuenta técnica de Google</string>
+    <string name="config_copy_email">Copiar el correo</string>
+    <string name="config_email_copied">Correo copiado</string>
+    <string name="config_instructions">Comparte las dos hojas con esta cuenta como Editor</string>
+    <string name="config_instructions_detail">En cada hoja de Google, pulsa «Compartir», pega el correo, elige «Editor» y envía. Después pega aquí los enlaces de las hojas.</string>
+    <string name="config_shifts_label">Hoja de fichajes</string>
+    <string name="config_invoices_label">Hoja de recibos</string>
+    <string name="config_link_placeholder">https://docs.google.com/spreadsheets/d/…</string>
+    <string name="config_link_required">Pega el enlace de la hoja</string>
+    <string name="config_save">Guardar las hojas</string>
+    <string name="config_saved">Hojas guardadas: la cuenta técnica puede editarlas</string>
+    <string name="config_change">Cambiar las hojas</string>
+    <string name="config_cancel">Cancelar</string>
+    <string name="config_open_shifts">Abrir la hoja de fichajes</string>
+    <string name="config_open_invoices">Abrir la hoja de recibos</string>
+    <string name="config_configured">Hojas configuradas</string>
+
+    <!-- Errores por campo -->
+    <string name="field_not_shared">La hoja no está compartida con la cuenta técnica. Compártela con ella como Editor.</string>
+    <string name="field_read_only">La cuenta técnica solo puede leer esta hoja. Compártela con ella como Editor.</string>
+    <string name="field_not_found">No se encuentra la hoja. Revisa el enlace y compártela con la cuenta técnica como Editor.</string>
+
+    <!-- Exportar -->
+    <string name="export_title">Exportar fichajes</string>
+    <string name="export_hint">Rellena la pestaña del mes en la hoja de fichajes con nombre, apellidos, DNI, fecha, entrada y salida.</string>
+    <string name="export_month">Mes</string>
+    <string name="export_choose_month">Elegir el mes</string>
+    <string name="export_button">Exportar a Google Drive</string>
+    <string name="export_running">Exportando… Puede tardar unos segundos.</string>
+    <string name="export_done">Exportados %1$d fichajes de %2$s</string>
+    <string name="export_done_one">Exportado 1 fichaje de %1$s</string>
+    <string name="export_last_names_pending">%1$d personas no tienen apellidos: complétalos en Personal y vuelve a exportar.</string>
+    <string name="export_last_names_pending_one">1 persona no tiene apellidos: complétalos en Personal y vuelve a exportar.</string>
+    <string name="export_queued">Google no responde ahora. La exportación está en cola y se completará en cuanto responda; el estado lo reflejará.</string>
+    <string name="export_failed">No se ha podido exportar</string>
+
+    <!-- Recibos -->
+    <string name="resync_title">Recibos</string>
+    <string name="resync_hint">Las facturas confirmadas se copian solas en la hoja de recibos. Si cambiaste la hoja, reescribe la pestaña de un mes.</string>
+    <string name="resync_button">Resincronizar recibos</string>
+    <string name="resync_running">Reescribiendo los recibos…</string>
+    <string name="resync_done">Reescritos %1$d recibos de %2$s</string>
+    <string name="resync_done_one">Reescrito 1 recibo de %1$s</string>
+    <string name="resync_queued">Google no responde ahora. La resincronización está en cola y se completará en cuanto responda.</string>
+    <string name="resync_failed">No se han podido reescribir los recibos</string>
+
+    <!-- Estado -->
+    <string name="status_title">Estado de la copia</string>
+    <string name="status_last_success">Última copia correcta</string>
+    <string name="status_never">Todavía ninguna</string>
+    <string name="status_pending">Pendientes</string>
+    <string name="status_failed">Fallidas</string>
+    <string name="status_failed_title">Escrituras fallidas</string>
+    <string name="status_no_failures">No hay escrituras fallidas</string>
+    <string name="status_retry">Reintentar</string>
+    <string name="status_retry_all">Reintentar todas</string>
+    <string name="status_retried">La escritura vuelve a la cola</string>
+    <string name="status_retried_all">%1$d escrituras vuelven a la cola</string>
+    <string name="status_retried_all_one">1 escritura vuelve a la cola</string>
+    <string name="status_refresh">Actualizar el estado</string>
+    <string name="status_error">No se ha podido cargar el estado</string>
+    <string name="task_shift_month">Fichajes de %1$s</string>
+    <string name="task_invoice_month">Recibos de %1$s</string>
+    <string name="task_invoice">Recibo de una factura</string>
+    <string name="task_unknown">Escritura en la hoja</string>
+    <string name="task_attempts">%1$d intentos</string>
+
+    <!-- Motivos de las tareas fallidas -->
+    <string name="reason_not_shared_shifts">Hoja de fichajes no compartida con la cuenta técnica</string>
+    <string name="reason_not_shared_invoices">Hoja de recibos no compartida con la cuenta técnica</string>
+    <string name="reason_read_only_shifts">Hoja de fichajes sin permiso de edición</string>
+    <string name="reason_read_only_invoices">Hoja de recibos sin permiso de edición</string>
+    <string name="reason_not_found_shifts">Hoja de fichajes no encontrada</string>
+    <string name="reason_not_found_invoices">Hoja de recibos no encontrada</string>
+    <string name="reason_transient">Google no responde</string>
+    <string name="reason_no_handler">El servidor no sabe escribir este tipo de tarea</string>
+    <string name="reason_unavailable">La copia no está disponible en este servidor</string>
+    <string name="reason_other">Error al escribir en la hoja</string>
+
+    <!-- Errores -->
+    <string name="error_invalid_link">Pega el enlace de una hoja de Google o su identificador</string>
+    <string name="error_same_spreadsheet">Las hojas de fichajes y de recibos deben ser distintas</string>
+    <string name="error_not_configured">Configura antes las hojas de Google Drive</string>
+    <string name="error_unavailable">La copia en Google Drive no está disponible en este servidor</string>
+    <string name="error_unreachable">Google no responde en este momento. No se ha guardado nada; inténtalo en unos minutos.</string>
+    <string name="error_invalid_period">Ese mes no se puede exportar</string>
+    <string name="error_task_not_found">Esa escritura ya no existe</string>
+    <string name="error_task_not_failed">Esa escritura ya no está fallida</string>
+    <string name="error_no_internet">Sin conexión. Comprueba la red e inténtalo de nuevo.</string>
+    <string name="error_forbidden">Tu rol no permite esta operación</string>
+    <string name="error_unknown">Algo ha fallado. Inténtalo de nuevo.</string>
+</resources>

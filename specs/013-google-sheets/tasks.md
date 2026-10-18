@@ -14,7 +14,7 @@ description: "Tareas de la feature 013: Google Drive y apellidos (app)"
 - [ ] T001 Fijar el contrato: `scripts/sync-openapi.sh <sha completo>` con el commit del backend
   publicado en `invoice-ml-feature` que incluye la spec 012, para actualizar `docs/openapi.json`
   y `docs/openapi.pin`. Copiar `docs/english-naming.md` del backend si cambió.
-- [ ] T002 Crear `feature/sheets/{domain,data,presentation}`:
+- [X] T002 Crear `feature/sheets/{domain,data,presentation}`:
   - `build.gradle.kts` copiados de `feature/staff`, cambiando las dependencias de proyecto;
   - los tres módulos incluidos en `settings.gradle.kts`;
   - dependencias en `composeApp/build.gradle.kts`.
@@ -46,7 +46,7 @@ description: "Tareas de la feature 013: Google Drive y apellidos (app)"
 
 ## Phase 3: User Story 2 y 3 - Configurar y exportar (P1)
 
-- [ ] T010 [P] [US2] Tests de dominio y data de `feature/sheets` con MockEngine:
+- [X] T010 [P] [US2] Tests de dominio y data de `feature/sheets` con MockEngine:
   - **settings**: GET (disponible o no), PUT `200`, y los errores:
     - `422 SPREADSHEET_NOT_ACCESSIBLE`, mapeado a `NotAccessible(field, reason)`;
     - `409 SAME_SPREADSHEET`, `503 SHEETS_UNAVAILABLE`, `502 SHEETS_UNREACHABLE`;
@@ -55,17 +55,17 @@ description: "Tareas de la feature 013: Google Drive y apellidos (app)"
   - **tareas**: `GET /tasks/{id}`;
   - **`awaitTask`**: consulta hasta `DONE` o `FAILED`, o se rinde tras N intentos y devuelve
     `StillQueued`.
-- [ ] T011 [US2] Implementar el dominio (modelos, `SheetsError`, `SheetsRepository`, casos de uso)
+- [X] T011 [US2] Implementar el dominio (modelos, `SheetsError`, `SheetsRepository`, casos de uso)
   y la data (DTOs según el contrato fijado, `SheetsRemoteDataSource`, `SheetsRepositoryImpl`,
   mapeo de errores) en `feature/sheets`. Hacer pasar T010.
-- [ ] T012 [P] [US2] Tests de `GoogleDriveViewModel` (Turbine):
+- [X] T012 [P] [US2] Tests de `GoogleDriveViewModel` (Turbine):
   - **carga**: no disponible; disponible sin hojas; configurada;
   - **guardar**: con éxito, con error por campo, con hojas iguales;
   - **copiar el correo**: emite un evento de UI;
   - **exportar**: progreso → resultado con filas y apellidos pendientes; en cola;
     `NotConfigured`;
   - **meses**: el selector no ofrece meses futuros.
-- [ ] T013 [US2] Implementar `GoogleDriveScreen` y `GoogleDriveViewModel` en
+- [X] T013 [US2] Implementar `GoogleDriveScreen` y `GoogleDriveViewModel` en
   `feature/sheets/presentation`:
   - secciones de configuración (correo con copiar, instrucciones, dos campos de enlace, guardar,
     abrir hoja) y de exportación (selector de mes, botón «Exportar a Google Drive», resultado);
@@ -73,12 +73,12 @@ description: "Tareas de la feature 013: Google Drive y apellidos (app)"
   - navegación con `SheetsGraphRoutes` y `sheetsGraph`.
 
   Hacer pasar T012.
-- [ ] T014 [US2] `composeApp`:
+- [X] T014 [US2] `composeApp`:
   - entrada «Google Drive» en `AccountScreen`, solo con `UserRole.ADMIN`, que navega a la
     pantalla;
   - módulos Koin en la inicialización;
   - test de que otros roles no ven la entrada (`AccountStateTest`).
-- [ ] T015 [US2] `core/demo`: `DemoSheetsRoutes` imitando `/api/sheets/**` según el contrato:
+- [X] T015 [US2] `core/demo`: `DemoSheetsRoutes` imitando `/api/sheets/**` según el contrato:
   - un correo de cuenta de demostración;
   - un enlace que contenga `no-compartida` responde `NOT_SHARED`;
   - la exportación crea una tarea que termina `DONE` en la siguiente consulta, con las filas
@@ -87,14 +87,14 @@ description: "Tareas de la feature 013: Google Drive y apellidos (app)"
 
 ## Phase 4: User Story 4 - Estado y reintentos (P2)
 
-- [ ] T016 [P] [US4] Tests:
+- [X] T016 [P] [US4] Tests:
   - data y ViewModel del estado (última copia, pendientes y fallidas con motivo traducido);
   - reintentar una o todas;
   - resincronizar un mes de recibos.
-- [ ] T017 [US4] Implementar la sección de estado y resincronización en `GoogleDriveScreen`, con los
+- [X] T017 [US4] Implementar la sección de estado y resincronización en `GoogleDriveScreen`, con los
   motivos traducidos: `NOT_SHARED`, `READ_ONLY`, `NOT_FOUND`, transitorio y sin manejador. Hacer
   pasar T016.
-- [ ] T018 [US4] `core/demo`: estado con una tarea fallida sembrada («hoja de recibos sin permiso
+- [X] T018 [US4] `core/demo`: estado con una tarea fallida sembrada («hoja de recibos sin permiso
   de edición»), reintentos y resincronización.
 
 ## Phase 5: Polish

@@ -31,6 +31,9 @@ data class AccountState(
 ) {
     /** The app cannot show the person's name: the backend offers no route for it (spec 004). */
     val initial: String get() = email.firstOrNull()?.uppercase() ?: "?"
+
+    /** «Google Drive» is company set-up: only `ADMIN` sees it (specs/013-google-sheets, FR-003). */
+    val showGoogleDrive: Boolean get() = role == UserRole.ADMIN
 }
 
 sealed interface AccountAction {

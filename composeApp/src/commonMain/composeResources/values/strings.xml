@@ -13,6 +13,7 @@
     <string name="account_signed_in_as">Has iniciado sesión como</string>
     <string name="account_role">Rol: %1$s</string>
     <string name="account_change_password">Cambiar contraseña</string>
+    <string name="account_google_drive">Google Drive</string>
     <string name="account_sign_out">Cerrar sesión</string>
     <string name="account_password_changed">Contraseña cambiada</string>
     <string name="role_admin">Administración</string>

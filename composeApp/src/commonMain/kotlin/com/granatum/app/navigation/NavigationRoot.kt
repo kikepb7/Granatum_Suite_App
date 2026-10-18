@@ -60,6 +60,8 @@ import com.granatum.feature.invoicing.presentation.navigation.invoicingGraph
 import com.granatum.feature.staff.presentation.navigation.StaffGraphRoutes
 import com.granatum.feature.staff.presentation.navigation.StaffGraphRoutes.StaffListRoute
 import com.granatum.feature.staff.presentation.navigation.staffGraph
+import com.granatum.feature.sheets.presentation.navigation.SheetsGraphRoutes.GoogleDriveRoute
+import com.granatum.feature.sheets.presentation.navigation.sheetsGraph
 import granatumsuite.composeapp.generated.resources.Res
 import granatumsuite.composeapp.generated.resources.splash_loading
 import granatumsuite.composeapp.generated.resources.tab_clock_in
@@ -185,12 +187,17 @@ private fun SignedInRoot(role: UserRole) {
             if (role.canManageInvoicing) {
                 invoicingGraph(navController = navController)
             }
+            // The Google Drive copy is company set-up, for ADMIN only (specs/013-google-sheets).
+            if (role == UserRole.ADMIN) {
+                sheetsGraph(navController = navController)
+            }
             if (role.canManageStaff) {
                 staffGraph(navController = navController, onOpenTeamAttendance = { navController.navigate(TeamAttendanceRoute) })
             }
             composable<AccountRoute> {
                 AccountScreenRoot(
                     onChangePasswordClick = { navController.navigate(VoluntaryPasswordChangeRoute) },
+                    onGoogleDriveClick = { navController.navigate(GoogleDriveRoute) { launchSingleTop = true } },
                     onNavigateBack = navController::popBackStack
                 )
             }
